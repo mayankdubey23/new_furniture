@@ -1,32 +1,26 @@
 'use client';
+
 import { useTheme } from 'next-themes';
 
 export default function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
 
-  const toggleTheme = () => {
-    const nextTheme = isDark ? 'light' : 'dark';
-    setTheme(nextTheme);
-
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.toggle('dark', nextTheme === 'dark');
-    }
-  };
-
   return (
     <button
-      onClick={toggleTheme}
-      className="p-2 rounded-full bg-theme-brown/10 dark:bg-white/10 text-theme-brown dark:text-theme-beige hover:scale-110 transition-all duration-300 focus:outline-none"
-      aria-label="Toggle Dark Mode"
+      type="button"
+      onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      className="rounded-full border border-theme-line bg-white/45 p-2.5 text-theme-walnut transition duration-300 hover:border-theme-bronze hover:text-theme-bronze dark:bg-white/5 dark:text-theme-ink"
+      aria-label="Toggle color theme"
     >
+      <span className="sr-only">Toggle theme</span>
       {isDark ? (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M12 3v2.25M12 18.75V21M4.72 4.72l1.6 1.6M17.68 17.68l1.6 1.6M3 12h2.25M18.75 12H21M4.72 19.28l1.6-1.6M17.68 6.32l1.6-1.6M15.75 12A3.75 3.75 0 1 1 8.25 12a3.75 3.75 0 0 1 7.5 0Z" />
         </svg>
       ) : (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12.8A8.98 8.98 0 0 1 11.2 3a9 9 0 1 0 9.8 9.8Z" />
         </svg>
       )}
     </button>

@@ -1,95 +1,107 @@
 'use client';
+
+import Image from 'next/image';
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
-// ScrollTrigger ko register karna zaroori hai
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-export default function ProductSection({ id, data, reverseLayout = false, bgColor = "bg-transparent" }) {
+export default function ProductSection({ id, data, reverseLayout = false, surfaceClassName = 'bg-transparent' }) {
   const container = useRef();
   const imageRef = useRef();
   const textGroupRef = useRef();
 
-  useGSAP(() => {
-    // 1. Image Parallax Reveal Animation
-    gsap.from(imageRef.current, {
-      scrollTrigger: {
-        trigger: container.current,
-        start: "top 80%", // Jab section screen ke 80% hisse par aaye
-        end: "top 30%",
-        toggleActions: "play none none reverse",
-      },
-      x: reverseLayout ? 100 : -100,
-      opacity: 0,
-      rotationY: reverseLayout ? -15 : 15, // 3D Tilt effect
-      duration: 1.5,
-      ease: "power3.out"
-    });
+  useGSAP(
+    () => {
+      gsap.from(imageRef.current, {
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 80%',
+          end: 'top 35%',
+          toggleActions: 'play none none reverse',
+        },
+        x: reverseLayout ? 120 : -120,
+        opacity: 0,
+        rotationY: reverseLayout ? -12 : 12,
+        duration: 1.4,
+        ease: 'power3.out',
+      });
 
-    // 2. Text Stagger Animation
-    // Text elements ko gsap.utils se select kar rahe hain
-    const textElements = gsap.utils.toArray(textGroupRef.current.children);
-    
-    gsap.from(textElements, {
-      scrollTrigger: {
-        trigger: container.current,
-        start: "top 75%",
-        toggleActions: "play none none reverse",
-      },
-      y: 50,
-      opacity: 0,
-      duration: 1,
-      stagger: 0.15, // Har line ke baad 0.15s ka gap
-      ease: "back.out(1.5)"
-    });
+      const textElements = gsap.utils.toArray(textGroupRef.current.children);
 
-  }, { scope: container });
+      gsap.from(textElements, {
+        scrollTrigger: {
+          trigger: container.current,
+          start: 'top 76%',
+          toggleActions: 'play none none reverse',
+        },
+        y: 42,
+        opacity: 0,
+        duration: 0.9,
+        stagger: 0.12,
+        ease: 'power2.out',
+      });
+    },
+    { scope: container }
+  );
 
   if (!data) return null;
 
   return (
-    <section 
-      ref={container}
-      id={id} 
-      className={`min-h-screen flex flex-col ${reverseLayout ? 'md:flex-row-reverse' : 'md:flex-row'} items-center p-10 md:p-20 ${bgColor} overflow-hidden`}
-      style={{ perspective: 1000 }} // 3D feel ke liye
-    >
-      {/* Image Section */}
-      <div className="w-full md:w-1/2 flex justify-center items-center p-4">
-        <div 
-          ref={imageRef}
-          className="relative w-full max-w-lg aspect-square rounded-2xl overflow-hidden shadow-2xl border-4 border-theme-beige group"
-        >
-          <img 
-            src={data.imageUrl} 
-            alt={data.name} 
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out"
-          />
-          <div className="absolute inset-0 bg-theme-brown/10 group-hover:bg-transparent transition-colors duration-500"></div>
-        </div>
-      </div>
-      
-      {/* Text Section */}
-      <div 
-        ref={textGroupRef}
-        className={`w-full md:w-1/2 mt-10 md:mt-0 ${reverseLayout ? 'md:pr-20' : 'md:pl-20'}`}
+    <section id={id} className={`px-6 py-18 md:px-10 md:py-24 ${surfaceClassName}`}>
+      <div
+        ref={container}
+        className={`section-shell mx-auto grid max-w-7xl gap-10 rounded-[2rem] px-8 py-10 md:grid-cols-2 md:gap-14 md:px-12 md:py-14 ${
+          reverseLayout ? 'md:[&>*:first-child]:order-2' : ''
+        }`}
+        style={{ perspective: 1000 }}
       >
-        <h2 className="text-4xl md:text-5xl font-bold mb-4 text-theme-forest">
-          {data.name}
-        </h2>
-        <p className="text-theme-brown mb-6 text-lg leading-relaxed font-medium">
-          {data.description}
-        </p>
-        <p className="text-3xl font-bold mb-8 text-theme-teal">
-          ₹{data.price.toLocaleString('en-IN')}
-        </p>
-        <button className="bg-theme-teal text-white px-10 py-4 rounded-full hover:bg-theme-forest transition-colors duration-300 shadow-lg font-semibold text-lg tracking-wide hover:scale-105">
-          Explore Collection
-        </button>
+        <div className="flex items-center justify-center">
+          <div ref={imageRef} className="premium-surface relative w-full overflow-hidden rounded-[2rem] p-3 md:p-4">
+            <div className="relative aspect-[0.95] overflow-hidden rounded-[1.6rem]">
+              <Image
+                src={data.imageUrl}
+                alt={data.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 42vw"
+                className="object-cover transition-transform duration-700 hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.3))]" />
+            </div>
+            <div className="absolute left-8 top-8 rounded-full border border-white/20 bg-black/25 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-white">
+              {data.eyebrow}
+            </div>
+          </div>
+        </div>
+
+        <div ref={textGroupRef} className="flex flex-col justify-center">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">{data.eyebrow}</p>
+          <h2 className="font-display mt-5 text-5xl leading-none text-theme-ink md:text-6xl">{data.name}</h2>
+          <p className="mt-6 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">{data.description}</p>
+
+          <div className="mt-8 flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-[0.28em] text-theme-walnut/70 dark:text-theme-ink/70">
+            <span className="rounded-full border border-theme-line px-4 py-2">Hand-finished details</span>
+            <span className="rounded-full border border-theme-line px-4 py-2">Made for lounge comfort</span>
+          </div>
+
+          <div className="mt-8 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-theme-walnut/55 dark:text-theme-ink/55">Starting At</p>
+              <p className="font-display mt-2 text-5xl text-theme-bronze">Rs. {data.price.toLocaleString('en-IN')}</p>
+            </div>
+
+            <a
+              href="#contact"
+              className="rounded-full bg-theme-ink px-8 py-4 text-center text-sm font-semibold uppercase tracking-[0.28em] text-theme-ivory transition duration-300 hover:bg-theme-bronze"
+            >
+              Book Consultation
+            </a>
+          </div>
+        </div>
       </div>
     </section>
   );
