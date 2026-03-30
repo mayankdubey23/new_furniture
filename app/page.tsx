@@ -19,6 +19,17 @@ const curatedProducts = [
   },
   {
     id: 2,
+    category: 'chair',
+    name: 'Verona Accent Chair',
+    description:
+      'A sculpted lounge chair with curved arms, rich textured upholstery, and a compact footprint that adds depth to reading corners and formal seating areas.',
+    price: 18500,
+    imageUrl:
+      'https://images.pexels.com/photos/2082090/pexels-photo-2082090.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    eyebrow: 'Accent Seating',
+  },
+  {
+    id: 3,
     category: 'recliner',
     name: 'Aurelian Leather Recliner',
     description:
@@ -29,7 +40,7 @@ const curatedProducts = [
     eyebrow: 'Private Lounge',
   },
   {
-    id: 3,
+    id: 4,
     category: 'pouffe',
     name: 'Atelier Accent Pouffe',
     description:
@@ -43,6 +54,7 @@ const curatedProducts = [
 
 export default function Home() {
   const sofaData = curatedProducts.find((product) => product.category === 'sofa');
+  const chairData = curatedProducts.find((product) => product.category === 'chair');
   const reclinerData = curatedProducts.find((product) => product.category === 'recliner');
   const pouffeData = curatedProducts.find((product) => product.category === 'pouffe');
 
@@ -53,7 +65,8 @@ export default function Home() {
       <FeaturesBanner />
       <About />
       <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
-      <ProductSection id="recliners" data={reclinerData} reverseLayout surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      <ProductSection id="recliners" data={reclinerData} reverseLayout surfaceClassName="bg-transparent" />
       <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
       <Footer />
     </main>

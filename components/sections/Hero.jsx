@@ -3,14 +3,20 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
+import Navbar from '@/components/Navbar';
+
+const titleRows = [
+  { text: 'Furniture', className: 'hero-piece hero-piece-left text-theme-ivory' },
+  { text: 'that', className: 'hero-piece hero-piece-top text-theme-ivory/88' },
+  { text: 'arrives', className: 'hero-piece hero-piece-right text-theme-bronze' },
+  { text: 'like', className: 'hero-piece hero-piece-bottom text-theme-ivory/88' },
+  { text: 'art.', className: 'hero-piece hero-piece-depth text-theme-ivory' },
+];
 
 export default function Hero() {
   const container = useRef();
-  const eyebrowRef = useRef();
-  const titleRef = useRef();
-  const descRef = useRef();
-  const actionsRef = useRef();
   const mediaRef = useRef();
+  const overlayRef = useRef();
   const orbOneRef = useRef();
   const orbTwoRef = useRef();
 
@@ -21,20 +27,22 @@ export default function Hero() {
       timeline
         .fromTo(
           mediaRef.current,
-          { clipPath: 'inset(18% 10% 22% 10% round 2rem)', scale: 1.08, opacity: 0 },
-          { clipPath: 'inset(0% 0% 0% 0% round 2rem)', scale: 1, opacity: 1, duration: 1.6 }
+          { scale: 1.12, opacity: 0, filter: 'blur(10px)' },
+          { scale: 1, opacity: 1, filter: 'blur(0px)', duration: 1.8, ease: 'power2.out' }
         )
-        .from(eyebrowRef.current, { y: 24, opacity: 0, duration: 0.7 }, '-=1.05')
-        .from('.hero-line', { y: 80, opacity: 0, stagger: 0.12, duration: 1 }, '-=0.85')
-        .from(descRef.current, { y: 24, opacity: 0, duration: 0.8 }, '-=0.65')
-        .from(actionsRef.current, { y: 20, opacity: 0, duration: 0.75 }, '-=0.55');
+        .fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 1 }, '-=1.3')
+        .from('.hero-piece-left', { x: -180, y: 24, rotate: -9, opacity: 0, duration: 1.05, ease: 'expo.out' }, '-=0.55')
+        .from('.hero-piece-right', { x: 190, y: -20, rotate: 8, opacity: 0, duration: 1.05, ease: 'expo.out' }, '-=0.9')
+        .from('.hero-piece-top', { y: -140, x: 36, rotate: -6, opacity: 0, duration: 0.95, ease: 'expo.out' }, '-=0.9')
+        .from('.hero-piece-bottom', { y: 140, x: -28, rotate: 7, opacity: 0, duration: 0.95, ease: 'expo.out' }, '-=0.88')
+        .from('.hero-piece-depth', { scale: 0.5, rotateX: -60, opacity: 0, duration: 1.05, ease: 'expo.out' }, '-=0.82');
 
       const handleMouseMove = (event) => {
-        const xPos = (event.clientX / window.innerWidth - 0.5) * 40;
-        const yPos = (event.clientY / window.innerHeight - 0.5) * 30;
+        const xPos = (event.clientX / window.innerWidth - 0.5) * 32;
+        const yPos = (event.clientY / window.innerHeight - 0.5) * 22;
 
-        gsap.to(orbOneRef.current, { x: xPos, y: yPos, duration: 2.6, ease: 'power2.out' });
-        gsap.to(orbTwoRef.current, { x: -xPos, y: -yPos, duration: 3, ease: 'power2.out' });
+        gsap.to(orbOneRef.current, { x: xPos, y: yPos, duration: 2.8, ease: 'power2.out' });
+        gsap.to(orbTwoRef.current, { x: -xPos * 0.85, y: -yPos * 0.85, duration: 3, ease: 'power2.out' });
       };
 
       window.addEventListener('mousemove', handleMouseMove);
@@ -47,94 +55,39 @@ export default function Hero() {
   );
 
   return (
-    <section
-      ref={container}
-      id="hero"
-      className="section-shell relative min-h-screen overflow-hidden px-6 pb-12 pt-32 md:px-10 md:pt-36"
-    >
-      <div className="mx-auto grid max-w-7xl items-center gap-12 md:grid-cols-[1.1fr_0.9fr]">
-        <div className="relative z-10">
-          <div
-            ref={eyebrowRef}
-            className="mb-7 inline-flex items-center gap-3 rounded-full border border-theme-line bg-white/45 px-4 py-2 text-[0.7rem] font-semibold uppercase tracking-[0.35em] text-theme-bronze dark:bg-white/5"
-          >
-            <span className="h-2 w-2 rounded-full bg-theme-bronze" />
-            Curated Furniture Studio
-          </div>
+    <section ref={container} id="hero" className="relative min-h-[100svh] overflow-hidden">
+      <div ref={mediaRef} className="absolute inset-0">
+        <video autoPlay loop muted playsInline className="h-full w-full object-cover">
+          <source src="/Furniture_Assembles.mp4" type="video/mp4" />
+        </video>
+      </div>
 
-          <div ref={titleRef} className="font-display text-[3.8rem] leading-[0.9] text-theme-ink sm:text-[4.8rem] md:text-[6.5rem] lg:text-[7.5rem]">
-            <div className="hero-line">Furniture</div>
-            <div className="hero-line text-theme-bronze">with Presence</div>
-            <div className="hero-line text-theme-walnut/75 dark:text-theme-ink/70">for Modern Homes</div>
-          </div>
+      <div
+        ref={overlayRef}
+        className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.18),transparent_22%),linear-gradient(115deg,rgba(18,14,11,0.58)_10%,rgba(18,14,11,0.24)_42%,rgba(18,14,11,0.6)_100%)]"
+      />
 
-          <p
-            ref={descRef}
-            className="mt-8 max-w-xl text-base leading-8 text-theme-walnut/78 dark:text-theme-ink/78 md:text-lg"
-          >
-            Discover sculpted seating, tailored textures, and warm material palettes designed to make your living room
-            feel collected, elevated, and deeply comfortable.
-          </p>
+      <Navbar />
 
-          <div ref={actionsRef} className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <a
-              href="#sofas"
-              className="rounded-full bg-theme-ink px-8 py-4 text-center text-sm font-semibold uppercase tracking-[0.28em] text-theme-ivory transition duration-300 hover:bg-theme-bronze"
-            >
-              Explore Collection
-            </a>
-            <a
-              href="#about"
-              className="rounded-full border border-theme-line px-8 py-4 text-center text-sm font-semibold uppercase tracking-[0.28em] text-theme-walnut transition duration-300 hover:border-theme-bronze hover:text-theme-bronze dark:text-theme-ink"
-            >
-              Our Design Story
-            </a>
-          </div>
-
-          <div className="mt-12 grid max-w-2xl gap-6 border-t border-theme-line pt-8 text-sm text-theme-walnut/76 dark:text-theme-ink/72 sm:grid-cols-3">
-            <div>
-              <div className="font-display text-3xl text-theme-ink">12+</div>
-              <p className="mt-2 uppercase tracking-[0.2em]">Signature silhouettes</p>
-            </div>
-            <div>
-              <div className="font-display text-3xl text-theme-ink">48h</div>
-              <p className="mt-2 uppercase tracking-[0.2em]">Designer assistance</p>
-            </div>
-            <div>
-              <div className="font-display text-3xl text-theme-ink">100%</div>
-              <p className="mt-2 uppercase tracking-[0.2em]">Material transparency</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="premium-surface relative overflow-hidden rounded-[2rem] p-3 md:p-4">
-            <div ref={mediaRef} className="relative h-[24rem] overflow-hidden rounded-[1.6rem] md:h-[42rem]">
-              <video autoPlay loop muted playsInline className="h-full w-full object-cover scale-[1.04]">
-                <source src="/Furniture_Assembles.mp4" type="video/mp4" />
-              </video>
-              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.28))]" />
-              <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-6 text-theme-ivory md:p-8">
-                <div>
-                  <p className="text-xs uppercase tracking-[0.35em] text-theme-ivory/70">Featured Edit</p>
-                  <h2 className="font-display mt-2 text-3xl md:text-4xl">Milano Living Series</h2>
-                </div>
-                <div className="hidden rounded-full border border-white/20 bg-black/20 px-4 py-2 text-xs uppercase tracking-[0.3em] md:block">
-                  Hand-finished
-                </div>
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[90rem] items-end px-6 pb-12 pt-28 sm:px-10 md:px-14 md:pb-16 md:pt-32 lg:px-20 lg:pb-20 lg:pt-36">
+        <div className="max-w-lg">
+          <div className="space-y-1 font-display text-[3rem] leading-[0.92] sm:text-[3.8rem] md:text-[4.8rem] lg:text-[5.6rem]">
+            {titleRows.map((piece) => (
+              <div key={piece.text}>
+                <span className={`inline-block will-change-transform ${piece.className}`}>{piece.text}</span>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
       <div
         ref={orbOneRef}
-        className="pointer-events-none absolute left-[-10rem] top-[10rem] h-[24rem] w-[24rem] rounded-full bg-theme-bronze/15 blur-[130px]"
+        className="pointer-events-none absolute left-[-8rem] top-[12rem] h-[24rem] w-[24rem] rounded-full bg-theme-bronze/18 blur-[130px]"
       />
       <div
         ref={orbTwoRef}
-        className="pointer-events-none absolute bottom-[-8rem] right-[-4rem] h-[20rem] w-[20rem] rounded-full bg-theme-olive/16 blur-[130px]"
+        className="pointer-events-none absolute bottom-[-6rem] right-[-3rem] h-[22rem] w-[22rem] rounded-full bg-theme-olive/18 blur-[130px]"
       />
     </section>
   );
