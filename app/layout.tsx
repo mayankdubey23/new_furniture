@@ -1,6 +1,7 @@
 import './globals.css';
 import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';
+import Link from 'next/link';
 
 export const metadata = {
   title: 'Luxe Decor | Sculpted Furniture for Refined Interiors',
@@ -13,6 +14,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
         <ThemeProvider>
+          <head>
+            <link rel="preload" href="/sofa.glb" as="fetch" type="model/gltf-binary" crossOrigin="anonymous" />
+            <link rel="preload" href="/rocking-chair.glb" as="fetch" type="model/gltf-binary" crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+          </head>
           <SmoothScrolling>{children}</SmoothScrolling>
         </ThemeProvider>
       </body>

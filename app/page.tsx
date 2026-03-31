@@ -1,7 +1,10 @@
+'use client';
+
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/sections/Hero';
 import FeaturesBanner from '@/components/sections/FeaturesBanner';
 import About from '@/components/sections/About';
+import Model3DViewer from '@/components/sections/Model3DViewer';
 import ProductSection from '@/components/sections/ProductSection';
 import Footer from '@/components/Footer';
 
@@ -13,8 +16,8 @@ const curatedProducts = [
     description:
       'Layered in deep olive velvet with a softly curved silhouette, this statement sofa anchors the room with gallery-grade presence and cloud-soft comfort.',
     price: 45000,
-    imageUrl:
-      'https://images.pexels.com/photos/1866149/pexels-photo-1866149.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    glbPath: '/sofa.glb',
+    imageUrl: '/sofa-preview.svg',
     eyebrow: 'Signature Sofa',
   },
   {
@@ -24,8 +27,8 @@ const curatedProducts = [
     description:
       'A sculpted lounge chair with curved arms, rich textured upholstery, and a compact footprint that adds depth to reading corners and formal seating areas.',
     price: 18500,
-    imageUrl:
-      'https://images.pexels.com/photos/2082090/pexels-photo-2082090.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    glbPath: '/rocking-chair.glb',
+    imageUrl: '/chair-preview.svg',
     eyebrow: 'Accent Seating',
   },
   {
@@ -35,8 +38,8 @@ const curatedProducts = [
     description:
       'Cut in rich saddle leather with tailored stitching and a quietly engineered recline, it brings lounge-level comfort to a polished living space.',
     price: 32000,
-    imageUrl:
-      'https://images.pexels.com/photos/3757055/pexels-photo-3757055.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    glbPath: '/recliner.glb',
+    imageUrl: '/recliner-preview.svg',
     eyebrow: 'Private Lounge',
   },
   {
@@ -46,8 +49,8 @@ const curatedProducts = [
     description:
       'A compact accent piece with artisanal texture, warm bronze undertones, and flexible styling that works beside a sofa, bed, or reading chair.',
     price: 4500,
-    imageUrl:
-      'https://images.pexels.com/photos/1034584/pexels-photo-1034584.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    glbPath: '/sofa.glb',
+    imageUrl: '/pouffe-preview.svg',
     eyebrow: 'Finishing Touch',
   },
 ];
@@ -64,11 +67,15 @@ export default function Home() {
       <Hero />
       <FeaturesBanner />
       <About />
+      <Model3DViewer id="sofa-3d-view" data={sofaData} surfaceClassName="bg-transparent" />
       <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
+      <Model3DViewer id="chair-3d-view" data={chairData} reverseLayout surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      <Model3DViewer id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
       <ProductSection id="recliners" data={reclinerData} reverseLayout surfaceClassName="bg-transparent" />
       <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
       <Footer />
     </main>
   );
 }
+
