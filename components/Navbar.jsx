@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
+import { useCart } from "@/context/CartContext";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,20 +12,20 @@ export default function Navbar() {
   const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [wishlist, setWishlist] = useState([]);
-  const [cart, setCart] = useState([]);
 
-  // localStorage sync
+  const { cart, updateQuantity, removeFromCart, totalItems, totalPrice } = useCart();
+
+  // Wishlist sync (local only)
   useEffect(() => {
-    const savedWishlist = localStorage.getItem("wishlist");
-    const savedCart = localStorage.getItem("cart");
-    if (savedWishlist) setWishlist(JSON.parse(savedWishlist));
-    if (savedCart) setCart(JSON.parse(savedCart));
+    try {
+      const saved = localStorage.getItem("wishlist");
+      if (saved) setWishlist(JSON.parse(saved));
+    } catch {}
   }, []);
 
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
-    localStorage.setItem("cart", JSON.stringify(cart));
-  }, [wishlist, cart]);
+  }, [wishlist]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -34,36 +35,15 @@ export default function Navbar() {
 
   const addToWishlist = (item) => setWishlist(prev => prev.find(p => p.id === item.id) ? prev : [...prev, item]);
   const removeFromWishlist = (id) => setWishlist(prev => prev.filter(p => p.id !== id));
-  const addToCart = (item) => {
-    setCart(prev => {
-      const existing = prev.find(p => p.id === item.id);
-      if (existing) {
-        return prev.map(p => p.id === item.id ? {...p, quantity: p.quantity + 1} : p);
-      }
-      return [...prev, {...item, quantity: 1}];
-    });
-  };
-  const updateCartQuantity = (id, delta) => {
-    setCart(prev => prev.map(p => p.id === id ? {...p, quantity: Math.max(1, p.quantity + delta)} : p).filter(p => p.quantity > 0));
-  };
-  const removeFromCart = (id) => setCart(prev => prev.filter(p => p.id !== id));
-
-  const sampleProducts = [
-    { id: 1, name: "Milano Sofa", price: 45000, image: "/images/sofa.jpg" },
-    { id: 2, name: "Verona Chair", price: 18500, image: "/images/chair.jpg" },
-    { id: 3, name: "Aurelian Recliner", price: 32000, image: "/images/recliner.jpg" }
-  ];
 
   const navLinks = [
     { name: "Sofas", href: "#sofas" },
     { name: "Chairs", href: "#chairs" },
     { name: "Recliners", href: "#recliners" },
     { name: "Pouffes", href: "#pouffes" },
-    { name: "Customization", href: "/customization" },
+{ name: "Customization", href: "/customization" },
     { name: "Contact", href: "#contact" }
   ];
-
-  const totalCartItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const HeartIcon = ({ filled, ...props }) => (
     <svg {...props} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
@@ -103,28 +83,13 @@ export default function Navbar() {
 
   const TrashIcon = (props) => (
     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 6h18"/>
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2s2 1 2 2v2m-4 0h8"/>
-    </svg>
-  );
-
-  const MinusIcon = (props) => (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="5" y1="12" x2="19" y2="12"/>
-    </svg>
-  );
-
-  const PlusIcon = (props) => (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <line x1="12" y1="5" x2="12" y2="19"/>
-      <line x1="5" y1="12" x2="19" y2="12"/>
+      <path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2s2 1 2 2v2m-4 0h8"/>
     </svg>
   );
 
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-50">
-        {/* Navbar main bar */}
         <div className={`mx-auto mt-4 flex w-[calc(100%-1.5rem)] max-w-[90rem] items-center justify-between rounded-full border px-5 py-3 shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-300 md:mt-5 md:w-[calc(100%-3rem)] md:px-6 lg:px-7 ${
           scrolled
             ? "border-theme-line bg-[rgba(251,247,241,0.92)] text-theme-walnut dark:border-white/10 dark:bg-[rgba(18,14,11,0.92)] dark:text-theme-ink"
@@ -145,9 +110,10 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* Icons: Theme + Wishlist + Cart + Account */}
+          {/* Icons */}
           <div className="flex items-center gap-3">
             <ThemeToggle />
+
             {/* Wishlist */}
             <button onClick={() => setWishlistOpen(true)} className="relative p-2 transition-all hover:scale-110" title="Wishlist">
               <HeartIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} filled={wishlist.length > 0} />
@@ -157,30 +123,34 @@ export default function Navbar() {
                 </span>
               )}
             </button>
+
             {/* Cart */}
             <button onClick={() => setCartOpen(true)} className="relative p-2 transition-all hover:scale-110" title="Cart">
               <ShoppingBagIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} />
-              {totalCartItems > 0 && (
-                <span className="absolute -right-1 -top-1 min-h-[18px] min-w-[18px] rounded-full bg-red-500 text-xs font-bold text-white flex items-center justify-center">
-                  {totalCartItems}
+              {totalItems > 0 && (
+                <span className="absolute -right-1 -top-1 min-h-[18px] min-w-[18px] rounded-full bg-theme-bronze text-xs font-bold text-white flex items-center justify-center px-1">
+                  {totalItems}
                 </span>
               )}
             </button>
+
             {/* Account */}
             <div className="relative">
               <button onClick={() => setAccountOpen(!accountOpen)} className="p-2 transition-all hover:scale-110" title="Account">
                 <UserIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} />
               </button>
               {accountOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-white/95 p-2 shadow-2xl backdrop-blur-md dark:bg-gray-800/95">
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-white/95 p-2 shadow-2xl backdrop-blur-md dark:bg-[rgba(34,27,23,0.95)]">
                   <div className="p-3 text-sm">
-                    <p className="font-semibold">John Doe</p>
-                    <p className="text-gray-500">john@example.com</p>
+                    <p className="font-semibold text-theme-ink">Guest User</p>
+                    <p className="text-theme-walnut/50 dark:text-theme-ink/50 text-xs mt-0.5">Not signed in</p>
                   </div>
-                  <div className="border-t border-gray-200 p-2">
-                    <button className="w-full rounded-lg p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">Profile</button>
-                    <button className="w-full rounded-lg p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">Orders</button>
-                    <button className="w-full rounded-lg p-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700">Logout</button>
+                  <div className="border-t border-theme-line p-2 space-y-1">
+                    {["Profile", "Orders", "Sign In"].map(item => (
+                      <button key={item} className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ink dark:hover:bg-theme-mist/30">
+                        {item}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
@@ -212,12 +182,12 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-          <div className="mt-6 flex gap-4 pt-4">
-            <button onClick={() => setWishlistOpen(true)} className="flex-1 p-3 text-left">
-              <HeartIcon className="inline h-5 w-5" filled={false} /> Wishlist ({wishlist.length})
+          <div className="mt-6 flex gap-4 pt-4 border-t border-white/10">
+            <button onClick={() => { setWishlistOpen(true); setIsOpen(false); }} className="flex-1 p-3 text-left text-sm">
+              <HeartIcon className="inline h-4 w-4 mr-2" filled={false} /> Wishlist ({wishlist.length})
             </button>
-            <button onClick={() => setCartOpen(true)} className="flex-1 p-3 text-left">
-              <ShoppingBagIcon className="inline h-5 w-5" /> Cart ({totalCartItems})
+            <button onClick={() => { setCartOpen(true); setIsOpen(false); }} className="flex-1 p-3 text-left text-sm">
+              <ShoppingBagIcon className="inline h-4 w-4 mr-2" /> Cart ({totalItems})
             </button>
           </div>
         </div>
@@ -225,91 +195,103 @@ export default function Navbar() {
 
       {/* Wishlist Modal */}
       {wishlistOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setWishlistOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">Wishlist</h3>
-              <button onClick={() => setWishlistOpen(false)} className="p-1 hover:bg-gray-200 rounded-lg">
-                <XIcon className="h-5 w-5" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setWishlistOpen(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[rgba(34,27,23,0.98)]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-bronze">Saved Items</p>
+                <h3 className="font-display text-2xl text-theme-ink mt-1">Wishlist</h3>
+              </div>
+              <button onClick={() => setWishlistOpen(false)} className="rounded-full p-2 hover:bg-theme-sand/30 transition-colors">
+                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ink" />
               </button>
             </div>
-            <div className="mt-6 max-h-96 overflow-auto">
+            <div className="max-h-[60vh] overflow-auto space-y-3">
               {wishlist.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No items in wishlist. <button onClick={() => addToWishlist(sampleProducts[0])} className="text-blue-600 hover:underline">Add sample sofa</button></p>
+                <div className="py-12 text-center">
+                  <p className="text-theme-walnut/50 dark:text-theme-ink/45 text-sm">No saved items yet.</p>
+                </div>
               ) : (
                 wishlist.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <img src={item.image || "https://via.placeholder.com/64"} alt={item.name} className="h-16 w-16 rounded-lg object-cover" />
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
+                    <img src={item.image || ""} alt={item.name} className="h-14 w-14 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{item.name}</p>
-                      <p className="text-sm text-gray-500">Rs. {item.price.toLocaleString()}</p>
+                      <p className="font-semibold text-sm text-theme-ink truncate">{item.name}</p>
+                      <p className="text-xs text-theme-bronze font-semibold mt-0.5">₹{item.price?.toLocaleString('en-IN')}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => addToCart(item)} className="p-2 hover:bg-blue-100 rounded-lg">
-                        <ShoppingBagIcon className="h-4 w-4" />
-                      </button>
-                      <button onClick={() => removeFromWishlist(item.id)} className="p-2 hover:bg-red-100 rounded-lg">
-                        <TrashIcon className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button onClick={() => removeFromWishlist(item.id)} className="p-2 hover:bg-red-50 rounded-lg text-theme-walnut/40 hover:text-red-500 transition-colors">
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 ))
               )}
             </div>
-            {wishlist.length > 0 && (
-              <button className="mt-6 w-full rounded-xl bg-gray-900 py-3 text-white font-semibold hover:bg-gray-800 transition-colors">
-                Add all to cart
-              </button>
-            )}
           </div>
         </div>
       )}
 
       {/* Cart Modal */}
       {cartOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setCartOpen(false)}>
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-800" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">Shopping Cart</h3>
-              <button onClick={() => setCartOpen(false)} className="p-1 hover:bg-gray-200 rounded-lg">
-                <XIcon className="h-5 w-5" />
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setCartOpen(false)}>
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[rgba(34,27,23,0.98)]" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-bronze">Your Bag</p>
+                <h3 className="font-display text-2xl text-theme-ink mt-1">Shopping Cart</h3>
+              </div>
+              <button onClick={() => setCartOpen(false)} className="rounded-full p-2 hover:bg-theme-sand/30 transition-colors">
+                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ink" />
               </button>
             </div>
-            <div className="mt-6 max-h-96 overflow-auto">
+
+            <div className="max-h-[50vh] overflow-auto space-y-3">
               {cart.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Your cart is empty. <button onClick={() => addToCart(sampleProducts[1])} className="text-blue-600 hover:underline">Add sample chair</button></p>
+                <div className="py-12 text-center">
+                  <p className="text-theme-walnut/50 dark:text-theme-ink/45 text-sm">Your cart is empty.</p>
+                  <Link href="/#sofas" onClick={() => setCartOpen(false)} className="mt-4 inline-block text-sm font-semibold text-theme-bronze hover:underline">
+                    Browse collection →
+                  </Link>
+                </div>
               ) : (
                 cart.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                    <img src={item.image || "https://via.placeholder.com/64"} alt={item.name} className="h-16 w-16 rounded-lg object-cover" />
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
+                    <img src={item.image || ""} alt={item.name} className="h-14 w-14 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{item.name}</p>
-                      <p className="text-sm text-gray-500">Rs. {(item.price * item.quantity).toLocaleString()}</p>
+                      <p className="font-semibold text-sm text-theme-ink truncate">{item.name}</p>
+                      <p className="text-xs text-theme-bronze font-semibold mt-0.5">
+                        ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => updateCartQuantity(item.id, -1)} className="p-1 hover:bg-gray-200 rounded">
-                        <MinusIcon className="h-4 w-4" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => updateQuantity(item.id, -1)} className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-theme-sand/40 text-theme-walnut dark:text-theme-ink transition-colors">
+                        −
                       </button>
-                      <span className="w-8 text-center font-semibold">{item.quantity}</span>
-                      <button onClick={() => updateCartQuantity(item.id, 1)} className="p-1 hover:bg-gray-200 rounded">
-                        <PlusIcon className="h-4 w-4" />
+                      <span className="w-6 text-center text-sm font-bold text-theme-ink">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.id, 1)} className="h-7 w-7 flex items-center justify-center rounded-full hover:bg-theme-sand/40 text-theme-walnut dark:text-theme-ink transition-colors">
+                        +
                       </button>
-                      <button onClick={() => removeFromCart(item.id)} className="p-2 hover:bg-red-100 rounded-lg">
-                        <TrashIcon className="h-4 w-4" />
+                      <button onClick={() => removeFromCart(item.id)} className="ml-1 h-7 w-7 flex items-center justify-center rounded-full hover:bg-red-50 text-theme-walnut/40 hover:text-red-500 transition-colors dark:text-theme-ink/40">
+                        <TrashIcon className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   </div>
                 ))
               )}
             </div>
+
             {cart.length > 0 && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-xl dark:bg-gray-700">
-                <div className="flex justify-between text-lg font-bold mb-2">
-                  Total: Rs. {cart.reduce((sum, item) => sum + item.price * item.quantity, 0).toLocaleString()}
+              <div className="mt-5 space-y-3">
+                <div className="flex justify-between text-base font-bold border-t border-theme-line pt-4">
+                  <span className="text-theme-walnut dark:text-theme-ink">Total</span>
+                  <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
                 </div>
-                <button className="w-full rounded-xl bg-blue-600 py-3 text-white font-semibold hover:bg-blue-700 transition-colors">
-                  Checkout
-                </button>
+                <Link
+                  href="/customization"
+                  onClick={() => setCartOpen(false)}
+                  className="block w-full rounded-full bg-theme-bronze py-3.5 text-center text-sm font-semibold uppercase tracking-[0.22em] text-white hover:bg-theme-ink transition-all"
+                >
+                  Customize & Checkout
+                </Link>
               </div>
             )}
           </div>
@@ -318,4 +300,3 @@ export default function Navbar() {
     </>
   );
 }
-

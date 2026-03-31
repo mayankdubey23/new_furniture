@@ -1,6 +1,7 @@
 import './globals.css';
 import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';
+import { CartProvider } from '@/context/CartContext';
 
 export const metadata = {
   title: 'Luxe Decor | Sculpted Furniture for Refined Interiors',
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
         <ThemeProvider>
-          <SmoothScrolling>{children}</SmoothScrolling>
+          <CartProvider>
+            <SmoothScrolling>{children}</SmoothScrolling>
+          </CartProvider>
         </ThemeProvider>
       </body>
     </html>

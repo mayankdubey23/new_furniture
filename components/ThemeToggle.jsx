@@ -1,15 +1,37 @@
 'use client';
 
 import { useTheme } from 'next-themes';
+import { useState, useEffect } from 'react';
 
 export default function ThemeToggle() {
+  const [mounted, setMounted] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <button
+        type="button"
+        className="rounded-full border border-white/20 bg-white/6 p-2.5 text-theme-ivory transition duration-300 hover:border-white/40 hover:bg-white/12 hover:text-white"
+        aria-label="Toggle color theme"
+      >
+        <span className="sr-only">Toggle theme</span>
+        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M21 12.8A8.98 8.98 0 0 1 11.2 3a9 9 0 1 0 9.8 9.8Z" />
+        </svg>
+      </button>
+    );
+  }
 
   return (
     <button
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
+      disabled={!mounted}
       className="rounded-full border border-white/20 bg-white/6 p-2.5 text-theme-ivory transition duration-300 hover:border-white/40 hover:bg-white/12 hover:text-white"
       aria-label="Toggle color theme"
     >
