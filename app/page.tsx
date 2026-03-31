@@ -156,7 +156,7 @@ export default function Home() {
       <Model3DViewer id="chair-3d-view" data={chairData} reverseLayout surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <Model3DViewer id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
-      <ProductSection id="recliners" data={reclinerData} reverseLayout surfaceClassName="bg-transparent" />
+      <ProductSection id="recliners" data={reclinerData}  surfaceClassName="bg-transparent" />
       <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
       <Footer />
     </main>

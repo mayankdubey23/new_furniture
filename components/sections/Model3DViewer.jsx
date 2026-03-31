@@ -49,6 +49,7 @@ export default function Model3DViewer({ id, data, reverseLayout = false, surface
         ease: 'power3.out',
       });
 
+      if (!textGroupRef.current || !textGroupRef.current.children) return;
       const textElements = gsap.utils.toArray(textGroupRef.current.children);
       gsap.from(textElements, {
         scrollTrigger: {
