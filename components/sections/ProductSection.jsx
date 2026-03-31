@@ -1,5 +1,4 @@
 'use client';
-
 import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -10,8 +9,9 @@ import ProductDetails from '../product/ProductDetails';
 import ProductSpecs from '../product/ProductSpecs';
 import ColorVariants from '../product/ColorVariants';
 
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !window.__scrollTriggerRegistered) {
   gsap.registerPlugin(ScrollTrigger);
+  window.__scrollTriggerRegistered = true;
 }
 
 function SectionLabel({ label }) {
@@ -55,8 +55,7 @@ export default function ProductSection({ id, data, surfaceClassName = 'bg-transp
         },
         y: 48,
         opacity: 0,
-        duration: 0.9,
-        delay: i * 0.04,
+        duration: 1.4,
         ease: 'power3.out',
       });
     });

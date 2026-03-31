@@ -9,7 +9,11 @@ export const metadata = {
     'Premium sofas, recliners, and accent pieces designed with warm materials, gallery-level styling, and modern comfort.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ 
+  children 
+}: { 
+  children: React.ReactNode 
+}) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
