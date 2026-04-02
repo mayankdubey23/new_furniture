@@ -1,25 +1,31 @@
-# Gallery Image Fixes TODO
+# Backend, Database & Admin Panel TODO
 
-## Approved Plan Steps (progress tracked ✅):
+✅ **Step 1:** Create TODO.md with detailed steps
 
-### 1. ✅ Create TODO.md with steps
+✅ **Step 2:** Install dependencies (`npm i bcryptjs jsonwebtoken @types/bcryptjs @types/jsonwebtoken swr`)
 
-### 2. ✅ Edit components/product/ImageGallery.jsx
-- Replaced object-cover → object-contain in ProductImage and ThumbImage
-- Enlarged main image aspect-[4/3] → [3/2]
+✅ **Step 3:** Create database connection (`lib/mongoose.ts`) & .env files
 
-### 3. ✅ Edit components/product/ProductDetails.jsx
-- Replaced object-cover → object-contain in color swatches and preview thumbnail
+✅ **Step 4:** Create models (`models/Product.ts`, `models/Order.ts`)
 
-### 4. ✅ Edit components/product/ColorVariants.jsx
-- Updated ColorImage and SwatchImage className object-cover → object-contain
+✅ **Step 11:** Backend & Admin Complete ✅
 
-### 5. ✅ Update TODO.md with progress
+### **Step 9: Frontend Integration**
+- Add SWR to app/layout.tsx providers
+- app/page.tsx fetch products
+- components/sections/ProductSection: accept id, fetch data
+- context/CartContext: fetch product name/price/image by ID
+- app/cart/page.tsx create from CartContext
+- Navbar: links to cart/admin
 
-### 6. Test: Run `npm run dev` and navigate to product page to verify:
-   - Gallery main image larger with full uncropped view
-   - Thumbnails show complete images (no crop)
-   - Color previews/swatch full images
-   - No console/TS errors
+### **Step 10: Dynamic Product Page**
+- app/products/[id]/page.tsx use ProductSection
 
-### 7. ✅ Complete
+### **Step 11: Test**
+- `npm run dev`
+- node lib/seed.js (after Mongo setup)
+- /admin login admin/admin
+- CRUD, dynamic home
+
+**Next:** Setup MongoDB (Atlas free or local), run seed, confirm connection.
+

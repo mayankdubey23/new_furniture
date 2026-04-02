@@ -1,22 +1,20 @@
 'use client';
 
-import { useTheme } from 'next-themes';
-import { useState, useEffect } from 'react';
+import { useTheme } from './ThemeProvider';
 
-export default function ThemeToggle() {
-  const [mounted, setMounted] = useState(false);
+export default function ThemeToggle({ scrolled = false }) {
   const { resolvedTheme, setTheme } = useTheme();
+  const mounted = typeof resolvedTheme !== 'undefined';
   const isDark = resolvedTheme === 'dark';
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const buttonClass = scrolled
+    ? 'border-theme-line bg-white/70 text-theme-walnut shadow-[0_8px_24px_rgba(26,22,19,0.08)] hover:border-theme-bronze/35 hover:bg-white hover:text-theme-bronze dark:border-white/12 dark:bg-white/8 dark:text-theme-ivory dark:hover:border-white/25 dark:hover:bg-white/12 dark:hover:text-white'
+    : 'border-white/28 bg-white/14 text-white shadow-[0_8px_24px_rgba(0,0,0,0.14)] hover:border-white/45 hover:bg-white/20 hover:text-white dark:border-white/18 dark:bg-white/10 dark:text-theme-ivory dark:hover:border-white/30 dark:hover:bg-white/16';
 
   if (!mounted) {
     return (
       <button
         type="button"
-        className="rounded-full border border-white/20 bg-white/6 p-2.5 text-theme-ivory transition duration-300 hover:border-white/40 hover:bg-white/12 hover:text-white"
+        className={`rounded-full border p-2.5 transition duration-300 ${buttonClass}`}
         aria-label="Toggle color theme"
       >
         <span className="sr-only">Toggle theme</span>
@@ -32,7 +30,7 @@ export default function ThemeToggle() {
       type="button"
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       disabled={!mounted}
-      className="rounded-full border border-white/20 bg-white/6 p-2.5 text-theme-ivory transition duration-300 hover:border-white/40 hover:bg-white/12 hover:text-white"
+      className={`rounded-full border p-2.5 transition duration-300 ${buttonClass}`}
       aria-label="Toggle color theme"
     >
       <span className="sr-only">Toggle theme</span>

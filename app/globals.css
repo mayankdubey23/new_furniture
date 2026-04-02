@@ -48,6 +48,7 @@ html {
 }
 
 body {
+  overflow-x: hidden;
   background:
     radial-gradient(circle at top, rgba(165, 106, 63, 0.12), transparent 30%),
     linear-gradient(180deg, var(--theme-mist) 0%, var(--theme-ivory) 48%, #efe5d7 100%);
@@ -97,6 +98,20 @@ body::before {
   border: 1px solid var(--theme-line);
   box-shadow: var(--theme-shadow);
   backdrop-filter: blur(18px);
+}
+
+.page-strata {
+  position: relative;
+}
+
+.page-strata::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(79,53,40,0.03) 38%, rgba(255,255,255,0) 100%);
+  opacity: 0.7;
 }
 
 .dark .premium-surface {

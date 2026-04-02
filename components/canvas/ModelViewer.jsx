@@ -8,13 +8,12 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
 import { gsap } from 'gsap';
 
-// ─── GLB Model ────────────────────────────────────────────────────────────────
 function GLBModel({ glbPath, isVisible, onLoaded }) {
   const { scene } = useGLTF(glbPath);
   const groupRef = useRef();
   const [popped, setPopped] = useState(false);
 
-  const { clonedScene, modelScale, floorOffset } = useMemo(() => {
+  const { clonedScene, modelScale, shadowY } = useMemo(() => {
     const clone = scene.clone(true);
     clone.traverse((child) => {
       if (child.isMesh) {
@@ -27,16 +26,16 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
 
     const box = new THREE.Box3().setFromObject(clone);
     const size = new THREE.Vector3();
-    const center = new THREE.Vector3();
     box.getSize(size);
-    box.getCenter(center);
 
     const maxAxis = Math.max(size.x, size.y, size.z) || 1;
+    const scale = 2.45 / maxAxis;
+    const shadowOffset = -((size.y * scale) / 2) - 0.08;
 
     return {
       clonedScene: clone,
-      modelScale: 2.6 / maxAxis,
-      floorOffset: box.min.y,
+      modelScale: scale,
+      shadowY: Number.isFinite(shadowOffset) ? shadowOffset : -1.05,
     };
   }, [scene]);
 
@@ -46,7 +45,7 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
 
   useEffect(() => {
     if (!isVisible || !groupRef.current || popped) return;
-    
+
     groupRef.current.scale.set(0.55, 0.55, 0.55);
     groupRef.current.rotation.y = reverseSafeAngle(groupRef.current.rotation.y);
     gsap.to(groupRef.current.scale, {
@@ -60,11 +59,11 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
   }, [isVisible, popped]);
 
   return (
-    <group ref={groupRef}>
-      <Center position={[0, -floorOffset * modelScale - 1.15, 0]}>
+    <group ref={groupRef} position={[0, 0.1, 0]}>
+      <Center>
         <primitive object={clonedScene} scale={modelScale} />
       </Center>
-      <ContactShadows position={[0, -1.18, 0]} opacity={0.5} scale={8} blur={2.4} far={3.5} color="#1a1a1a" />
+      <ContactShadows position={[0, shadowY, 0]} opacity={0.5} scale={8} blur={2.4} far={3.5} color="#1a1a1a" />
     </group>
   );
 }
@@ -73,7 +72,6 @@ function reverseSafeAngle(value) {
   return Number.isFinite(value) ? value : 0;
 }
 
-// ─── OBJ / MTL Model ─────────────────────────────────────────────────────────
 function OBJModel({ objPath, mtlPath, isVisible }) {
   const groupRef = useRef();
   const [popped, setPopped] = useState(false);
@@ -98,12 +96,14 @@ function OBJModel({ objPath, mtlPath, isVisible }) {
 
   useEffect(() => {
     if (!isVisible || !groupRef.current || popped) return;
-    
+
     groupRef.current.scale.set(0, 0, 0);
-    groupRef.current.position.set(0, -1.2, 0); // Grounded!
+    groupRef.current.position.set(0, 0, 0);
 
     gsap.to(groupRef.current.scale, {
-      x: 0.0035, y: 0.0035, z: 0.0035,
+      x: 0.0035,
+      y: 0.0035,
+      z: 0.0035,
       duration: 1.2,
       ease: 'elastic.out(1, 0.75)',
       onComplete: () => setPopped(true),
@@ -113,13 +113,11 @@ function OBJModel({ objPath, mtlPath, isVisible }) {
   return (
     <group ref={groupRef}>
       <primitive object={clonedObj} />
-      {/* Shadow directly under the grounded model */}
-      <ContactShadows position={[0, 0, 0]} opacity={0.7} scale={12} blur={2.5} far={4} color="#1a1a1a" />
+      <ContactShadows position={[0, -1.05, 0]} opacity={0.7} scale={12} blur={2.5} far={4} color="#1a1a1a" />
     </group>
   );
 }
 
-// ─── Loading spinner ─────────────────────────────────────────────────────────
 function LoadingFallback() {
   return (
     <Html center>
@@ -137,24 +135,25 @@ function LoadingFallback() {
   );
 }
 
-// ─── OrbitControls ────────────────────────────────────────────────────────────
 function SceneControls() {
   return (
     <OrbitControls
+      makeDefault
       enablePan={false}
-      enableZoom={true}
-      enableRotate={true}
+      enableZoom
+      enableRotate
       enableDamping
       dampingFactor={0.08}
       rotateSpeed={0.7}
-      minDistance={2}
-      maxDistance={7} 
-      maxPolarAngle={Math.PI / 2 + 0.1} // Zameen ke neeche dekhne se rokne ke liye
+      target={[0, 0.2, 0]}
+      minDistance={2.4}
+      maxDistance={6.5}
+      minPolarAngle={0.45}
+      maxPolarAngle={Math.PI / 2 - 0.05}
     />
   );
 }
 
-// ─── Root export ──────────────────────────────────────────────────────────────
 export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef(null);
@@ -167,7 +166,7 @@ export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
           observer.disconnect();
         }
       },
-      { threshold: 0.15 },
+      { threshold: 0.15 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -178,25 +177,20 @@ export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
       ref={containerRef}
       className="relative flex h-[22rem] w-full items-center justify-center overflow-hidden rounded-[1.6rem] cursor-grab active:cursor-grabbing md:h-[30rem]"
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(165,106,63,0.16),_rgba(251,247,241,0.15)_65%,_transparent_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(199,140,92,0.18),_rgba(34,27,23,0.08)_65%,_transparent_100%)]"></div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(165,106,63,0.16),_rgba(251,247,241,0.15)_65%,_transparent_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(199,140,92,0.18),_rgba(34,27,23,0.08)_65%,_transparent_100%)]" />
 
       <Canvas
+        frameloop="demand"
         className="relative z-10"
-        camera={{ position: [4.3, 1.3, 4.1], fov: 42, near: 0.1, far: 40 }}
+        camera={{ position: [4.6, 1.9, 4.8], fov: 38, near: 0.1, far: 40 }}
         style={{ width: '100%', height: '100%' }}
-        dpr={[1, 1.25]}
+        dpr={[1, 1]}
         gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping }}
         performance={{ min: 0.4, max: 1 }}
-        shadows="percentage"
       >
         <ambientLight intensity={1} />
-        <directionalLight
-          position={[5, 8, 5]}
-          intensity={1.6}
-          castShadow
-          shadow-mapSize={[512, 512]}
-        />
-        <pointLight position={[-5, 4, -5]} intensity={0.6} />
+        <directionalLight position={[5, 8, 5]} intensity={1.45} />
+        <pointLight position={[-5, 4, -5]} intensity={0.5} />
         <Environment preset="studio" />
 
         <Suspense fallback={<LoadingFallback />}>

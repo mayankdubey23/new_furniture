@@ -22,22 +22,19 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [initialized, setInitialized] = useState(false);
-
-  useEffect(() => {
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem('cart');
-      if (saved) setCart(JSON.parse(saved) as CartItem[]);
-    } catch {}
-    setInitialized(true);
-  }, []);
+      const saved = window.localStorage.getItem('cart');
+      return saved ? (JSON.parse(saved) as CartItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
 
   useEffect(() => {
-    if (initialized) {
-      localStorage.setItem('cart', JSON.stringify(cart));
-    }
-  }, [cart, initialized]);
+    localStorage.setItem('cart', JSON.stringify(cart));
+  }, [cart]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setCart(prev => {

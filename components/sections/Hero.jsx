@@ -3,7 +3,8 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import Navbar from '@/components/Navbar';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 const titleRows = [
   { text: 'Furniture', className: 'hero-piece hero-piece-left text-theme-ivory' },
@@ -67,10 +68,18 @@ export default function Hero() {
         className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.18),transparent_22%),linear-gradient(115deg,rgba(18,14,11,0.58)_10%,rgba(18,14,11,0.24)_42%,rgba(18,14,11,0.6)_100%)]"
       />
 
-      <Navbar />
-
       <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[90rem] items-end px-6 pb-12 pt-28 sm:px-10 md:px-14 md:pb-16 md:pt-32 lg:px-20 lg:pb-20 lg:pt-36">
         <div className="max-w-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/14 bg-black/24 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-theme-ivory/82 backdrop-blur-md"
+          >
+            <span className="h-2 w-2 rounded-full bg-theme-bronze" />
+            Sculpted Interiors
+          </motion.div>
+
           <div className="space-y-1 font-display text-[3rem] leading-[0.92] sm:text-[3.8rem] md:text-[4.8rem] lg:text-[5.6rem]">
             {titleRows.map((piece) => (
               <div key={piece.text}>
@@ -78,6 +87,40 @@ export default function Hero() {
               </div>
             ))}
           </div>
+
+          <motion.p
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.55 }}
+            className="mt-8 max-w-md text-sm leading-7 text-theme-ivory/72 md:text-base"
+          >
+            Discover statement seating, tactile finishes, and gallery-inspired furniture designed to make every room feel curated.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+            className="mt-8 flex flex-wrap gap-4"
+          >
+            <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/#sofas"
+                className="inline-flex rounded-full bg-theme-bronze px-7 py-3 text-sm font-semibold uppercase tracking-[0.24em] text-white shadow-[0_18px_50px_rgba(165,106,63,0.28)] transition-colors hover:bg-theme-ink"
+              >
+                Explore Collection
+              </Link>
+            </motion.div>
+
+            <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link
+                href="/contact"
+                className="inline-flex rounded-full border border-white/16 bg-white/8 px-7 py-3 text-sm font-semibold uppercase tracking-[0.24em] text-theme-ivory backdrop-blur-md transition-colors hover:bg-white/14"
+              >
+                Book Styling Call
+              </Link>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
 
@@ -89,6 +132,15 @@ export default function Hero() {
         ref={orbTwoRef}
         className="pointer-events-none absolute bottom-[-6rem] right-[-3rem] h-[22rem] w-[22rem] rounded-full bg-theme-olive/18 blur-[130px]"
       />
+
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8, delay: 1 }}
+        className="pointer-events-none absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 rounded-full border border-white/12 bg-black/22 px-5 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-ivory/70 backdrop-blur-md md:block"
+      >
+        Scroll to uncover the collection
+      </motion.div>
     </section>
   );
 }

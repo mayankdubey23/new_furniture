@@ -1,7 +1,9 @@
 import './globals.css';
+import Navbar from '@/components/Navbar';
 import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';
 import { CartProvider } from '@/context/CartContext';
+import { WishlistProvider } from '@/context/WishlistContext';
 
 export const metadata = {
   title: 'Luxe Decor | Sculpted Furniture for Refined Interiors',
@@ -18,9 +20,14 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
         <ThemeProvider>
-          <CartProvider>
-            <SmoothScrolling>{children}</SmoothScrolling>
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              <SmoothScrolling>
+                <Navbar />
+                {children}
+              </SmoothScrolling>
+            </CartProvider>
+          </WishlistProvider>
         </ThemeProvider>
       </body>
     </html>

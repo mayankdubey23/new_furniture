@@ -2,18 +2,25 @@
 
 import Link from 'next/link';
 import { useCart } from '@/context/CartContext';
+import AnimatedHeading from '@/components/AnimatedHeading';
 
 export default function ClientCustomization() {
-  const { cart, updateQuantity, removeFromCart, totalPrice } = useCart();
+  const { cart, updateQuantity, totalPrice } = useCart();
 
   if (cart.length === 0) {
     return (
-      <main className="min-h-screen bg-transparent px-6 pb-16 pt-32 md:px-10">
-        <div className="mx-auto max-w-7xl">
-          <div className="text-center py-24">
+      <main className="relative min-h-screen overflow-hidden bg-transparent px-6 pb-16 pt-32 md:px-10">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[30rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.22),transparent_24%),linear-gradient(115deg,rgba(18,14,11,0.92)_12%,rgba(48,32,23,0.72)_45%,rgba(18,14,11,0.92)_100%)]" />
+        <div className="pointer-events-none absolute left-[-8rem] top-[6rem] h-[20rem] w-[20rem] rounded-full bg-theme-bronze/20 blur-[120px]" />
+        <div className="pointer-events-none absolute right-[-4rem] top-[8rem] h-[18rem] w-[18rem] rounded-full bg-theme-olive/14 blur-[110px]" />
+
+        <div className="relative z-10 mx-auto max-w-7xl">
+          <div className="section-shell rounded-[2rem] border border-white/10 bg-[rgba(18,14,11,0.34)] px-8 py-20 text-center text-theme-ivory backdrop-blur-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze mb-4">Customization Studio</p>
-            <h1 className="font-display text-5xl text-theme-ink mb-6 md:text-6xl">Ready to Customize?</h1>
-            <p className="mb-10 text-lg text-theme-walnut/70 dark:text-theme-ink/65 max-w-2xl mx-auto">
+            <AnimatedHeading as="h1" className="mb-6 font-display text-5xl text-theme-ivory md:text-6xl">
+              Ready to Customize?
+            </AnimatedHeading>
+            <p className="mb-10 text-lg text-theme-ivory/74 max-w-2xl mx-auto">
               Add pieces to your cart first, then return here to select fabrics, finishes, and perfect the details.
             </p>
             <Link
@@ -29,25 +36,35 @@ export default function ClientCustomization() {
   }
 
   return (
-    <main className="min-h-screen px-6 pb-20 pt-32 md:px-10 lg:px-20">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-12">
+    <main className="relative min-h-screen overflow-hidden px-6 pb-20 pt-32 md:px-10 lg:px-20">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[30rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.22),transparent_24%),linear-gradient(115deg,rgba(18,14,11,0.92)_12%,rgba(48,32,23,0.72)_45%,rgba(18,14,11,0.92)_100%)]" />
+      <div className="pointer-events-none absolute left-[-8rem] top-[6rem] h-[20rem] w-[20rem] rounded-full bg-theme-bronze/20 blur-[120px]" />
+      <div className="pointer-events-none absolute right-[-4rem] top-[8rem] h-[18rem] w-[18rem] rounded-full bg-theme-olive/14 blur-[110px]" />
+
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="mb-12 rounded-[2rem] border border-white/10 bg-[rgba(18,14,11,0.34)] px-8 py-10 text-theme-ivory backdrop-blur-sm">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">Your Selections</p>
-          <h1 className="font-display mt-3 text-5xl text-theme-ink md:text-6xl">Customize & Checkout</h1>
+          <AnimatedHeading as="h1" className="mt-3 font-display text-5xl text-theme-ivory md:text-6xl">
+            Customize & Checkout
+          </AnimatedHeading>
         </div>
 
         <div className="grid gap-12 md:grid-cols-[1fr_380px]">
           {/* Customization Content */}
           <div>
             <section className="section-shell rounded-[2rem] px-8 py-12 mb-12">
-              <h2 className="font-display text-3xl text-theme-ink mb-6">Personalize Your Selection</h2>
+              <AnimatedHeading as="h2" className="mb-6 font-display text-3xl text-theme-ink">
+                Personalize Your Selection
+              </AnimatedHeading>
               <p className="text-lg text-theme-walnut/78 dark:text-theme-ink/76 mb-8">
                 For the {cart.length} {cart.length === 1 ? 'piece' : 'pieces'} in your cart, choose from premium fabrics, wood stains,
                 and custom dimensions. Our team will guide proportions and comfort.
               </p>
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="premium-surface rounded-[1.5rem] p-6">
-                  <h3 className="font-semibold text-lg mb-3">Fabric & Upholstery</h3>
+                  <AnimatedHeading as="h3" className="mb-3 text-lg font-semibold text-theme-ink">
+                    Fabric & Upholstery
+                  </AnimatedHeading>
                   <ul className="space-y-2 text-sm text-theme-walnut/70">
                     <li>• Velvet (Olive, Taupe, Charcoal)</li>
                     <li>• Full-grain leather (Saddle, Cognac)</li>
@@ -55,7 +72,9 @@ export default function ClientCustomization() {
                   </ul>
                 </div>
                 <div className="premium-surface rounded-[1.5rem] p-6">
-                  <h3 className="font-semibold text-lg mb-3">Dimensions & Details</h3>
+                  <AnimatedHeading as="h3" className="mb-3 text-lg font-semibold text-theme-ink">
+                    Dimensions & Details
+                  </AnimatedHeading>
                   <ul className="space-y-2 text-sm text-theme-walnut/70">
                     <li>• Seat depth adjustment</li>
                     <li>• Leg finish options</li>

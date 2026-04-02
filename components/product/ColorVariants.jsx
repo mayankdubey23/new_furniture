@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import NextImage from 'next/image';
+import AnimatedHeading from '../AnimatedHeading';
 
 function ColorImage({ src, alt, className }) {
   if (!src) return null;
@@ -20,10 +21,14 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
 
   if (!colors || colors.length === 0) return null;
 
+  const activeColor = currentColor ?? colors[0];
+
   return (
     <div className="space-y-6">
       <div>
-        <p className="font-display text-2xl text-theme-ink md:text-3xl mb-1">Choose Your Finish</p>
+        <AnimatedHeading as="h3" className="mb-1 font-display text-2xl text-theme-ink md:text-3xl">
+          Choose Your Finish
+        </AnimatedHeading>
         <p className="text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65">
           Every upholstery variant is sourced to age beautifully. Click to preview each finish.
         </p>
@@ -32,8 +37,8 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
       {/* Large image preview */}
       <div className="relative overflow-hidden rounded-2xl border border-theme-line bg-theme-sand/20 aspect-[16/9]">
         <ColorImage
-          src={currentColor?.image}
-          alt={currentColor?.name}
+          src={activeColor?.image}
+          alt={activeColor?.name}
           className="h-full w-full object-contain transition-all duration-700"
         />
         {/* Overlay */}
@@ -41,14 +46,16 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.35em] text-theme-ivory/70">
             Current Finish
           </p>
-          <p className="font-display mt-1 text-2xl text-theme-ivory">{currentColor?.name}</p>
+          <AnimatedHeading as="h4" className="mt-1 font-display text-2xl text-theme-ivory">
+            {activeColor?.name}
+          </AnimatedHeading>
         </div>
       </div>
 
       {/* Color swatch cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {colors.map((color, idx) => {
-          const isActive = currentColor?.name === color.name;
+          const isActive = activeColor?.name === color.name;
           const isHovered = hovered === idx;
           return (
             <button
