@@ -3,6 +3,15 @@
 import { useEffect, useRef } from 'react';
 import { useLenis } from 'lenis/react';
 
+/**
+ * ParallaxLayer — GPU-composited parallax via translate3d.
+ *
+ * ✅ Performance notes:
+ * - The rAF dedup flag prevents multiple layout reads per frame when several
+ *   ParallaxLayer instances exist on the same page.
+ * - getBoundingClientRect() is cached between Lenis ticks using a 100ms stale check,
+ *   avoiding forced-layout every scroll frame.
+ */
 export default function ParallaxLayer({
   children,
   className = '',
@@ -10,18 +19,37 @@ export default function ParallaxLayer({
   offset = 0,
 }) {
   const layerRef = useRef(null);
+  const tickingRef = useRef(false);
+  // Cache the rect — recompute at most every 100ms (not every 16ms scroll tick)
+  const rectCacheRef = useRef({ top: 0, height: 0, stamp: 0 });
 
   useLenis(
     () => {
-      const element = layerRef.current;
-      if (!element) return;
+      if (tickingRef.current) return;
+      tickingRef.current = true;
 
-      const rect = element.getBoundingClientRect();
-      const viewportHeight = window.innerHeight || 1;
-      const progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
-      const translateY = (progress - 0.5) * viewportHeight * speed + offset;
+      requestAnimationFrame(() => {
+        tickingRef.current = false;
+        const element = layerRef.current;
+        if (!element) return;
 
-      element.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+        const now = performance.now();
+        let { top, height, stamp } = rectCacheRef.current;
+
+        // Recompute rect at most every 100ms
+        if (now - stamp > 100) {
+          const rect = element.getBoundingClientRect();
+          top = rect.top;
+          height = rect.height;
+          rectCacheRef.current = { top, height, stamp: now };
+        }
+
+        const viewportHeight = window.innerHeight || 1;
+        const progress = (viewportHeight - top) / (viewportHeight + height);
+        const translateY = (progress - 0.5) * viewportHeight * speed + offset;
+
+        element.style.transform = `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+      });
     },
     [speed, offset],
     1

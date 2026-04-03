@@ -45,8 +45,7 @@ function TiltCard({ children, className = '', delay = 0 }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.25 }}
       transition={{ duration: 0.55, delay, ease: 'easeOut' }}
-      whileHover={{ y: -6, rotateX: 2, rotateY: 2 }}
-      style={{ transformStyle: 'preserve-3d' }}
+      whileHover={{ y: -6 }}
       className={`relative ${className}`}
     >
       <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.2),transparent_34%)]" />
@@ -63,24 +62,17 @@ export default function About() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        whileHover={{ y: -4 }}
-        style={{ transformStyle: 'preserve-3d' }}
         className="section-shell before:hidden relative w-full overflow-hidden rounded-none border-y border-theme-line/70 bg-[linear-gradient(180deg,rgba(251,247,241,0.9),rgba(247,240,231,0.82))] px-8 py-10 shadow-[0_28px_100px_rgba(49,30,21,0.1)] dark:bg-[linear-gradient(180deg,rgba(34,27,23,0.88),rgba(24,18,15,0.86))] md:px-12 md:py-12"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.14),transparent_36%)]" />
+
+        {/* ✅ Replaced animated blur-[80px]/blur-[96px] orbs with static gradients.
+            Those blur filters forced GPU repaints every animation frame. */}
         <ParallaxLayer speed={-0.12} className="pointer-events-none absolute inset-0">
-          <motion.div
-            className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-theme-bronze/16 blur-[80px]"
-            animate={{ x: [-10, 16, -10], y: [0, 14, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          <div className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-gradient-to-br from-theme-bronze/14 to-transparent" />
         </ParallaxLayer>
         <ParallaxLayer speed={-0.18} className="pointer-events-none absolute inset-0">
-          <motion.div
-            className="absolute bottom-8 right-6 h-44 w-44 rounded-full bg-theme-olive/14 blur-[96px]"
-            animate={{ x: [12, -14, 12], y: [0, -10, 0] }}
-            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          <div className="absolute bottom-8 right-6 h-44 w-44 rounded-full bg-gradient-to-bl from-theme-olive/12 to-transparent" />
         </ParallaxLayer>
 
         <div className="relative z-10 grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
@@ -99,12 +91,11 @@ export default function About() {
               {titleLines.map((line, index) => (
                 <motion.div
                   key={line}
-                  initial={{ opacity: 0, x: index % 2 === 0 ? -26 : 26, rotateX: -18 }}
-                  whileInView={{ opacity: 1, x: 0, rotateX: 0 }}
+                  initial={{ opacity: 0, x: index % 2 === 0 ? -26 : 26 }}
+                  whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true, amount: 0.4 }}
                   transition={{ duration: 0.6, delay: index * 0.08 }}
-                  whileHover={{ x: 10, rotateY: 10, skewX: -4 }}
-                  className="origin-left [transform-style:preserve-3d]"
+                  className="origin-left"
                 >
                   <span className="inline-block drop-shadow-[0_10px_24px_rgba(49,30,21,0.08)]">{line}</span>
                 </motion.div>
@@ -139,8 +130,7 @@ export default function About() {
               {editorialHighlights.map((item, index) => (
                 <motion.div
                   key={item.label}
-                  whileHover={{ y: -6, rotateX: 4, rotateY: index % 2 === 0 ? -4 : 4 }}
-                  style={{ transformStyle: 'preserve-3d' }}
+                  whileHover={{ y: -6 }}
                   className="rounded-[1.45rem] border border-theme-bronze/14 bg-white/62 px-4 py-4 shadow-[0_12px_32px_rgba(49,30,21,0.06)] dark:bg-white/5"
                 >
                   <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze/78">{item.label}</p>

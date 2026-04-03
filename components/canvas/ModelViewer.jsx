@@ -63,7 +63,8 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
       <Center>
         <primitive object={clonedScene} scale={modelScale} />
       </Center>
-      <ContactShadows position={[0, shadowY, 0]} opacity={0.5} scale={8} blur={2.4} far={3.5} color="#1a1a1a" />
+      {/* ✅ blur reduced 2.4 → 1.2: ContactShadows blur is rendered via multi-pass blur shaders */}
+      <ContactShadows position={[0, shadowY, 0]} opacity={0.45} scale={8} blur={1.2} far={3.5} color="#1a1a1a" />
     </group>
   );
 }

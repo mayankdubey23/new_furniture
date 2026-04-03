@@ -1,11 +1,15 @@
 'use client';
 
+import { useRef, useEffect, useState } from 'react';
 import Hero from '@/components/sections/Hero';
 import FeaturesBanner from '@/components/sections/FeaturesBanner';
-import About from '@/components/sections/About';
-import Product3D from '@/components/product/Product3D';
-import ProductSection from '@/components/sections/ProductSection';
-import Footer from '@/components/Footer';
+import dynamic from 'next/dynamic';
+
+// Heavy below-fold sections loaded as separate JS chunks
+const About = dynamic(() => import('@/components/sections/About'), { ssr: false });
+const Product3D = dynamic(() => import('@/components/product/Product3D'), { ssr: false });
+const ProductSection = dynamic(() => import('@/components/sections/ProductSection'), { ssr: false });
+const Footer = dynamic(() => import('@/components/Footer'), { ssr: false });
 
 const curatedProducts = [
   {
@@ -138,26 +142,101 @@ const curatedProducts = [
   },
 ];
 
+/**
+ * LazySection — only mounts children when the placeholder enters the viewport
+ * (+ rootMargin buffer). Once mounted it never unmounts, so loaded models persist.
+ * A min-height placeholder prevents layout shift before mount.
+ * 
+ * ✅ Fixed: Added keepMounted prop to prevent unmounting after initial mount
+ * to avoid DOM manipulation conflicts with GSAP and Three.js
+ */
+function LazySection({
+  children,
+  minHeight = '80vh',
+  rootMargin = '400px',
+  keepMounted = true, // New prop to keep content mounted after first render
+}: {
+  children: React.ReactNode;
+  minHeight?: string;
+  rootMargin?: string;
+  keepMounted?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setMounted(true);
+          // Only disconnect if we don't need to keep watching
+          if (!keepMounted) {
+            observer.disconnect();
+          }
+        }
+      },
+      { rootMargin, threshold: 0 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [rootMargin, keepMounted]);
+
+  return (
+    <div ref={ref} style={mounted ? undefined : { minHeight }}>
+      {mounted ? children : null}
+    </div>
+  );
+}
+
 export default function Home() {
-  const sofaData = curatedProducts.find((product) => product.category === 'sofa');
-  const chairData = curatedProducts.find((product) => product.category === 'chair');
-  const reclinerData = curatedProducts.find((product) => product.category === 'recliner');
-  const pouffeData = curatedProducts.find((product) => product.category === 'pouffe');
+  const sofaData = curatedProducts.find((p) => p.category === 'sofa')!;
+  const chairData = curatedProducts.find((p) => p.category === 'chair')!;
+  const reclinerData = curatedProducts.find((p) => p.category === 'recliner')!;
+  const pouffeData = curatedProducts.find((p) => p.category === 'pouffe')!;
 
   return (
     <main className="page-strata overflow-clip bg-transparent">
+      {/* ── Above the fold — loaded eagerly ── */}
       <Hero />
       <FeaturesBanner />
-      <About />
-      <Product3D id="sofa-3d-view" data={sofaData} surfaceClassName="bg-transparent" />
-      <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
-      <Product3D id="chair-3d-view" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
-      <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
-      <Product3D id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
-      <ProductSection id="recliners" data={reclinerData} surfaceClassName="bg-transparent" />
-      <Product3D id="pouffe-3d-view" data={pouffeData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
-      <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
-      <Footer />
+
+      {/* ── Below the fold — lazy-mounted when approaching viewport ── */}
+      <LazySection minHeight="60vh">
+        <About />
+      </LazySection>
+
+      {/* Sofa — first product, slightly tighter margin so it feels instant */}
+      <LazySection minHeight="80vh" rootMargin="300px">
+        <Product3D id="sofa-3d-view" data={sofaData} surfaceClassName="bg-transparent" />
+        <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
+      </LazySection>
+
+      {/* Chair */}
+      <LazySection minHeight="80vh">
+        <Product3D id="chair-3d-view" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+        <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      </LazySection>
+
+      {/* Recliner */}
+      <LazySection minHeight="80vh">
+        <Product3D id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
+        <ProductSection id="recliners" data={reclinerData} surfaceClassName="bg-transparent" />
+      </LazySection>
+
+      {/* Pouffe */}
+      <LazySection minHeight="80vh">
+        <Product3D id="pouffe-3d-view" data={pouffeData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+        <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
+      </LazySection>
+
+      {/* Footer — heaviest 3D scene, only mounts when user scrolls near it */}
+      <LazySection minHeight="40vh">
+        <Footer />
+      </LazySection>
     </main>
   );
 }

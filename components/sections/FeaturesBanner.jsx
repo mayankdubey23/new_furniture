@@ -37,10 +37,9 @@ export default function FeaturesBanner() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,140,92,0.26),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(102,114,95,0.18),transparent_24%)]" />
             </ParallaxLayer>
             <ParallaxLayer speed={-0.14} className="pointer-events-none absolute inset-0">
-              <motion.div
-                className="absolute right-8 top-8 h-28 w-28 rounded-full border border-white/12"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+              {/* ✅ CSS animation runs on compositor thread — no JS frame overhead */}
+              <div
+                className="absolute right-8 top-8 h-28 w-28 rounded-full border border-white/12 animate-[spin_18s_linear_infinite]"
               />
             </ParallaxLayer>
 
@@ -59,7 +58,7 @@ export default function FeaturesBanner() {
                   <motion.span
                     key={item}
                     whileHover={{ y: -3, scale: 1.03 }}
-                    className="rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[0.64rem] font-semibold uppercase tracking-[0.3em] text-theme-ivory/84 backdrop-blur-sm"
+                    className="rounded-full border border-white/14 bg-white/8 px-4 py-2 text-[0.64rem] font-semibold uppercase tracking-[0.3em] text-theme-ivory/84"
                   >
                     {item}
                   </motion.span>
@@ -76,12 +75,11 @@ export default function FeaturesBanner() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, amount: 0.22 }}
                 transition={{ duration: 0.55, delay: index * 0.08, ease: 'easeOut' }}
-                whileHover={{ y: -10, rotateX: 4, rotateY: index % 2 === 0 ? -5 : 5, scale: 1.01 }}
-                style={{ transformStyle: 'preserve-3d' }}
+                whileHover={{ y: -10, scale: 1.01 }}
                 className="group relative overflow-hidden rounded-[1.9rem] border border-theme-bronze/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.84),rgba(248,241,232,0.68))] p-6 shadow-[0_20px_48px_rgba(49,30,21,0.07)] dark:bg-[linear-gradient(145deg,rgba(50,39,33,0.46),rgba(24,18,15,0.72))]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.12),transparent_34%)]" />
-                <div className="pointer-events-none absolute -right-8 bottom-0 h-24 w-24 rounded-full bg-theme-bronze/10 blur-[40px] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                <div className="pointer-events-none absolute -right-8 bottom-0 h-24 w-24 rounded-full bg-theme-bronze/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <div className="relative z-10 flex h-full flex-col justify-between gap-8">
                   <div className="flex items-center justify-between">
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{feature.number}</p>

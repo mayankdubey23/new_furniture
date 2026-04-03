@@ -157,6 +157,7 @@ html.lenis body {
   overscroll-behavior: contain;
 }
 
+/* ✅ GPU-composited decorative overlays — transform:translateZ(0) prevents scroll repaints */
 body::before {
   content: "";
   position: fixed;
@@ -168,6 +169,8 @@ body::before {
     linear-gradient(90deg, rgba(79, 53, 40, 0.04) 1px, transparent 1px);
   background-size: 80px 80px;
   mask-image: radial-gradient(circle at center, black, transparent 82%);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 body::after {
@@ -179,6 +182,8 @@ body::after {
     radial-gradient(circle at 50% 0%, rgba(255,255,255,0.18), transparent 42%),
     radial-gradient(circle at 50% 100%, rgba(79,53,40,0.06), transparent 34%);
   opacity: 0.9;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .dark body {
@@ -210,11 +215,12 @@ body::after {
     0 12px 40px rgba(49, 30, 21, 0.05);
 }
 
+/* ✅ Removed backdrop-filter:blur(18px) — it forced GPU repaints on every scroll frame
+   and created stacking context issues. Compensated with higher bg opacity. */
 .premium-surface {
-  background: linear-gradient(180deg, rgba(251, 247, 241, 0.84), rgba(243, 235, 224, 0.7));
+  background: linear-gradient(180deg, rgba(251, 247, 241, 0.95), rgba(243, 235, 224, 0.88));
   border: 1px solid var(--theme-line);
   box-shadow: var(--theme-shadow);
-  backdrop-filter: blur(18px);
 }
 
 .page-strata {
@@ -232,7 +238,7 @@ body::after {
 }
 
 .dark .premium-surface {
-  background: linear-gradient(180deg, rgba(34, 27, 23, 0.82), rgba(24, 18, 15, 0.72));
+  background: linear-gradient(180deg, rgba(34, 27, 23, 0.96), rgba(24, 18, 15, 0.92));
 }
 
 ::selection {

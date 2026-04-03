@@ -82,7 +82,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
         style={{ perspective: 1000 }}
       >
         {showIntroCard ? (
-          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 md:col-span-2 rounded-[2.2rem] border border-theme-line/70 bg-white/34 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:px-10 md:py-10">
+          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 md:col-span-2 rounded-[2.2rem] border border-theme-line/70 bg-white/50 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-white/4 md:px-10 md:py-10">
             <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
               {data.eyebrow}
             </span>
@@ -98,7 +98,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
         <div className="relative z-10 flex items-center justify-center md:col-span-1">
           <motion.div
             ref={stageRef}
-            whileHover={{ y: -8, rotateX: 1.2, rotateY: reverseLayout ? -1.2 : 1.2 }}
+            whileHover={{ y: -6 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="premium-surface relative w-full rounded-[2rem] p-3 md:p-4"
           >
@@ -151,7 +151,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.15))]" />
 
-              <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/42 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80 backdrop-blur-md">
+          <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80">
                 {data.modelPath ? 'Interactive 3D View' : 'Product Preview'}
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
         </div>
 
         <div ref={textGroupRef} className="relative z-0 flex flex-col justify-center md:col-span-1">
-          <div className="rounded-[2rem] border border-theme-line/70 bg-white/38 p-6 shadow-[0_16px_46px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:p-7">
+            <div className="rounded-[2rem] border border-theme-line/70 bg-white/55 p-6 shadow-[0_16px_46px_rgba(49,30,21,0.05)] dark:bg-white/4 md:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">3D View</p>
             <p className="mt-4 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">
               Tap the model to load the live 3D experience, then continue through the product details below.
@@ -180,8 +180,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
 
           <div className="mt-5 grid gap-4 md:grid-cols-[0.85fr_1.15fr]">
             <motion.div
-              whileHover={{ y: -6, rotateX: 4, rotateY: -4 }}
-              style={{ transformStyle: 'preserve-3d' }}
+              whileHover={{ y: -6 }}
               className="rounded-[1.7rem] border border-theme-bronze/12 bg-theme-ink px-6 py-6 text-theme-ivory shadow-[0_20px_50px_rgba(26,22,19,0.18)]"
             >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-theme-sand/70">Starting At</p>
@@ -189,9 +188,8 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
             </motion.div>
 
             <motion.div
-              whileHover={{ y: -5, rotateX: 3, rotateY: 4 }}
-              style={{ transformStyle: 'preserve-3d' }}
-              className="rounded-[1.7rem] border border-theme-line/70 bg-white/42 p-6 shadow-[0_14px_40px_rgba(49,30,21,0.05)] dark:bg-white/4"
+              whileHover={{ y: -5 }}
+              className="rounded-[1.7rem] border border-theme-line/70 bg-white/55 p-6 shadow-[0_14px_40px_rgba(49,30,21,0.05)] dark:bg-white/4"
             >
               <div className="flex flex-col gap-4">
                 <div>

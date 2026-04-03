@@ -1,6 +1,6 @@
-'use client';
+metimes 'use client';
 
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
@@ -8,7 +8,7 @@ import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
 
-function FooterScene({ isDark }) {
+function FooterScene({ isDark, isVisible }) {
   const sofaGroup = useRef(null);
   const lampLightRef = useRef(null);
   const glowIntensity = isDark ? 2.4 : 1.2;
@@ -22,8 +22,8 @@ function FooterScene({ isDark }) {
         child.material.color.setHex(0xc78c5c);
         child.material.emissive = new THREE.Color(0x26120a);
         child.material.emissiveIntensity = 0.08;
-        child.castShadow = true;
-        child.receiveShadow = true;
+        child.castShadow = false; // ✅ Disabled shadows for performance
+        child.receiveShadow = false; // ✅ Disabled shadows for performance
       }
     });
 
@@ -34,7 +34,8 @@ function FooterScene({ isDark }) {
   }, [scene]);
 
   useEffect(() => {
-    if (sofaGroup.current) {
+    let lampTween;
+    if (sofaGroup.current && isVisible) {
       gsap.from(sofaGroup.current.scale, {
         x: 0.5,
         y: 0.5,
@@ -44,8 +45,8 @@ function FooterScene({ isDark }) {
       });
     }
 
-    if (lampLightRef.current) {
-      gsap.to(lampLightRef.current, {
+    if (lampLightRef.current && isVisible) {
+      lampTween = gsap.to(lampLightRef.current, {
         intensity: glowIntensity * 1.5,
         duration: 2,
         repeat: -1,
@@ -53,7 +54,12 @@ function FooterScene({ isDark }) {
         ease: 'power2.inOut',
       });
     }
-  }, [glowIntensity]);
+
+    // Clean up infinite animation on unmount or when not visible
+    return () => {
+      lampTween?.kill();
+    };
+  }, [glowIntensity, isVisible]);
 
   return (
     <>
@@ -95,25 +101,61 @@ function FooterScene({ isDark }) {
   );
 }
 
-useGLTF.preload('/3D models/teal sofa 3d model.glb');
-
 export default function ThreeFooter({ isDark = true }) {
+  const footerRef = useRef(null);
+  // ✅ Only mount the Canvas when the footer enters the viewport.
+  // This stops the Three.js render loop from running while the user is above the fold.
+  const [canvasVisible, setCanvasVisible] = useState(false);
+
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // ✅ Only render when footer is actually visible to save GPU
+        setCanvasVisible(entry.isIntersecting);
+      },
+      { threshold: 0.05, rootMargin: '100px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <footer className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]">
+    <footer
+      ref={footerRef}
+      className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]"
+    >
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <Canvas
-          camera={{ position: [0, 1.5, 5], fov: 45 }}
-          gl={{ toneMapping: THREE.ACESFilmicToneMapping, antialias: true }}
-        >
-          <Suspense fallback={null}>
-            <Environment preset="studio" />
-            <FooterScene isDark={isDark} />
-            <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} autoRotate autoRotateSpeed={0.3} />
-            <EffectComposer>
-              <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={1.45} />
-            </EffectComposer>
-          </Suspense>
-        </Canvas>
+        {canvasVisible && (
+          <Canvas
+            camera={{ position: [0, 1.5, 5], fov: 45 }}
+            // ✅ Performance optimizations: disabled antialias, use high-performance mode
+            gl={{ 
+              toneMapping: THREE.ACESFilmicToneMapping, 
+              antialias: false, 
+              powerPreference: 'high-performance',
+              failIfMajorPerformanceCaveat: false,
+            }}
+            dpr={[1, 2]} // ✅ Limit pixel ratio for performance
+          >
+            <Suspense fallback={null}>
+              <Environment preset="studio" />
+              <FooterScene isDark={isDark} isVisible={canvasVisible} />
+              <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} autoRotate autoRotateSpeed={0.3} />
+              <EffectComposer disableNormalPass>
+                <Bloom 
+                  luminanceThreshold={0.6} 
+                  luminanceSmoothing={0.9} 
+                  intensity={0.8} // ✅ Reduced bloom intensity for performance
+                  mipmapBlur 
+                />
+              </EffectComposer>
+            </Suspense>
+          </Canvas>
+        )}
       </div>
 
       <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />

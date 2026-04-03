@@ -1,6 +1,6 @@
-'use client';
+ghts too much in text colors so i cant write'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { ReactLenis, useLenis } from 'lenis/react';
 import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
@@ -9,6 +9,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 function LenisBridge() {
   const pathname = usePathname();
   const lenis = useLenis();
+  const frameIdRef = useRef(0);
 
   useLenis(() => {
     ScrollTrigger.update();
@@ -22,7 +23,10 @@ function LenisBridge() {
       ScrollTrigger.refresh();
     });
 
-    return () => window.cancelAnimationFrame(refreshId);
+    return () => {
+      window.cancelAnimationFrame(refreshId);
+      window.cancelAnimationFrame(frameIdRef.current);
+    };
   }, [lenis, pathname]);
 
   return null;
@@ -43,25 +47,45 @@ export default function SmoothScrolling({ children }) {
 
   const shouldOptimize = prefersReducedMotion || isSlowConnection;
 
+  // ✅ Performance-optimized Lenis configuration
   return (
     <ReactLenis
       root
       options={{
-        autoRaf: !shouldOptimize, // Only use RAF if not optimizing
-        smoothWheel: !shouldOptimize, // Disable on slow connections
-        lerp: shouldOptimize ? 0.15 : 0.08, // Faster lerp for performance
-        duration: shouldOptimize ? 0.4 : 0.8, // Reduced duration
-        syncTouch: true,
-        wheelMultiplier: 0.9, // Slightly reduced  
+        // ✅ Core performance settings
+        autoRaf: true, // Always use RAF for smooth scrolling
+        smoothWheel: true,
+        smoothTouch: false, // ✅ Disable smooth touch scrolling for better mobile performance
+        
+        // ✅ Reduced interpolation for snappier feel and better performance
+        lerp: shouldOptimize ? 0.1 : 0.07,
+        duration: shouldOptimize ? 0.3 : 0.6,
+        
+        // ✅ Optimized multipliers
+        wheelMultiplier: 0.85,
         touchMultiplier: 1,
+        
+        // ✅ Disable features that cause lag
+        infinite: false, // ✅ Important: disable infinite scrolling
         overscroll: false,
+        syncTouch: false, // ✅ Disable sync touch for performance
+        
+        // ✅ Basic settings
         gestureOrientation: 'vertical',
-        allowNestedScroll: false,
+        allowNestedScroll: true,
         stopInertiaOnNavigate: true,
+        
+        // ✅ Anchor scroll optimization
         anchors: {
           offset: -140,
-          duration: shouldOptimize ? 0.25 : 0.6, // Faster anchor scrolling
+          duration: shouldOptimize ? 0.2 : 0.5,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // ✅ Performance-optimized easing
         },
+        
+        // ✅ Touch settings for mobile
+        touchInertiaMultiplier: 35,
+        normalizeWheel: false, // ✅ Disable wheel normalization for performance
+        prevent: null, // ✅ Don't prevent any default behavior
       }}
     >
       <LenisBridge />
