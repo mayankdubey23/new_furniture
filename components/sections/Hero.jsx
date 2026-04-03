@@ -3,7 +3,6 @@
 import { useRef } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const titleRows = [
@@ -56,9 +55,9 @@ export default function Hero() {
   );
 
   return (
-    <section ref={container} id="hero" className="relative min-h-[100svh] overflow-hidden">
+    <section ref={container} id="hero" className="relative h-[100svh] overflow-hidden">
       <div ref={mediaRef} className="absolute inset-0">
-        <video autoPlay loop muted playsInline className="h-full w-full object-cover">
+        <video autoPlay loop muted playsInline className="h-full w-full object-cover object-center">
           <source src="/Furniture_Assembles.mp4" type="video/mp4" />
         </video>
       </div>
@@ -68,8 +67,8 @@ export default function Hero() {
         className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.18),transparent_22%),linear-gradient(115deg,rgba(18,14,11,0.58)_10%,rgba(18,14,11,0.24)_42%,rgba(18,14,11,0.6)_100%)]"
       />
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-[90rem] items-end px-6 pb-12 pt-28 sm:px-10 md:px-14 md:pb-16 md:pt-32 lg:px-20 lg:pb-20 lg:pt-36">
-        <div className="max-w-lg">
+      <div className="relative z-10 mx-auto flex h-full w-full max-w-[90rem] items-center px-6 pt-24 sm:px-10 md:px-14 md:pt-28 lg:px-20 lg:pt-32">
+        <div className="max-w-[34rem] pb-10 sm:pb-12 lg:pb-14">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -80,7 +79,7 @@ export default function Hero() {
             Sculpted Interiors
           </motion.div>
 
-          <div className="space-y-1 font-display text-[3rem] leading-[0.92] sm:text-[3.8rem] md:text-[4.8rem] lg:text-[5.6rem]">
+          <div className="space-y-1 font-display text-[2.8rem] leading-[0.86] sm:text-[3.5rem] md:text-[4.25rem] lg:text-[4.9rem] xl:text-[5.3rem]">
             {titleRows.map((piece) => (
               <div key={piece.text}>
                 <span className={`inline-block will-change-transform ${piece.className}`}>{piece.text}</span>
@@ -92,35 +91,11 @@ export default function Hero() {
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.55 }}
-            className="mt-8 max-w-md text-sm leading-7 text-theme-ivory/72 md:text-base"
+            className="mt-6 max-w-md text-sm leading-7 text-theme-ivory/72 md:text-base"
           >
             Discover statement seating, tactile finishes, and gallery-inspired furniture designed to make every room feel curated.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.7 }}
-            className="mt-8 flex flex-wrap gap-4"
-          >
-            <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href="/#sofas"
-                className="inline-flex rounded-full bg-theme-bronze px-7 py-3 text-sm font-semibold uppercase tracking-[0.24em] text-white shadow-[0_18px_50px_rgba(165,106,63,0.28)] transition-colors hover:bg-theme-ink"
-              >
-                Explore Collection
-              </Link>
-            </motion.div>
-
-            <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Link
-                href="/contact"
-                className="inline-flex rounded-full border border-white/16 bg-white/8 px-7 py-3 text-sm font-semibold uppercase tracking-[0.24em] text-theme-ivory backdrop-blur-md transition-colors hover:bg-white/14"
-              >
-                Book Styling Call
-              </Link>
-            </motion.div>
-          </motion.div>
         </div>
       </div>
 

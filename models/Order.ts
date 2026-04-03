@@ -8,34 +8,56 @@ export interface IOrderItem {
   quantity: number;
 }
 
+export interface ICustomerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+}
+
 export interface IOrder {
   items: IOrderItem[];
   totalItems: number;
   totalPrice: number;
   status: 'pending' | 'paid' | 'shipped' | 'delivered';
-  userId?: string; // optional for guest carts
+  customer: ICustomerInfo;
+  notes?: string;
   createdAt?: Date;
 }
 
 const OrderItemSchema = new Schema({
-  productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+  productId: { type: String, required: true },
   name: { type: String, required: true },
   price: { type: Number, required: true },
   image: { type: String, required: true },
   quantity: { type: Number, required: true },
 });
 
-const OrderSchema = new Schema<IOrder>({
-  items: [OrderItemSchema],
-  totalItems: { type: Number, required: true },
-  totalPrice: { type: Number, required: true },
-  status: { 
-    type: String, 
-    enum: ['pending', 'paid', 'shipped', 'delivered'], 
-    default: 'pending' 
+const CustomerInfoSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  address: { type: String, required: true },
+  city: { type: String, required: true },
+  pincode: { type: String, required: true },
+});
+
+const OrderSchema = new Schema<IOrder>(
+  {
+    items: [OrderItemSchema],
+    totalItems: { type: Number, required: true },
+    totalPrice: { type: Number, required: true },
+    status: {
+      type: String,
+      enum: ['pending', 'paid', 'shipped', 'delivered'],
+      default: 'pending',
+    },
+    customer: { type: CustomerInfoSchema, required: true },
+    notes: String,
   },
-  userId: String,
-}, { timestamps: true });
+  { timestamps: true }
+);
 
 export default models.Order || model('Order', OrderSchema);
-

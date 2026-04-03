@@ -155,22 +155,13 @@ function SceneControls() {
 }
 
 export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
-  const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.15 }
-    );
-    if (containerRef.current) observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, []);
+    if (glbPath) {
+      useGLTF.preload(glbPath);
+    }
+  }, [glbPath]);
 
   return (
     <div
@@ -195,9 +186,9 @@ export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
 
         <Suspense fallback={<LoadingFallback />}>
           {glbPath ? (
-            <GLBModel glbPath={glbPath} isVisible={isVisible} onLoaded={onLoaded} />
+            <GLBModel glbPath={glbPath} isVisible={true} onLoaded={onLoaded} />
           ) : objPath && mtlPath ? (
-            <OBJModel objPath={objPath} mtlPath={mtlPath} isVisible={isVisible} />
+            <OBJModel objPath={objPath} mtlPath={mtlPath} isVisible={true} />
           ) : null}
         </Suspense>
 

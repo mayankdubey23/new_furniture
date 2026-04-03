@@ -1,5 +1,5 @@
-portimport dbConnect from './mongoose.js';
-import Product from '../models/Product.js';
+import dbConnect from './mongoose';
+import Product from '../models/Product';
 
 const initialProducts = [
   {
@@ -8,62 +8,61 @@ const initialProducts = [
     description:
       'Layered in deep olive velvet with a softly curved silhouette, this statement sofa anchors the room with gallery-grade presence and cloud-soft comfort.',
     price: 45000,
-    imageUrl: '/sofa_fbx/main.png',
+    imageUrl: '/products/sofa/main.png',
     eyebrow: 'Signature Sofa',
-    modelPath: null,
+    modelPath: '/3D%20models/teal%20sofa%203d%20model.glb',
     images: [
-      '/sofa_fbx/main.png',
-      '/sofa_fbx/cover.png',
-      '/sofa_fbx/top.png',
-      '/sofa_fbx/left.png',
-      '/sofa_fbx/right.png',
-      '/sofa_fbx/sofa leg.png',
+      '/products/sofa/main.png',
+      '/products/sofa/cover.png',
+      '/products/sofa/top.png',
+      '/products/sofa/left.png',
+      '/products/sofa/right.png',
+      '/products/sofa/sofa leg.png',
     ],
     colors: [
-      { name: 'Olive Velvet', image: '/sofa_fbx/main.png' },
-      { name: 'Bronze Leather', image: '/sofa_fbx/bronge leather.png' },
-      { name: 'Warm Taupe', image: '/sofa_fbx/warm taupe.png' },
-      { name: 'Deep Charcoal', image: '/sofa_fbx/deep charcol.png' }
+      { name: 'Olive Velvet', image: '/products/sofa/main.png' },
+      { name: 'Bronze Leather', image: '/products/sofa/bronge leather.png' },
+      { name: 'Warm Taupe', image: '/products/sofa/warm taupe.png' },
+      { name: 'Deep Charcoal', image: '/products/sofa/deep charcol.png' },
     ],
     specs: {
       material: 'Premium velvet upholstery',
       foam: 'High-density foam core',
       dimensions: '300 × 90 × 80 cm',
       weight: '80 kg',
-      warranty: '5 years'
-    }
+      warranty: '5 years',
+    },
   },
-  // Add other 3 products similarly from app/page.tsx hardcoded
   {
     category: 'chair',
     name: 'Verona Accent Chair',
     description:
       'A sculpted lounge chair with curved arms, rich textured upholstery, and a compact footprint that adds depth to reading corners and formal seating areas.',
     price: 18500,
-    imageUrl: '/chair-preview.svg',
+    imageUrl: '/products/chairs/main.png',
     eyebrow: 'Accent Seating',
-    modelPath: '/rocking-chair.glb',
+    modelPath: '/3D%20models/teal+velvet+armchair+3d+model.glb',
     images: [
-      'https://images.pexels.com/photos/2082090/pexels-photo-2082090.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1591060/pexels-photo-1591060.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1458894/pexels-photo-1458894.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1235708/pexels-photo-1235708.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1570610/pexels-photo-1570610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+      '/products/chairs/main.png',
+      '/products/chairs/cover.png',
+      '/products/chairs/top.png',
+      '/products/chairs/left.png',
+      '/products/chairs/right.png',
+      '/products/chairs/legs.png',
     ],
     colors: [
-      { name: 'Cognac Leather', image: 'https://images.pexels.com/photos/2082090/pexels-photo-2082090.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Forest Green', image: 'https://images.pexels.com/photos/1235708/pexels-photo-1235708.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Sunset Terracotta', image: 'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Midnight Navy', image: 'https://images.pexels.com/photos/1570610/pexels-photo-1570610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
+      { name: 'Cognac Leather', image: '/products/chairs/Cognac Leather.png' },
+      { name: 'Forest Green', image: '/products/chairs/Forest Green.png' },
+      { name: 'Sunset Terracotta', image: '/products/chairs/Sunset Terracotta.png' },
+      { name: 'Midnight Navy', image: '/products/chairs/midnight navy.png' },
     ],
     specs: {
       material: 'Textured fabric',
       foam: 'Multi-layer foam',
       dimensions: '80 × 80 × 85 cm',
       weight: '25 kg',
-      warranty: '3 years'
-    }
+      warranty: '3 years',
+    },
   },
   {
     category: 'recliner',
@@ -71,30 +70,30 @@ const initialProducts = [
     description:
       'Cut in rich saddle leather with tailored stitching and a quietly engineered recline, it brings lounge-level comfort to a polished living space.',
     price: 32000,
-    imageUrl: '/recliner-preview.svg',
+    imageUrl: '/products/recliners/main.png',
     eyebrow: 'Private Lounge',
-    modelPath: '/recliner.glb',
+    modelPath: '/3D%20models/recliner+chair+3d+model.glb',
     images: [
-      'https://images.pexels.com/photos/3757055/pexels-photo-3757055.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1458894/pexels-photo-1458894.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1235708/pexels-photo-1235708.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1570610/pexels-photo-1570610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1590782/pexels-photo-1590782.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+      '/products/recliners/main.png',
+      '/products/recliners/cover.png',
+      '/products/recliners/top.png',
+      '/products/recliners/left.png',
+      '/products/recliners/right.png',
+      '/products/recliners/legs.png',
     ],
     colors: [
-      { name: 'Saddle Leather', image: 'https://images.pexels.com/photos/3757055/pexels-photo-3757055.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Dark Cognac', image: 'https://images.pexels.com/photos/1235708/pexels-photo-1235708.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Ebony Black', image: 'https://images.pexels.com/photos/1570610/pexels-photo-1570610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Caramel Brown', image: 'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
+      { name: 'Cognac Leather', image: '/products/recliners/Cognac Leather.png' },
+      { name: 'Forest Green', image: '/products/recliners/Forest Green.png' },
+      { name: 'Midnight Navy', image: '/products/recliners/Midnight Navy.png' },
+      { name: 'Sunset Terracotta', image: '/products/recliners/Sunset Terracotta.png' },
     ],
     specs: {
       material: 'Full-grain leather',
       foam: 'Ergonomic recliner mechanism',
       dimensions: '95 × 95 × 105 cm',
       weight: '45 kg',
-      warranty: '5 years'
-    }
+      warranty: '5 years',
+    },
   },
   {
     category: 'pouffe',
@@ -102,49 +101,60 @@ const initialProducts = [
     description:
       'A compact accent piece with artisanal texture, warm bronze undertones, and flexible styling that works beside a sofa, bed, or reading chair.',
     price: 4500,
-    imageUrl: '/pouffe-preview.svg',
+    imageUrl: '/products/pouffes/main.png',
     eyebrow: 'Finishing Touch',
-    modelPath: '/sofa.glb',
+    modelPath: '/3D%20models/teal+pouffies+3d+model.glb',
     images: [
-      'https://images.pexels.com/photos/1034584/pexels-photo-1034584.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1570610/pexels-photo-1570610.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1235708/pexels-photo-1235708.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1590782/pexels-photo-1590782.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-      'https://images.pexels.com/photos/1458894/pexels-photo-1458894.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2'
+      '/products/pouffes/main.png',
+      '/products/pouffes/cover.png',
+      '/products/pouffes/top.png',
+      '/products/pouffes/left.png',
+      '/products/pouffes/right.png',
+      '/products/pouffes/closeup.png',
     ],
     colors: [
-      { name: 'Bronze Texture', image: 'https://images.pexels.com/photos/1034584/pexels-photo-1034584.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Warm Sand', image: 'https://images.pexels.com/photos/1458894/pexels-photo-1458894.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Clay Terracotta', image: 'https://images.pexels.com/photos/1364075/pexels-photo-1364075.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' },
-      { name: 'Smoked Pearl', image: 'https://images.pexels.com/photos/1590782/pexels-photo-1590782.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2' }
+      { name: 'Bronze Texture', image: '/products/pouffes/Cognac Leather.png' },
+      { name: 'Warm Sand', image: '/products/pouffes/Midnight Navy.png' },
+      { name: 'Clay Terracotta', image: '/products/pouffes/Sunset Terracota.png' },
+      { name: 'Forest Green', image: '/products/pouffes/Forest Green.png' },
     ],
     specs: {
       material: 'Artisanal woven fabric',
       foam: 'Firm support filling',
       dimensions: '50 × 50 × 40 cm',
       weight: '8 kg',
-      warranty: '2 years'
-    }
-  }
+      warranty: '2 years',
+    },
+  },
 ];
 
-async function seed() {
+export async function seedProducts() {
   await dbConnect();
-  console.log('Connected to DB');
-  
+  const results: string[] = [];
+
   for (const productData of initialProducts) {
     const existing = await Product.findOne({ name: productData.name });
     if (!existing) {
       await Product.create(productData);
-      console.log(`Created: ${productData.name}`);
+      results.push(`Created: ${productData.name}`);
     } else {
-      console.log(`Skipped: ${productData.name} (exists)`);
+      results.push(`Skipped: ${productData.name} (already exists)`);
     }
   }
-  console.log('Seed complete!');
-  process.exit(0);
+
+  return results;
 }
 
-seed().catch(console.error);
-
+// CLI entry point: npx tsx lib/seed.ts
+if (process.argv[1]?.endsWith('seed.ts') || process.argv[1]?.endsWith('seed.js')) {
+  seedProducts()
+    .then(results => {
+      results.forEach(r => console.log(r));
+      console.log('Seed complete!');
+      process.exit(0);
+    })
+    .catch(err => {
+      console.error(err);
+      process.exit(1);
+    });
+}

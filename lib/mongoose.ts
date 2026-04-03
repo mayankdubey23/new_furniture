@@ -1,9 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose, { type Mongoose } from 'mongoose';
 
 declare global {
-  var mongoose: {
-    conn: typeof mongoose | null;
-    promise: Promise<typeof mongoose> | null;
+  // eslint-disable-next-line no-var
+  var _mongooseCache: {
+    conn: Mongoose | null;
+    promise: Promise<Mongoose> | null;
   } | undefined;
 }
 
@@ -13,13 +14,13 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
-let cached = global.mongoose;
+let cached = global._mongooseCache;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global._mongooseCache = { conn: null, promise: null };
 }
 
-async function dbConnect() {
+async function dbConnect(): Promise<Mongoose> {
   if (cached!.conn) {
     return cached!.conn;
   }
@@ -29,7 +30,7 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI).then((mongoose) => mongoose);
+    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => m);
   }
 
   cached!.conn = await cached!.promise;
@@ -37,4 +38,3 @@ async function dbConnect() {
 }
 
 export default dbConnect;
-

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 
 export default function AnimatedHeading({
   as: Tag = 'h2',
-  lines,
+  lines = undefined,
   children,
   className = '',
   lineClassName = '',

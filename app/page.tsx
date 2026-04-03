@@ -116,6 +116,7 @@ const curatedProducts = [
     modelPath: '/3D%20models/teal+pouffies+3d+model.glb',
     images: [
       '/products/pouffes/main.png',
+      '/products/pouffes/cover.png',
       '/products/pouffes/top.png',
       '/products/pouffes/left.png',
       '/products/pouffes/right.png',
@@ -150,14 +151,13 @@ export default function Home() {
       <About />
       <Product3D id="sofa-3d-view" data={sofaData} surfaceClassName="bg-transparent" />
       <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
-      <Product3D id="chair-3d-view" data={chairData} reverseLayout surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      <Product3D id="chair-3d-view" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <ProductSection id="chairs" data={chairData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <Product3D id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
-      <ProductSection id="recliners" data={reclinerData}  surfaceClassName="bg-transparent" />
-      <Product3D id="pouffe-3d-view" data={pouffeData} reverseLayout surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
+      <ProductSection id="recliners" data={reclinerData} surfaceClassName="bg-transparent" />
+      <Product3D id="pouffe-3d-view" data={pouffeData} surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20" />
       <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
       <Footer />
     </main>
   );
 }
-

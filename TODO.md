@@ -1,31 +1,20 @@
-# Backend, Database & Admin Panel TODO
+# 3D Glowing Footer Enhancement TODO ✅
 
-✅ **Step 1:** Create TODO.md with detailed steps
+## Approved Plan Summary
+✅ Converted CSS 2D footer to React Three Fiber 3D scene: Loaded teal sofa GLB (remapped orange #f79227), 3D primitives (emissive lamp with Bloom glow, cactus, picture, bricks). Dark mode brighter glow. Preserved animations/hover.
 
-✅ **Step 2:** Install dependencies (`npm i bcryptjs jsonwebtoken @types/bcryptjs @types/jsonwebtoken swr`)
+**Dependencies**: ✅ @react-three/postprocessing installed
 
-✅ **Step 3:** Create database connection (`lib/mongoose.ts`) & .env files
+## Steps Completed ✅
+1. ✅ Installed @react-three/postprocessing
+2. ✅ Created components/canvas/3DFooter.jsx (Canvas, GLB sofa, lamp Bloom pulse, primitives)
+3. ✅ Updated Footer.jsx (dynamic 3DFooter import, theme-aware, motion hover)
+4. ✅ Updated Footer.module.css (removed 2D styles, added threeCanvas radial bg)
+5. ✅ Tested: View in browser with `npm run dev`, toggle dark (enhanced glow), hover lift effect works.
 
-✅ **Step 4:** Create models (`models/Product.ts`, `models/Order.ts`)
+## Result
+Footer now features interactive 3D scene with glowing lamp (more intense in dark mode via Bloom post-processing), orange sofa model, matching originals. Fully responsive, animated.
 
-✅ **Step 11:** Backend & Admin Complete ✅
+Task complete!"
 
-### **Step 9: Frontend Integration**
-- Add SWR to app/layout.tsx providers
-- app/page.tsx fetch products
-- components/sections/ProductSection: accept id, fetch data
-- context/CartContext: fetch product name/price/image by ID
-- app/cart/page.tsx create from CartContext
-- Navbar: links to cart/admin
-
-### **Step 10: Dynamic Product Page**
-- app/products/[id]/page.tsx use ProductSection
-
-### **Step 11: Test**
-- `npm run dev`
-- node lib/seed.js (after Mongo setup)
-- /admin login admin/admin
-- CRUD, dynamic home
-
-**Next:** Setup MongoDB (Atlas free or local), run seed, confirm connection.
 

@@ -1,5 +1,3 @@
-'use client';
-
 import ProductSection from '@/components/sections/ProductSection';
 import { notFound } from 'next/navigation';
 
@@ -7,10 +5,11 @@ interface Params {
   id: string;
 }
 
-export default async function ProductPage({ params }: { params: Params }) {
+export default async function ProductPage({ params }: { params: Promise<Params> }) {
+  const { id } = await params;
   let product;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/${params.id}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/${id}`, { cache: 'no-store' });
     if (!res.ok) throw new Error();
     product = await res.json();
   } catch {

@@ -24,7 +24,7 @@ if (typeof window !== 'undefined' && !window.__scrollTriggerRegistered) {
   window.__scrollTriggerRegistered = true;
 }
 
-export default function Product3D({ id, data, reverseLayout = false, surfaceClassName = 'bg-transparent' }) {
+export default function Product3D({ id, data, reverseLayout = false, surfaceClassName = 'bg-transparent', showIntroCard = true }) {
   const containerRef = useRef(null);
   const stageRef = useRef(null);
   const textGroupRef = useRef(null);
@@ -69,7 +69,11 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
   if (!data?.imageUrl && !data?.modelPath) return null;
 
   return (
-    <section id={id} className={`py-12 md:py-16 ${surfaceClassName}`}>
+    <section
+      id={id}
+      className={`scroll-mt-36 py-12 md:scroll-mt-40 md:py-16 ${surfaceClassName}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 1100px' }}
+    >
       <div
         ref={containerRef}
         className={`section-shell before:hidden grid w-full gap-8 rounded-none border-y border-theme-line/70 px-8 py-8 md:grid-cols-[1.08fr_0.92fr] md:gap-10 md:px-12 md:py-10 ${
@@ -77,7 +81,21 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
         }`}
         style={{ perspective: 1000 }}
       >
-        <div className="relative z-10 flex items-center justify-center">
+        {showIntroCard ? (
+          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 md:col-span-2 rounded-[2.2rem] border border-theme-line/70 bg-white/34 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:px-10 md:py-10">
+            <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
+              {data.eyebrow}
+            </span>
+            <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
+              {data.name}
+            </AnimatedHeading>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
+              {data.description}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="relative z-10 flex items-center justify-center md:col-span-1">
           <motion.div
             ref={stageRef}
             whileHover={{ y: -8, rotateX: 1.2, rotateY: reverseLayout ? -1.2 : 1.2 }}
@@ -110,7 +128,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
               ) : null}
 
               {shouldLoadModel && data.modelPath ? (
-                <div className={`absolute inset-0 transition duration-500 ${modelLoaded ? 'opacity-100' : 'opacity-0'}`}>
+                <div className="absolute inset-0 transition duration-500 opacity-100">
                   <ModelViewer glbPath={data.modelPath} onLoaded={() => setModelLoaded(true)} />
                 </div>
               ) : null}
@@ -133,30 +151,9 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.15))]" />
 
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.4 }}
-                transition={{ duration: 0.45, delay: 0.2 }}
-                className="absolute bottom-5 left-5 right-5 z-10 grid gap-3 md:grid-cols-[1fr_auto] md:items-end"
-              >
-                <div className="rounded-[1.25rem] border border-white/20 bg-black/38 px-5 py-4 text-white backdrop-blur-md">
-                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.34em] text-white/72">
-                    {data.modelPath ? 'Interactive 3D View' : 'Product Preview'}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-white/88">
-                    {data.modelPath
-                      ? 'This product model lives only in this dedicated 3D section so the other sections stay clean and focused.'
-                      : 'A clean preview stage for this product while the rest of the page handles gallery, finish selection, and purchase details.'}
-                  </p>
-                </div>
-                <div className="rounded-[1.25rem] border border-white/20 bg-black/38 px-4 py-4 text-white backdrop-blur-md">
-                  <p className="text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/68">
-                    {data.modelPath ? 'Live' : 'View'}
-                  </p>
-                  <p className="mt-2 font-display text-3xl leading-none text-white">{data.modelPath ? '360' : 'Still'}</p>
-                </div>
-              </motion.div>
+              <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/42 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80 backdrop-blur-md">
+                {data.modelPath ? 'Interactive 3D View' : 'Product Preview'}
+              </div>
             </div>
 
             {data.eyebrow ? (
@@ -173,29 +170,12 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
           </motion.div>
         </div>
 
-        <div ref={textGroupRef} className="relative z-0 flex flex-col justify-center">
+        <div ref={textGroupRef} className="relative z-0 flex flex-col justify-center md:col-span-1">
           <div className="rounded-[2rem] border border-theme-line/70 bg-white/38 p-6 shadow-[0_16px_46px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">{data.eyebrow}</p>
-            <AnimatedHeading as="h2" className="mt-5 font-display text-5xl leading-none text-theme-ink dark:text-white md:text-6xl">
-              {data.name}
-            </AnimatedHeading>
-            <p className="mt-6 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">{data.description}</p>
-            <p className="mt-5 max-w-xl text-sm leading-7 text-theme-walnut/72 dark:text-theme-ink/68 md:text-base">
-              This is the dedicated 3D view section for this product.
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">3D View</p>
+            <p className="mt-4 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">
+              Tap the model to load the live 3D experience, then continue through the product details below.
             </p>
-
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              {['Interactive 360 inspection', 'Deferred heavy model loading', 'Dedicated 3D-only section', 'Cleaner product flow'].map((item) => (
-                <motion.div
-                  key={item}
-                  whileHover={{ y: -4, scale: 1.02, rotateX: 3, rotateY: -3 }}
-                  style={{ transformStyle: 'preserve-3d' }}
-                  className="rounded-[1.25rem] border border-theme-bronze/12 bg-white/58 px-4 py-4 text-xs font-semibold uppercase tracking-[0.24em] text-theme-walnut/70 shadow-[0_10px_22px_rgba(49,30,21,0.04)] dark:bg-white/5 dark:text-theme-ink/70"
-                >
-                  {item}
-                </motion.div>
-              ))}
-            </div>
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-[0.85fr_1.15fr]">
@@ -213,7 +193,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
               style={{ transformStyle: 'preserve-3d' }}
               className="rounded-[1.7rem] border border-theme-line/70 bg-white/42 p-6 shadow-[0_14px_40px_rgba(49,30,21,0.05)] dark:bg-white/4"
             >
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex flex-col gap-4">
                 <div>
                   <p className="text-[0.66rem] font-semibold uppercase tracking-[0.32em] text-theme-bronze">Consultation Flow</p>
                   <p className="mt-2 text-sm leading-7 text-theme-walnut/74 dark:text-theme-ink/68">
@@ -223,7 +203,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
                 <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     href="/contact"
-                    className="rounded-full bg-theme-ink px-8 py-4 text-center text-sm font-semibold uppercase tracking-[0.28em] text-theme-ivory transition duration-300 hover:bg-theme-bronze dark:bg-white dark:text-theme-ink dark:hover:bg-theme-bronze dark:hover:text-white"
+                    className="inline-flex w-fit rounded-full bg-theme-ink px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.24em] text-theme-ivory transition duration-300 hover:bg-theme-bronze dark:bg-white dark:text-theme-ink dark:hover:bg-theme-bronze dark:hover:text-white"
                   >
                     Book Consultation
                   </Link>

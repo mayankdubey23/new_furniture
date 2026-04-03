@@ -4,11 +4,11 @@ import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
+import AnimatedHeading from '../AnimatedHeading';
 import ImageGallery from '../product/ImageGallery';
 import ProductDetails from '../product/ProductDetails';
 import ProductSpecs from '../product/ProductSpecs';
 import ColorVariants from '../product/ColorVariants';
-import AnimatedHeading from '../AnimatedHeading';
 
 if (typeof window !== 'undefined' && !window.__scrollTriggerRegistered) {
   gsap.registerPlugin(ScrollTrigger);
@@ -32,9 +32,9 @@ function SectionDivider() {
   );
 }
 
-export default function ProductSection({ id, data, surfaceClassName = 'bg-transparent' }) {
+export default function ProductSection({ id, data, surfaceClassName = 'bg-transparent', showIntroCard = false }) {
   const container = useRef(null);
-  const [currentImage, setCurrentImage] = useState(data?.images?.[0] ?? data?.imageUrl ?? null);
+  const [currentImage, setCurrentImage] = useState(data?.imageUrl ?? data?.images?.[0] ?? null);
   const [currentColor, setCurrentColor] = useState(data?.colors?.[0] ?? null);
 
   const onImageChange = (img) => setCurrentImage(img);
@@ -64,37 +64,43 @@ export default function ProductSection({ id, data, surfaceClassName = 'bg-transp
   if (!data) return null;
 
   return (
-    <section id={id} className={`py-14 md:py-20 ${surfaceClassName}`}>
+    <section
+      id={id}
+      className={`scroll-mt-36 py-14 md:scroll-mt-40 md:py-20 ${surfaceClassName}`}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 1200px' }}
+    >
       <div ref={container} className="w-full space-y-10 px-8 md:px-12">
-        <div className="ps-block rounded-[2.2rem] border border-theme-line/70 bg-white/34 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:px-10 md:py-10">
-          <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
-            {data.eyebrow}
-          </span>
-          <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
-            {data.name}
-          </AnimatedHeading>
-          <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
-            {data.description}
-          </p>
-        </div>
+        {showIntroCard ? (
+          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 rounded-[2.2rem] border border-theme-line/70 bg-white/34 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:px-10 md:py-10">
+            <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
+              {data.eyebrow}
+            </span>
+            <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
+              {data.name}
+            </AnimatedHeading>
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
+              {data.description}
+            </p>
+          </div>
+        ) : null}
 
         <SectionDivider />
 
         <div className="ps-block">
-          <SectionLabel label="01 - Gallery" />
-          <ImageGallery images={data.images} currentImage={currentImage} onImageChange={onImageChange} />
-        </div>
-
-        <SectionDivider />
-
-        <div className="ps-block">
-          <SectionLabel label="02 - Details & Purchase" />
+          <SectionLabel label="01 - Details & Purchase" />
           <ProductDetails
             data={data}
             currentColor={currentColor}
             currentImage={currentImage}
             onColorChange={onColorChange}
           />
+        </div>
+
+        <SectionDivider />
+
+        <div className="ps-block">
+          <SectionLabel label="02 - Gallery" />
+          <ImageGallery images={data.images} currentImage={currentImage} onImageChange={onImageChange} />
         </div>
 
         <SectionDivider />

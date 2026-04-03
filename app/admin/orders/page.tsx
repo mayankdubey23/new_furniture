@@ -2,32 +2,59 @@
 
 import { useState, useEffect } from 'react';
 
+interface OrderItem {
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+interface Customer {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  pincode: string;
+}
+
 interface Order {
   _id: string;
   totalPrice: number;
   totalItems: number;
   status: string;
   createdAt: string;
-  items: Array<{
-    name: string;
-    price: number;
-    quantity: number;
-  }>;
+  items: OrderItem[];
+  customer: Customer;
+  notes?: string;
 }
+
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+  paid: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+};
 
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrders();
   }, []);
 
   const fetchOrders = async () => {
-    const res = await fetch('/api/orders');
-    const data = await res.json();
-    setOrders(data);
-    setLoading(false);
+    try {
+      const res = await fetch('/api/orders', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      setOrders(data);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateStatus = async (id: string, status: string) => {
@@ -40,47 +67,120 @@ export default function AdminOrders() {
     fetchOrders();
   };
 
-  if (loading) return <div className="p-8">Loading orders...</div>;
+  if (loading) {
+    return (
+      <div className="p-8 text-center text-sm font-semibold uppercase tracking-widest text-theme-walnut/50 dark:text-theme-ivory/50">
+        Loading orders...
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Orders Management</h1>
-      <div className="bg-white shadow rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {orders.map((order) => (
-              <tr key={order._id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order._id.slice(-8)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">₹{order.totalPrice.toLocaleString()}</td>
-                <td className="px-6 py-4 text-sm text-gray-500">{order.totalItems} items</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <select 
-                    value={order.status} 
+    <div className="p-4 md:p-6">
+      <div className="mb-8 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-theme-ink dark:text-theme-ivory">Orders</h1>
+        <span className="rounded-full bg-theme-bronze/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-theme-bronze">
+          {orders.length} total
+        </span>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="rounded-2xl border border-theme-line/40 bg-white/60 p-12 text-center dark:bg-white/5">
+          <p className="text-sm text-theme-walnut/60 dark:text-theme-ivory/50">No orders yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {orders.map((order) => (
+            <div
+              key={order._id}
+              className="rounded-2xl border border-theme-line/40 bg-white/70 shadow-sm dark:bg-white/5 overflow-hidden"
+            >
+              {/* Row */}
+              <div className="flex flex-wrap items-center gap-4 p-5">
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-xs text-theme-walnut/50 dark:text-theme-ivory/40">
+                    #{order._id.slice(-10).toUpperCase()}
+                  </p>
+                  <p className="mt-0.5 font-semibold text-theme-ink dark:text-white">
+                    {order.customer?.name ?? 'Guest'}
+                  </p>
+                  <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">
+                    {order.customer?.email} · {order.customer?.phone}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-theme-bronze">₹{order.totalPrice.toLocaleString('en-IN')}</p>
+                  <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">{order.totalItems} items</p>
+                </div>
+                <div>
+                  <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${STATUS_COLORS[order.status] ?? ''}`}>
+                    {order.status}
+                  </span>
+                </div>
+                <div>
+                  <select
+                    value={order.status}
                     onChange={(e) => updateStatus(order._id, e.target.value)}
-                    className="border rounded px-2 py-1 text-sm"
+                    className="rounded-lg border border-theme-line/60 bg-white px-3 py-1.5 text-xs font-semibold text-theme-ink outline-none focus:border-theme-bronze dark:bg-theme-ink dark:text-theme-ivory"
                   >
                     <option value="pending">Pending</option>
                     <option value="paid">Paid</option>
                     <option value="shipped">Shipped</option>
                     <option value="delivered">Delivered</option>
                   </select>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
+                <div className="text-xs text-theme-walnut/50 dark:text-theme-ivory/40">
+                  {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })}
+                </div>
+                <button
+                  onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
+                  className="text-xs font-semibold uppercase tracking-widest text-theme-bronze hover:underline"
+                >
+                  {expandedId === order._id ? 'Hide' : 'Details'}
+                </button>
+              </div>
+
+              {/* Expanded Details */}
+              {expandedId === order._id && (
+                <div className="border-t border-theme-line/40 px-5 py-4 bg-theme-ivory/50 dark:bg-white/5">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">Delivery Address</p>
+                      <p className="text-sm text-theme-ink dark:text-theme-ivory">
+                        {order.customer?.address}, {order.customer?.city} – {order.customer?.pincode}
+                      </p>
+                      {order.notes && (
+                        <p className="mt-2 text-xs italic text-theme-walnut/60 dark:text-theme-ivory/50">
+                          Notes: {order.notes}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">Items</p>
+                      <div className="space-y-1">
+                        {order.items.map((item, i) => (
+                          <div key={i} className="flex justify-between text-sm">
+                            <span className="text-theme-ink dark:text-theme-ivory">
+                              {item.name} × {item.quantity}
+                            </span>
+                            <span className="font-semibold text-theme-walnut/80 dark:text-theme-ivory/80">
+                              ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

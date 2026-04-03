@@ -45,13 +45,16 @@ body {
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 8.75rem;
 }
 
 body {
   overflow-x: hidden;
   background:
-    radial-gradient(circle at top, rgba(165, 106, 63, 0.12), transparent 30%),
-    linear-gradient(180deg, var(--theme-mist) 0%, var(--theme-ivory) 48%, #efe5d7 100%);
+    radial-gradient(circle at top, rgba(165, 106, 63, 0.16), transparent 28%),
+    radial-gradient(circle at 18% 18%, rgba(103, 114, 95, 0.08), transparent 18%),
+    radial-gradient(circle at 82% 8%, rgba(165, 106, 63, 0.08), transparent 22%),
+    linear-gradient(180deg, var(--theme-mist) 0%, var(--theme-ivory) 40%, #efe3d1 72%, #eadcc8 100%);
   color: var(--theme-walnut);
   font-family: var(--font-body-family), sans-serif;
 }
@@ -69,10 +72,23 @@ body::before {
   mask-image: radial-gradient(circle at center, black, transparent 82%);
 }
 
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255,255,255,0.18), transparent 42%),
+    radial-gradient(circle at 50% 100%, rgba(79,53,40,0.06), transparent 34%);
+  opacity: 0.9;
+}
+
 .dark body {
   background:
-    radial-gradient(circle at top, rgba(199, 140, 92, 0.14), transparent 32%),
-    linear-gradient(180deg, #1b1512 0%, #140f0d 55%, #0f0b09 100%);
+    radial-gradient(circle at top, rgba(199, 140, 92, 0.18), transparent 30%),
+    radial-gradient(circle at 12% 18%, rgba(143, 157, 132, 0.08), transparent 18%),
+    radial-gradient(circle at 88% 0%, rgba(199, 140, 92, 0.08), transparent 22%),
+    linear-gradient(180deg, #1b1512 0%, #140f0d 54%, #0f0b09 100%);
   color: var(--theme-ink);
 }
 
@@ -87,14 +103,17 @@ body::before {
 .section-shell::before {
   content: "";
   position: absolute;
-  inset: 24px;
+  inset: 18px;
   border: 1px solid var(--theme-line);
   border-radius: 2rem;
   pointer-events: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 12px 40px rgba(49, 30, 21, 0.05);
 }
 
 .premium-surface {
-  background: rgba(251, 247, 241, 0.72);
+  background: linear-gradient(180deg, rgba(251, 247, 241, 0.84), rgba(243, 235, 224, 0.7));
   border: 1px solid var(--theme-line);
   box-shadow: var(--theme-shadow);
   backdrop-filter: blur(18px);
@@ -115,7 +134,7 @@ body::before {
 }
 
 .dark .premium-surface {
-  background: rgba(34, 27, 23, 0.72);
+  background: linear-gradient(180deg, rgba(34, 27, 23, 0.82), rgba(24, 18, 15, 0.72));
 }
 
 ::selection {

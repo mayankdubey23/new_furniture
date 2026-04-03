@@ -8,13 +8,13 @@ export async function GET() {
     await dbConnect();
     const products = await Product.find({}).lean();
     return NextResponse.json(products);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
-  const authError = adminMiddleware(request);
+  const authError = await adminMiddleware(request);
   if (authError) return authError;
 
   try {
@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json();
     const product = await Product.create(data);
     return NextResponse.json(product, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to create' }, { status: 500 });
   }
 }
-

@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import ThemeToggle from "./ThemeToggle";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import AnimatedHeading from "./AnimatedHeading";
+import { useTheme } from "./ThemeProvider";
+import { useUser } from "@/context/UserContext";
 
 function HeartIcon({ filled, ...props }) {
   return (
@@ -67,8 +70,32 @@ export default function Navbar() {
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const pathname = usePathname();
+  const { resolvedTheme } = useTheme();
   const { cart, updateQuantity, removeFromCart, totalItems, totalPrice } = useCart();
   const { wishlist, removeFromWishlist, totalWishlistItems } = useWishlist();
+  const { user, logout } = useUser();
+  const isHomePage = pathname === "/";
+  const isSolidNav = !isHomePage || scrolled;
+  const isDarkTheme = resolvedTheme === 'dark';
+  const navTextColor = isSolidNav
+    ? (isDarkTheme ? 'var(--theme-ivory)' : 'var(--theme-walnut)')
+    : 'var(--theme-ivory)';
+  const navMutedTextColor = isSolidNav
+    ? (isDarkTheme ? 'rgba(244, 238, 229, 0.92)' : 'rgba(79, 53, 40, 0.88)')
+    : 'rgba(244, 238, 229, 0.92)';
+  const navIconColor = isSolidNav
+    ? (isDarkTheme ? 'var(--theme-ivory)' : 'var(--theme-walnut)')
+    : 'var(--theme-ivory)';
+  const navSurfaceClass = isSolidNav
+    ? "border-theme-line/70 bg-[rgba(251,247,241,0.92)] text-theme-walnut shadow-[0_18px_60px_rgba(18,14,11,0.12)] dark:border-white/10 dark:bg-[rgba(18,14,11,0.9)] dark:text-theme-ivory"
+    : "border-white/14 bg-[rgba(18,14,11,0.16)] text-theme-ivory shadow-[0_18px_60px_rgba(18,14,11,0.12)] dark:border-white/10 dark:bg-[rgba(0,0,0,0.16)] dark:text-theme-ivory";
+  const navLinkClass = isSolidNav
+    ? (isDarkTheme ? "text-theme-ivory/92 hover:text-theme-bronze" : "text-theme-walnut/86 hover:text-theme-bronze")
+    : "text-theme-ivory/92 hover:text-white";
+  const navIconClass = isSolidNav
+    ? (isDarkTheme ? "text-theme-ivory" : "text-theme-walnut")
+    : "text-theme-ivory";
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -76,11 +103,18 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const scrollToSection = (id) => {
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setIsOpen(false);
+  };
+
   const navLinks = [
-    { name: "Sofas", href: "/#sofas" },
-    { name: "Chairs", href: "/#chairs" },
-    { name: "Recliners", href: "/#recliners" },
-    { name: "Pouffes", href: "/#pouffes" },
+    { name: "Sofas", href: "/#sofa-3d-view-start", targetId: "sofa-3d-view-start" },
+    { name: "Chairs", href: "/#chairs-start", targetId: "chairs-start" },
+    { name: "Recliners", href: "/#recliner-3d-view-start", targetId: "recliner-3d-view-start" },
+    { name: "Pouffes", href: "/#pouffes-start", targetId: "pouffes-start" },
     { name: "Customization", href: "/customization" },
     { name: "Contact", href: "/contact" }
   ];
@@ -88,20 +122,27 @@ export default function Navbar() {
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-50">
-        <div className={`mx-auto mt-3 flex w-[calc(100%-1rem)] max-w-[96rem] items-center justify-between rounded-[2rem] border px-5 py-3 shadow-[0_18px_60px_rgba(18,14,11,0.12)] backdrop-blur-xl transition-all duration-300 md:mt-4 md:w-[calc(100%-2rem)] md:px-6 lg:px-8 ${
-          scrolled
-            ? "border-theme-line/70 bg-[rgba(251,247,241,0.88)] text-theme-walnut dark:border-white/10 dark:bg-[rgba(18,14,11,0.88)] dark:text-theme-ink"
-            : "border-white/14 bg-[rgba(18,14,11,0.16)] text-theme-ivory dark:border-white/10 dark:bg-[rgba(0,0,0,0.16)] dark:text-theme-ivory"
-        }`}>
+        <div
+          className={`mx-auto mt-3 flex w-[calc(100%-1rem)] max-w-[96rem] items-center justify-between rounded-[2rem] border px-5 py-3 backdrop-blur-xl transition-all duration-300 md:mt-4 md:w-[calc(100%-2rem)] md:px-6 lg:px-8 ${navSurfaceClass}`}
+          style={{ color: navTextColor }}
+        >
           <Link href="/#hero" scroll={true} className="shrink-0">
-            <span className="font-display text-[1.9rem] font-semibold tracking-[0.18em] md:text-[2.15rem]">LUXE</span>
+            <span className="font-display text-[1.9rem] font-semibold tracking-[0.18em] md:text-[2.15rem]">
+              LUXE
+            </span>
           </Link>
 
           {/* Desktop nav */}
           <ul className="hidden flex-1 items-center justify-center gap-6 px-6 text-[0.75rem] font-semibold uppercase tracking-[0.28em] lg:gap-8 md:flex">
 {[...navLinks, { name: "Admin", href: "/admin" }].map((link) => (
               <li key={link.name}>
-                <Link href={link.href} scroll={true} className={`whitespace-nowrap transition-colors duration-300 ${scrolled ? "opacity-78 hover:opacity-100" : "opacity-84 hover:opacity-100"}`}>
+                <Link
+                  href={link.href}
+                  scroll={true}
+                  onClick={link.targetId && isHomePage ? (event) => { event.preventDefault(); scrollToSection(link.targetId); } : undefined}
+                  className={`whitespace-nowrap transition-colors duration-300 ${navLinkClass}`}
+                  style={{ color: navMutedTextColor }}
+                >
                   {link.name}
                 </Link>
               </li>
@@ -113,8 +154,8 @@ export default function Navbar() {
             <ThemeToggle scrolled={scrolled} />
 
             {/* Wishlist */}
-            <button onClick={() => setWishlistOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Wishlist">
-              <HeartIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} filled={wishlist.length > 0} />
+            <button onClick={() => setWishlistOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Wishlist" style={{ color: navIconColor }}>
+              <HeartIcon className={`h-5 w-5 ${navIconClass}`} filled={wishlist.length > 0} />
               {totalWishlistItems > 0 && (
                 <span className="absolute -right-1 -top-1 h-4 w-4 rounded-full bg-red-500 text-xs font-bold text-white flex items-center justify-center">
                   {totalWishlistItems}
@@ -123,8 +164,8 @@ export default function Navbar() {
             </button>
 
             {/* Cart */}
-            <button onClick={() => setCartOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Cart">
-              <ShoppingBagIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} />
+            <button onClick={() => setCartOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Cart" style={{ color: navIconColor }}>
+              <ShoppingBagIcon className={`h-5 w-5 ${navIconClass}`} />
               {totalItems > 0 && (
                 <span className="absolute -right-1 -top-1 min-h-[18px] min-w-[18px] rounded-full bg-theme-bronze text-xs font-bold text-white flex items-center justify-center px-1">
                   {totalItems}
@@ -134,22 +175,50 @@ export default function Navbar() {
 
             {/* Account */}
             <div className="relative">
-              <button onClick={() => setAccountOpen(!accountOpen)} className="rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Account">
-                <UserIcon className={`h-5 w-5 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} />
+              <button onClick={() => setAccountOpen(!accountOpen)} className="rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Account" style={{ color: navIconColor }}>
+                <UserIcon className={`h-5 w-5 ${navIconClass}`} />
               </button>
               {accountOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-white/95 p-2 shadow-2xl backdrop-blur-md dark:bg-[rgba(34,27,23,0.95)]">
-                  <div className="p-3 text-sm">
-                    <p className="font-semibold text-theme-ink">Guest User</p>
-                    <p className="text-theme-walnut/50 dark:text-theme-ink/50 text-xs mt-0.5">Not signed in</p>
-                  </div>
-                  <div className="border-t border-theme-line p-2 space-y-1">
-                    {["Profile", "Orders", "Sign In"].map(item => (
-                      <button key={item} className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ink dark:hover:bg-theme-mist/30">
-                        {item}
-                      </button>
-                    ))}
-                  </div>
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white/95 p-2 shadow-2xl backdrop-blur-md dark:bg-[rgba(34,27,23,0.95)]">
+                  {user ? (
+                    <>
+                      <div className="p-3 text-sm">
+                        <p className="font-semibold text-theme-ink dark:text-theme-ivory truncate">{user.name}</p>
+                        <p className="text-theme-walnut/50 dark:text-theme-ivory/40 text-xs mt-0.5 truncate">{user.email}</p>
+                      </div>
+                      <div className="border-t border-theme-line p-2 space-y-1">
+                        <button
+                          onClick={() => { setAccountOpen(false); logout(); }}
+                          className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 hover:bg-red-50/60 transition-colors dark:hover:bg-red-900/20"
+                        >
+                          Sign Out
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-3 text-sm">
+                        <p className="font-semibold text-theme-ink dark:text-theme-ivory">Guest User</p>
+                        <p className="text-theme-walnut/50 dark:text-theme-ivory/40 text-xs mt-0.5">Not signed in</p>
+                      </div>
+                      <div className="border-t border-theme-line p-2 space-y-1">
+                        <Link
+                          href="/login"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          Sign In
+                        </Link>
+                        <Link
+                          href="/login?tab=signup"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-bronze hover:bg-theme-sand/30 transition-colors dark:hover:bg-theme-mist/30"
+                        >
+                          Create Account
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -157,8 +226,8 @@ export default function Navbar() {
 
           {/* Mobile hamburger */}
           <div className="flex items-center gap-3 md:hidden">
-            <button onClick={() => setIsOpen(true)} className={`rounded-full border p-2 ${scrolled ? "border-theme-walnut/30 bg-theme-walnut/8 dark:border-white/20 dark:bg-white/6" : "border-white/20 bg-white/6"}`}>
-              <MenuIcon className={`h-6 w-6 ${scrolled ? "text-theme-walnut" : "text-theme-ivory"}`} />
+            <button onClick={() => setIsOpen(true)} className={`rounded-full border p-2 ${isSolidNav ? (isDarkTheme ? "border-white/20 bg-white/6 text-theme-ivory" : "border-theme-walnut/30 bg-theme-walnut/8 text-theme-walnut") : "border-white/20 bg-white/6 text-theme-ivory"}`} style={{ color: navIconColor }}>
+              <MenuIcon className={`h-6 w-6 ${navIconClass}`} />
             </button>
           </div>
         </div>
@@ -168,14 +237,20 @@ export default function Navbar() {
           isOpen ? "border-white/18 bg-[rgba(18,14,11,0.38)] max-h-96 p-5 text-theme-ivory" : "max-h-0 p-0"
         }`}>
           <div className="flex items-center justify-between">
-            <div className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-ivory/65">Navigation</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-ivory/75">Navigation</div>
             <button onClick={() => setIsOpen(false)} className="p-1">
               <XIcon className="h-5 w-5 text-theme-ivory" />
             </button>
           </div>
           <div className="mt-4 flex flex-col gap-4 text-base font-medium">
             {navLinks.map((link) => (
-              <Link key={link.name} href={link.href} scroll={true} onClick={() => setIsOpen(false)} className="hover:opacity-80">
+              <Link
+                key={link.name}
+                href={link.href}
+                scroll={true}
+                onClick={link.targetId && isHomePage ? (event) => { event.preventDefault(); scrollToSection(link.targetId); } : () => setIsOpen(false)}
+                className="text-theme-ivory/90 hover:text-white"
+              >
                 {link.name}
               </Link>
             ))}

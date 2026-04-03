@@ -10,8 +10,11 @@ export default function CartPage() {
     return (
       <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Your cart is empty</h1>
-          <Link href="/" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Your cart is empty</h1>
+          <Link
+            href="/#sofas"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold uppercase tracking-widest rounded-full text-white bg-theme-bronze hover:bg-theme-ink transition-all"
+          >
             Continue Shopping
           </Link>
         </div>
@@ -20,33 +23,35 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-transparent py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold text-theme-ink dark:text-white mb-8">Shopping Cart</h1>
         <div className="space-y-6">
           {cart.map((item) => (
-            <div key={item.id} className="flex bg-white rounded-lg shadow">
-              <img src={item.image} alt={item.name} className="w-24 h-24 object-cover rounded-l-lg" />
-              <div className="p-6 flex-1">
-                <h3 className="text-lg font-medium text-gray-900">{item.name}</h3>
-                <p className="text-lg font-bold text-gray-900">₹{(item.price * item.quantity).toLocaleString()}</p>
-                <div className="flex items-center mt-4">
-                  <button 
+            <div key={item.id} className="flex bg-white/70 dark:bg-white/5 rounded-2xl shadow border border-theme-line/40 overflow-hidden">
+              <img src={item.image} alt={item.name} className="w-28 h-28 object-cover" />
+              <div className="p-5 flex-1">
+                <h3 className="text-base font-semibold text-theme-ink dark:text-white">{item.name}</h3>
+                <p className="text-lg font-bold text-theme-bronze mt-1">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                <div className="flex items-center mt-3 gap-3">
+                  <button
                     onClick={() => updateQuantity(item.id, -1)}
-                    className="w-10 h-10 border rounded-l-md flex items-center justify-center hover:bg-gray-100"
+                    className="w-8 h-8 border border-theme-line/60 rounded-full flex items-center justify-center hover:border-theme-bronze hover:text-theme-bronze text-theme-walnut dark:text-white transition-all"
+                    aria-label="Decrease quantity"
                   >
-                    -
+                    −
                   </button>
-                  <span className="w-12 text-center border-t border-b py-2">{item.quantity}</span>
-                  <button 
+                  <span className="w-8 text-center text-sm font-bold text-theme-ink dark:text-white">{item.quantity}</span>
+                  <button
                     onClick={() => updateQuantity(item.id, 1)}
-                    className="w-10 h-10 border rounded-r-md flex items-center justify-center hover:bg-gray-100"
+                    className="w-8 h-8 border border-theme-line/60 rounded-full flex items-center justify-center hover:border-theme-bronze hover:text-theme-bronze text-theme-walnut dark:text-white transition-all"
+                    aria-label="Increase quantity"
                   >
                     +
                   </button>
-                  <button 
+                  <button
                     onClick={() => removeFromCart(item.id)}
-                    className="ml-4 text-red-600 hover:text-red-900 font-medium"
+                    className="ml-2 text-xs font-semibold uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors"
                   >
                     Remove
                   </button>
@@ -55,17 +60,32 @@ export default function CartPage() {
             </div>
           ))}
         </div>
-        <div className="mt-12 bg-white p-6 rounded-lg shadow">
-          <div className="flex justify-between text-xl font-bold">
-            <span>Total: {totalItems} items</span>
-            <span>₹{totalPrice.toLocaleString()}</span>
+
+        <div className="mt-10 bg-white/70 dark:bg-white/5 p-6 rounded-2xl shadow border border-theme-line/40">
+          <div className="flex justify-between mb-2 text-sm text-theme-walnut/70 dark:text-theme-ivory/60">
+            <span>Items</span>
+            <span>{totalItems}</span>
           </div>
-          <button className="w-full mt-6 bg-indigo-600 text-white py-3 px-6 rounded-md hover:bg-indigo-700 font-medium">
-            Proceed to Checkout
-          </button>
+          <div className="flex justify-between text-xl font-bold text-theme-ink dark:text-white border-t border-theme-line/40 pt-4 mt-2">
+            <span>Total</span>
+            <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="mt-6 flex flex-col gap-3">
+            <Link
+              href="/customization"
+              className="w-full text-center rounded-full border border-theme-line/50 py-3 text-xs font-bold uppercase tracking-[0.25em] text-theme-walnut hover:border-theme-bronze hover:text-theme-bronze dark:text-theme-ivory/70 dark:hover:text-theme-bronze transition-all"
+            >
+              Customize Your Pieces
+            </Link>
+            <Link
+              href="/checkout"
+              className="w-full text-center rounded-full bg-theme-ink py-3 text-sm font-bold uppercase tracking-[0.28em] text-white hover:bg-theme-bronze transition-all dark:bg-white dark:text-theme-ink"
+            >
+              Proceed to Checkout
+            </Link>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
