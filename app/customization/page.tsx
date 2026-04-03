@@ -1,3 +1,4 @@
+import SofaReveal from '@/components/sections/SofaReveal';
 import ClientCustomization from '@/components/customization/ClientCustomization';
 
 export const metadata = {
@@ -6,5 +7,10 @@ export const metadata = {
 };
 
 export default function CustomizationPage() {
-  return <ClientCustomization />;
+  return (
+    <>
+      <SofaReveal />
+      <ClientCustomization />
+    </>
+  );
 }

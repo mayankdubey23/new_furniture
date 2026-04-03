@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Image optimization
   images: {
     remotePatterns: [
       {
@@ -8,7 +9,48 @@ const nextConfig: NextConfig = {
         hostname: 'images.pexels.com',
       },
     ],
+    formats: ['image/webp', 'image/avif'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+  // Compression
+  compress: true,
+  // Increase memory limit for large builds
+  experimental: {
+    optimizePackageImports: [
+      '@gsap/react',
+      'gsap',
+      'framer-motion',
+      'three',
+      'three/examples/jsm',
+      '@react-three/fiber',
+      '@react-three/drei',
+    ],
+  },
+  // Enable SWR stale-while-revalidate
+  headers: async () => [
+    {
+      source: '/api/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=60, s-maxage=60, stale-while-revalidate=300',
+        },
+      ],
+    },
+    {
+      source: '/public/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'public, max-age=31536000, immutable',
+        },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;

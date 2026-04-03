@@ -1,318 +1,857 @@
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useCart } from '@/context/CartContext';
-import AnimatedHeading from '@/components/AnimatedHeading';
-import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// --- Customization Data Options ---
-const swatches = {
-  fabric: [
-    { id: 'f1', name: 'Olive Velvet', hex: '#4B5320' },
-    { id: 'f2', name: 'Cognac Leather', hex: '#8B4513' },
-    { id: 'f3', name: 'Sand Boucle', hex: '#D2B48C' },
-    { id: 'f4', name: 'Charcoal Linen', hex: '#36454F' },
-  ],
-  wood: [
-    { id: 'w1', name: 'Dark Walnut', hex: '#3e2723' },
-    { id: 'w2', name: 'Natural Oak', hex: '#8d6e63' },
-    { id: 'w3', name: 'Matte Black', hex: '#1a1a1a' },
-  ],
-  metal: [
-    { id: 'm1', name: 'Brushed Brass', hex: '#b5a642' },
-    { id: 'm2', name: 'Polished Nickel', hex: '#c0c0c0' },
-  ]
+// Featured colors for all products
+const FEATURED_COLORS = [
+  { name: 'Cognac Leather', hex: '#8B5E3C' },
+  { name: 'Midnight Navy', hex: '#1F2A44' },
+  { name: 'Sunset Terracotta', hex: '#C96A4A' },
+  { name: 'Forest Green', hex: '#2F5D50' },
+];
+
+// Material options
+const MATERIALS = [
+  'Leather',
+  'Velvet',
+  'Boucle',
+  'Linen',
+  'Premium Fabric',
+];
+
+// Finish options
+const FINISHES = [
+  'Dark Walnut',
+  'Natural Oak',
+  'Matte Black',
+  'Brushed Brass',
+  'Polished Nickel',
+];
+
+// Product-specific add-ons
+const PRODUCT_ADDONS = {
+  recliner: ['Manual Glide', 'Power Motor'],
+  pouffe: ['Hidden Seam', 'Contrast Piping'],
+  sofa: ['Extended Depth', 'Premium Cushion Fill', 'Left or Right Chaise'],
+  chair: ['Swivel Base', 'Accent Stitching'],
 };
 
-export default function ClientCustomization() {
-  const { cart, updateQuantity, totalPrice } = useCart();
+export default function LuxeCustomizationStudio() {
   const containerRef = useRef();
+  const formRef = useRef();
+  const progressRef = useRef([]);
 
-  // Store user customizations per item id: { itemId: { fabric: 'f1', wood: 'w1', extra: 'power' } }
-  const [customs, setCustoms] = useState({});
+  // Form state
+  const [customerInfo, setCustomerInfo] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
 
-  // GSAP Entrance Animation
-  useGSAP(() => {
-    if (cart.length > 0 && containerRef.current) {
-      gsap.from('.gsap-slide-up', {
-        y: 50,
+  const [customization, setCustomization] = useState({
+    product: {
+      id: '',
+      name: '',
+      quantity: 1,
+    },
+    color: {
+      featured: null,
+      custom: {
+        name: '',
+        code: '',
+        picker: '',
+      },
+    },
+    material: '',
+    finish: '',
+    addons: [],
+    notes: '',
+    reference: null,
+    delivery: {
+      contact: 'email',
+      callTime: '',
+      city: '',
+      timeline: '',
+    },
+  });
+
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [referenceId, setReferenceId] = useState('');
+  const [showCustomColor, setShowCustomColor] = useState(false);
+  const [selectedAddons, setSelectedAddons] = useState([]);
+
+  const totalSteps = 5;
+
+  // GSAP animations
+  useGSAP(
+    () => {
+      gsap.from('.step-badge', {
+        y: 20,
         opacity: 0,
         stagger: 0.1,
-        duration: 1,
+        duration: 0.6,
         ease: 'power3.out',
       });
-    }
-  }, { scope: containerRef, dependencies: [cart.length] });
+    },
+    { scope: containerRef }
+  );
 
-  const handleSelect = (itemId, type, value) => {
-    setCustoms(prev => ({
+  const handleCustomerInfoChange = (field, value) => {
+    setCustomerInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleColorSelect = (color) => {
+    setCustomization((prev) => ({
       ...prev,
-      [itemId]: { ...prev[itemId], [type]: value }
+      color: { ...prev.color, featured: color },
     }));
   };
 
-  // Helper to determine what options to show based on item name
-  const getItemType = (name) => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes('recliner')) return 'recliner';
-    if (lowerName.includes('pouffe')) return 'pouffe';
-    if (lowerName.includes('chair')) return 'chair';
-    return 'sofa'; // Default
+  const handleAddonToggle = (addon) => {
+    setSelectedAddons((prev) =>
+      prev.includes(addon) ? prev.filter((a) => a !== addon) : [...prev, addon]
+    );
+    setCustomization((prev) => ({
+      ...prev,
+      addons: selectedAddons.includes(addon)
+        ? selectedAddons.filter((a) => a !== addon)
+        : [...selectedAddons, addon],
+    }));
   };
 
-  // --- Empty Cart View ---
-  if (cart.length === 0) {
+  const handleNextStep = () => {
+    if (currentStep < totalSteps) {
+      setCurrentStep((prev) => prev + 1);
+      // Scroll to top of form container instead of full page
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  const handlePrevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+      // Scroll to top of form container instead of full page
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        customerName: customerInfo.name,
+        customerEmail: customerInfo.email,
+        customerPhone: customerInfo.phone,
+        productId: customization.product.id || '000000000000000000000000',
+        productName: 'Premium Custom Furniture',
+        quantity: customization.product.quantity,
+        selectedFeaturedColor: customization.color.featured,
+        customColorName: customization.color.custom.name,
+        customColorCode: customization.color.custom.code,
+        customColorPickerValue: customization.color.custom.picker,
+        selectedMaterial: customization.material,
+        selectedFinish: customization.finish,
+        selectedAddons: selectedAddons,
+        customDescription: customization.notes,
+        preferredContactMethod: customization.delivery.contact,
+        preferredCallTime: customization.delivery.callTime,
+        deliveryCity: customization.delivery.city,
+        expectedTimeline: customization.delivery.timeline,
+      };
+
+      const response = await fetch('/api/customizations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit customization');
+      }
+
+      const data = await response.json();
+      setReferenceId(data.referenceId);
+      setSubmitted(true);
+      setIsSubmitting(false);
+    } catch (error) {
+      console.error('Submission error:', error);
+      alert('Failed to submit customization. Please try again.');
+      setIsSubmitting(false);
+    }
+  };
+
+  // Success state
+  if (submitted) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-transparent px-6 pb-16 pt-32 md:px-10">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[30rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.22),transparent_24%),linear-gradient(115deg,rgba(18,14,11,0.92)_12%,rgba(48,32,23,0.72)_45%,rgba(18,14,11,0.92)_100%)]" />
-        <div className="pointer-events-none absolute left-[-8rem] top-[6rem] h-[20rem] w-[20rem] rounded-full bg-theme-bronze/20 blur-[120px]" />
-        
-        <div className="relative z-10 mx-auto max-w-7xl">
-          <div className="section-shell rounded-[2rem] border border-white/10 bg-[rgba(18,14,11,0.34)] px-8 py-20 text-center text-theme-ivory backdrop-blur-sm shadow-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze mb-4">Customization Studio</p>
-            <AnimatedHeading as="h1" className="mb-6 font-display text-5xl text-theme-ivory md:text-6xl">
-              Ready to Customize?
-            </AnimatedHeading>
-            <p className="mb-10 text-lg text-theme-ivory/74 max-w-2xl mx-auto">
-              Add pieces to your cart first, then return here to select fabrics, finishes, and perfect the details.
-            </p>
-            <Link
-              href="/#sofas"
-              className="rounded-full bg-theme-bronze px-10 py-4 text-sm font-semibold uppercase tracking-[0.28em] text-white hover:bg-theme-ink transition-all shadow-lg hover:shadow-theme-bronze/30"
+      <main className="relative min-h-screen overflow-hidden px-6 pb-20 pt-32 md:px-10 lg:px-20">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_30%),linear-gradient(115deg,rgba(18,14,11,0.95)_10%,rgba(48,32,23,0.6)_50%,rgba(18,14,11,0.95)_100%)]" />
+
+        <div className="relative mx-auto max-w-2xl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="rounded-2xl border border-theme-bronze/30 bg-theme-ink/40 px-8 py-16 text-center backdrop-blur-md"
+          >
+            {/* Success Badge */}
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-theme-bronze to-theme-bronze/60"
             >
-              Start Shopping →
+              <svg
+                className="h-8 w-8 text-white"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </motion.div>
+
+            <h2 className="font-display text-3xl text-theme-ivory md:text-4xl mb-4">
+              Request Submitted Successfully
+            </h2>
+
+            <p className="text-lg text-theme-ivory/80 mb-2">
+              Thank you for your customization request!
+            </p>
+            <p className="text-base text-theme-ivory/60 mb-8">
+              Our team will review your preferences shortly and contact you soon.
+            </p>
+
+            {/* Reference ID */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="rounded-lg border border-theme-bronze/20 bg-theme-bronze/10 px-6 py-4 mb-8"
+            >
+              <p className="text-xs uppercase tracking-widest text-theme-bronze mb-2">
+                Reference ID
+              </p>
+              <p className="font-mono text-lg text-theme-ivory">{referenceId}</p>
+            </motion.div>
+
+            {/* Trust Badges */}
+            <div className="mb-10 grid grid-cols-3 gap-4">
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-4 backdrop-blur-sm">
+                <p className="text-2xl mb-1">✓</p>
+                <p className="text-xs text-theme-ivory/70">5-Year Warranty</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-4 backdrop-blur-sm">
+                <p className="text-2xl mb-1">🤍</p>
+                <p className="text-xs text-theme-ivory/70">White-Glove Delivery</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-4 backdrop-blur-sm">
+                <p className="text-2xl mb-1">✨</p>
+                <p className="text-xs text-theme-ivory/70">Handcrafted</p>
+              </div>
+            </div>
+
+            <p className="mb-8 text-sm text-theme-ivory/60">
+              Check your email for a detailed confirmation of your customization preferences.
+            </p>
+
+            <Link
+              href="/"
+              className="inline-block rounded-full bg-theme-bronze px-8 py-4 text-sm font-semibold uppercase tracking-widest text-white hover:bg-theme-bronze/90 transition-all"
+            >
+              Return Home →
             </Link>
-          </div>
+          </motion.div>
         </div>
       </main>
     );
   }
 
-  // --- Customization Studio View ---
   return (
-    <main ref={containerRef} className="relative min-h-screen overflow-hidden px-6 pb-20 pt-32 md:px-10 lg:px-20">
-      {/* Premium Ambient Backgrounds */}
+    <main ref={containerRef} className="relative min-h-screen overflow-hidden px-4 pb-20 pt-28 sm:px-6 md:px-10 lg:px-20">
+      {/* Ambient Backgrounds */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_30%),linear-gradient(115deg,rgba(18,14,11,0.95)_10%,rgba(48,32,23,0.6)_50%,rgba(18,14,11,0.95)_100%)]" />
       <div className="pointer-events-none absolute left-[-8rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-theme-bronze/10 blur-[150px]" />
       <div className="pointer-events-none absolute right-[-4rem] top-[20rem] h-[25rem] w-[25rem] rounded-full bg-theme-olive/10 blur-[150px]" />
 
-      <div className="relative z-10 mx-auto max-w-[1400px]">
-        {/* Header */}
-        <div className="gsap-slide-up mb-12 rounded-[2rem] border border-white/5 bg-[rgba(18,14,11,0.4)] px-10 py-12 text-theme-ivory backdrop-blur-md shadow-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">Bespoke Studio</p>
-          <AnimatedHeading as="h1" className="mt-4 font-display text-5xl text-theme-ivory md:text-6xl">
-            Tailor Your Masterpieces
-          </AnimatedHeading>
-          <p className="mt-4 text-theme-ivory/60 max-w-2xl text-lg">
-            Personalize fabrics, materials, and configurations for each piece in your collection.
+      <div className="relative z-10 mx-auto max-w-4xl">
+        {/* Hero Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="mb-16 text-center"
+        >
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">
+            Premium Customization
           </p>
+          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-theme-ivory mb-6">
+            Craft Your Signature Piece
+          </h1>
+          <p className="mx-auto max-w-2xl text-lg text-theme-ivory/72">
+            Create a bespoke furniture piece tailored to your style. Choose from our featured luxury colors or request custom shade. Our artisans will handcraft your vision.
+          </p>
+        </motion.div>
+
+        {/* Progress Indicator */}
+        <div className="mb-16 flex justify-center gap-2">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <motion.div
+              key={i}
+              ref={(el) => (progressRef.current[i] = el)}
+              initial={{ scale: 0.8, opacity: 0.4 }}
+              animate={
+                i < currentStep
+                  ? { scale: 1, opacity: 1 }
+                  : i === currentStep - 1
+                  ? { scale: 1, opacity: 1 }
+                  : { scale: 0.8, opacity: 0.4 }
+              }
+              className={`h-2 rounded-full transition-all ${
+                i < currentStep
+                  ? 'w-8 bg-theme-bronze'
+                  : i === currentStep - 1
+                  ? 'w-8 bg-theme-bronze/60'
+                  : 'w-2 bg-theme-ivory/20'
+              }`}
+            />
+          ))}
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-[1fr_400px]">
-          {/* LEFT COLUMN: Interactive Customization Cards */}
-          <div className="space-y-8">
-            {cart.map((item, index) => {
-              const itemType = getItemType(item.name);
-              const selectedFabric = customs[item.id]?.fabric || swatches.fabric[0].id;
-              const selectedWood = customs[item.id]?.wood || swatches.wood[0].id;
-              const selectedExtra = customs[item.id]?.extra || 'standard';
+        {/* Form */}
+        <form ref={formRef} onSubmit={handleSubmit} className="mx-auto max-w-4xl">
+          <AnimatePresence mode="wait">
+            {/* Step 1: Customer Info */}
+            {currentStep === 1 && (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12"
+              >
+                <h2 className="mb-8 font-display text-2xl text-theme-ivory">
+                  Your Information
+                </h2>
 
-              return (
-                <div key={item.id} className="gsap-slide-up section-shell relative overflow-hidden rounded-[2rem] p-8 md:p-10 border border-theme-line/50 hover:border-theme-bronze/30 transition-colors duration-500">
-                  <div className="flex flex-col md:flex-row gap-8">
-                    
-                    {/* Item Thumbnail & Info */}
-                    <div className="shrink-0 w-full md:w-48 flex flex-col items-center md:items-start text-center md:text-left">
-                      <div className="relative h-40 w-40 overflow-hidden rounded-2xl border border-white/10 shadow-lg">
-                        <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      </div>
-                      <p className="mt-4 font-display text-2xl text-theme-ink dark:text-white leading-tight">{item.name}</p>
-                      <p className="mt-1 text-sm font-semibold uppercase tracking-widest text-theme-bronze">Qty: {item.quantity}</p>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <input
+                    type="text"
+                    placeholder="Full Name"
+                    value={customerInfo.name}
+                    onChange={(e) =>
+                      handleCustomerInfoChange('name', e.target.value)
+                    }
+                    required
+                    className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email Address"
+                    value={customerInfo.email}
+                    onChange={(e) =>
+                      handleCustomerInfoChange('email', e.target.value)
+                    }
+                    required
+                    className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone Number"
+                    value={customerInfo.phone}
+                    onChange={(e) =>
+                      handleCustomerInfoChange('phone', e.target.value)
+                    }
+                    required
+                    className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none md:col-span-2"
+                  />
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 2: Featured Colors */}
+            {currentStep === 2 && (
+              <motion.div
+                key="step-2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-2 font-display text-2xl text-theme-ivory">
+                    Featured Luxury Colors
+                  </h2>
+                  <p className="mb-8 text-theme-ivory/60">
+                    Select from our curated collection of premium finishes
+                  </p>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {FEATURED_COLORS.map((color) => (
+                      <motion.button
+                        key={color.hex}
+                        type="button"
+                        onClick={() => {
+                          handleColorSelect(color);
+                          setShowCustomColor(false);
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        className={`group relative overflow-hidden rounded-xl border-2 p-6 text-left transition-all ${
+                          customization.color.featured?.hex === color.hex
+                            ? 'border-theme-bronze/80 bg-theme-bronze/10'
+                            : 'border-theme-bronze/20 bg-white/5 hover:border-theme-bronze/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="h-12 w-12 rounded-lg shadow-lg"
+                            style={{ backgroundColor: color.hex }}
+                          />
+                          <div>
+                            <p className="font-semibold text-theme-ivory">
+                              {color.name}
+                            </p>
+                            <p className="text-sm text-theme-ivory/60">
+                              {color.hex}
+                            </p>
+                          </div>
+                        </div>
+                        {customization.color.featured?.hex === color.hex && (
+                          <div className="absolute right-4 top-4 text-theme-bronze">
+                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Custom Color Section */}
+                <motion.div
+                  className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomColor(!showCustomColor)}
+                    className="mb-6 flex w-full items-center justify-between rounded-lg border border-theme-bronze/20 bg-white/5 px-6 py-4 text-left transition-all hover:border-theme-bronze/40 hover:bg-white/10"
+                  >
+                    <span className="font-semibold text-theme-ivory">
+                      Need Another Color?
+                    </span>
+                    <span className="text-theme-bronze">
+                      {showCustomColor ? '−' : '+'}
+                    </span>
+                  </button>
+
+                  <AnimatePresence>
+                    {showCustomColor && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="space-y-4"
+                      >
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-theme-ivory">
+                            Color Name
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Warm Sage, Burgundy Velvet"
+                            value={customization.color.custom.name}
+                            onChange={(e) =>
+                              setCustomization((prev) => ({
+                                ...prev,
+                                color: {
+                                  ...prev.color,
+                                  custom: {
+                                    ...prev.color.custom,
+                                    name: e.target.value,
+                                  },
+                                },
+                              }))
+                            }
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-theme-ivory">
+                            Color Code (HEX, RGB, or Pantone)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., #A8D8D8 or RGB(168, 216, 216)"
+                            value={customization.color.custom.code}
+                            onChange={(e) =>
+                              setCustomization((prev) => ({
+                                ...prev,
+                                color: {
+                                  ...prev.color,
+                                  custom: {
+                                    ...prev.color.custom,
+                                    code: e.target.value,
+                                  },
+                                },
+                              }))
+                            }
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-theme-ivory">
+                            Color Picker
+                          </label>
+                          <div className="flex items-center gap-4">
+                            <input
+                              type="color"
+                              value={customization.color.custom.picker || '#A8D8D8'}
+                              onChange={(e) =>
+                                setCustomization((prev) => ({
+                                  ...prev,
+                                  color: {
+                                    ...prev.color,
+                                    custom: {
+                                      ...prev.color.custom,
+                                      picker: e.target.value,
+                                    },
+                                  },
+                                }))
+                              }
+                              className="h-12 w-24 cursor-pointer rounded-lg border border-theme-bronze/20"
+                            />
+                            <div
+                              className="h-12 w-24 rounded-lg shadow-lg"
+                              style={{
+                                backgroundColor:
+                                  customization.color.custom.picker || '#A8D8D8',
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              </motion.div>
+            )}
+
+            {/* Step 3: Material & Finish */}
+            {currentStep === 3 && (
+              <motion.div
+                key="step-3"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-6 font-display text-2xl text-theme-ivory">
+                    Select Material
+                  </h2>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {MATERIALS.map((material) => (
+                      <button
+                        key={material}
+                        type="button"
+                        onClick={() =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            material,
+                          }))
+                        }
+                        className={`rounded-lg border-2 px-6 py-4 text-left font-semibold transition-all ${
+                          customization.material === material
+                            ? 'border-theme-bronze/80 bg-theme-bronze/10 text-theme-ivory'
+                            : 'border-theme-bronze/20 bg-white/5 text-theme-ivory hover:border-theme-bronze/40'
+                        }`}
+                      >
+                        {material}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-6 font-display text-2xl text-theme-ivory">
+                    Select Finish
+                  </h2>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {FINISHES.map((finish) => (
+                      <button
+                        key={finish}
+                        type="button"
+                        onClick={() =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            finish,
+                          }))
+                        }
+                        className={`rounded-lg border-2 px-6 py-4 text-left font-semibold transition-all ${
+                          customization.finish === finish
+                            ? 'border-theme-bronze/80 bg-theme-bronze/10 text-theme-ivory'
+                            : 'border-theme-bronze/20 bg-white/5 text-theme-ivory hover:border-theme-bronze/40'
+                        }`}
+                      >
+                        {finish}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 4: Add-ons & Notes */}
+            {currentStep === 4 && (
+              <motion.div
+                key="step-4"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-6 font-display text-2xl text-theme-ivory">
+                    Optional Add-ons
+                  </h2>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {['Premium Cushion Fill', 'Accent Stitching', 'Extended Depth', 'Swivel Base'].map((addon) => (
+                      <button
+                        key={addon}
+                        type="button"
+                        onClick={() => handleAddonToggle(addon)}
+                        className={`rounded-lg border-2 px-6 py-4 text-left font-semibold transition-all flex items-center justify-between ${
+                          selectedAddons.includes(addon)
+                            ? 'border-theme-bronze/80 bg-theme-bronze/10 text-theme-ivory'
+                            : 'border-theme-bronze/20 bg-white/5 text-theme-ivory hover:border-theme-bronze/40'
+                        }`}
+                      >
+                        {addon}
+                        {selectedAddons.includes(addon) && (
+                          <svg className="h-5 w-5 text-theme-bronze" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <label className="mb-4 block font-display text-2xl text-theme-ivory">
+                    Additional Customization Notes
+                  </label>
+                  <p className="mb-4 text-sm text-theme-ivory/60">
+                    Share any extra details such as preferred stitching, finish feel, inspiration, comfort preference, or delivery instructions.
+                  </p>
+                  <textarea
+                    placeholder="Tell us everything you'd like us to know about your custom piece..."
+                    value={customization.notes}
+                    onChange={(e) =>
+                      setCustomization((prev) => ({
+                        ...prev,
+                        notes: e.target.value.slice(0, 1000),
+                      }))
+                    }
+                    maxLength={1000}
+                    className="w-full h-32 rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none resize-none"
+                  />
+                  <p className="mt-2 text-xs text-theme-ivory/40">
+                    {customization.notes.length}/1000 characters
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Step 5: Delivery & Review */}
+            {currentStep === 5 && (
+              <motion.div
+                key="step-5"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-8"
+              >
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-6 font-display text-2xl text-theme-ivory">
+                    Delivery Preferences
+                  </h2>
+
+                  <div className="grid gap-6">
+                    <div>
+                      <label className="mb-3 block font-semibold text-theme-ivory">
+                        Preferred Contact Method
+                      </label>
+                      <select
+                        value={customization.delivery.contact}
+                        onChange={(e) =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            delivery: { ...prev.delivery, contact: e.target.value },
+                          }))
+                        }
+                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                      >
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                        <option value="both">Both</option>
+                      </select>
                     </div>
 
-                    {/* Customization Controls */}
-                    <div className="flex-1 space-y-8">
-                      
-                      {/* 1. Fabric Selection (All Items) */}
-                      <div>
-                        <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-theme-walnut dark:text-theme-ivory/80 flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-theme-bronze"></span>
-                          Upholstery Material
-                        </h3>
-                        <div className="flex flex-wrap gap-4">
-                          {swatches.fabric.map((swatch) => (
-                            <div key={swatch.id} className="flex flex-col items-center gap-2">
-                              <button
-                                onClick={() => handleSelect(item.id, 'fabric', swatch.id)}
-                                className="relative h-12 w-12 rounded-full outline-none"
-                              >
-                                {/* Framer Motion active ring */}
-                                {selectedFabric === swatch.id && (
-                                  <motion.div
-                                    layoutId={`ring-fab-${item.id}`}
-                                    className="absolute -inset-2 rounded-full border-2 border-theme-bronze"
-                                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                                  />
-                                )}
-                                <div className="absolute inset-0 rounded-full shadow-inner" style={{ backgroundColor: swatch.hex }} />
-                              </button>
-                              <span className={`text-[10px] uppercase tracking-wider ${selectedFabric === swatch.id ? 'text-theme-ink dark:text-white font-bold' : 'text-theme-walnut/60 dark:text-white/40'}`}>
-                                {swatch.name.split(' ')[0]}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                    <div>
+                      <label className="mb-3 block font-semibold text-theme-ivory">
+                        Preferred Call Time (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., 9-12 PM weekdays"
+                        value={customization.delivery.callTime}
+                        onChange={(e) =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            delivery: { ...prev.delivery, callTime: e.target.value },
+                          }))
+                        }
+                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                      />
+                    </div>
 
-                      {/* 2. Base/Leg Finish (For Sofa & Chair) */}
-                      {(itemType === 'sofa' || itemType === 'chair') && (
-                        <div>
-                          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-theme-walnut dark:text-theme-ivory/80 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-theme-olive"></span>
-                            Base Finish
-                          </h3>
-                          <div className="flex gap-4">
-                            {swatches.wood.map((swatch) => (
-                              <button
-                                key={swatch.id}
-                                onClick={() => handleSelect(item.id, 'wood', swatch.id)}
-                                className={`relative px-5 py-2.5 rounded-full border text-xs font-semibold uppercase tracking-widest transition-all duration-300 ${
-                                  selectedWood === swatch.id 
-                                    ? 'border-theme-bronze bg-theme-bronze/10 text-theme-bronze dark:text-white' 
-                                    : 'border-theme-line text-theme-walnut/60 hover:border-theme-bronze/50'
-                                }`}
-                              >
-                                {swatch.name}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                    <div>
+                      <label className="mb-3 block font-semibold text-theme-ivory">
+                        Delivery City
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Your city"
+                        value={customization.delivery.city}
+                        onChange={(e) =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            delivery: { ...prev.delivery, city: e.target.value },
+                          }))
+                        }
+                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                      />
+                    </div>
 
-                      {/* 3. Special Add-ons (Recliners & Pouffes) */}
-                      {itemType === 'recliner' && (
-                        <div>
-                          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-theme-walnut dark:text-theme-ivory/80 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-theme-ink dark:bg-white"></span>
-                            Motion Mechanism
-                          </h3>
-                          <div className="flex gap-4">
-                            <button
-                              onClick={() => handleSelect(item.id, 'extra', 'standard')}
-                              className={`flex-1 px-4 py-3 rounded-xl border text-xs font-semibold uppercase tracking-widest transition-all ${selectedExtra === 'standard' ? 'border-theme-ink bg-theme-ink text-white dark:bg-white dark:text-theme-ink dark:border-white' : 'border-theme-line text-theme-walnut'}`}
-                            >
-                              Manual Glide
-                            </button>
-                            <button
-                              onClick={() => handleSelect(item.id, 'extra', 'power')}
-                              className={`flex-1 px-4 py-3 rounded-xl border text-xs font-semibold uppercase tracking-widest transition-all ${selectedExtra === 'power' ? 'border-theme-ink bg-theme-ink text-white dark:bg-white dark:text-theme-ink dark:border-white' : 'border-theme-line text-theme-walnut'}`}
-                            >
-                              Power Motor (+₹15,000)
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {itemType === 'pouffe' && (
-                        <div>
-                          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-theme-walnut dark:text-theme-ivory/80 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-theme-sand"></span>
-                            Stitching Detail
-                          </h3>
-                          <div className="flex gap-4">
-                            {['Hidden Seam', 'Contrast Piping'].map((stitch, idx) => (
-                              <button
-                                key={idx}
-                                onClick={() => handleSelect(item.id, 'extra', stitch)}
-                                className={`px-5 py-2.5 rounded-full border text-xs font-semibold uppercase tracking-widest transition-all ${selectedExtra === stitch ? 'border-theme-bronze bg-theme-bronze/10 text-theme-bronze' : 'border-theme-line text-theme-walnut'}`}
-                              >
-                                {stitch}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
+                    <div>
+                      <label className="mb-3 block font-semibold text-theme-ivory">
+                        Expected Timeline
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Within 2 months"
+                        value={customization.delivery.timeline}
+                        onChange={(e) =>
+                          setCustomization((prev) => ({
+                            ...prev,
+                            delivery: { ...prev.delivery, timeline: e.target.value },
+                          }))
+                        }
+                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                      />
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
 
-          {/* RIGHT COLUMN: Sticky Cart Summary */}
-          <div>
-            <div className="gsap-slide-up premium-surface sticky top-32 rounded-[2rem] p-8 md:p-10 shadow-2xl border border-white/5">
-              <p className="text-xs font-bold uppercase tracking-[0.35em] text-theme-bronze mb-8">Studio Summary</p>
+                {/* Review Summary */}
+                <div className="rounded-2xl border border-theme-bronze/20 bg-theme-bronze/10 p-8 backdrop-blur-md md:p-12">
+                  <h2 className="mb-6 font-display text-2xl text-theme-ivory">
+                    Request Summary
+                  </h2>
 
-              <div className="space-y-5 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                <AnimatePresence>
-                  {cart.map(item => (
-                    <motion.div 
-                      key={item.id} 
-                      initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, scale: 0.9 }}
-                      className="flex items-center gap-4 p-4 rounded-2xl border border-theme-line/50 bg-white/40 dark:bg-black/20"
-                    >
-                      <img src={item.image} alt={item.name} className="h-16 w-16 rounded-xl object-cover shrink-0 shadow-sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-sm text-theme-ink dark:text-white truncate">{item.name}</p>
-                        <p className="text-xs text-theme-walnut/70 dark:text-theme-ivory/50 mt-1 truncate">
-                          {customs[item.id]?.fabric ? swatches.fabric.find(f => f.id === customs[item.id].fabric)?.name : 'Standard'} Finish
-                        </p>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <p className="text-sm font-bold text-theme-bronze">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
-                        <div className="flex items-center gap-2 bg-theme-sand/30 dark:bg-white/5 rounded-full px-2 py-0.5 mt-1">
-                          <button onClick={() => updateQuantity(item.id, -1)} className="text-xs font-bold text-theme-walnut dark:text-white/70 hover:text-theme-bronze px-1">-</button>
-                          <span className="text-xs font-bold w-3 text-center dark:text-white">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.id, 1)} className="text-xs font-bold text-theme-walnut dark:text-white/70 hover:text-theme-bronze px-1">+</button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </div>
-
-              <div className="space-y-4 text-sm border-t border-theme-line/50 pt-6">
-                <div className="flex justify-between">
-                  <span className="text-theme-walnut/70 dark:text-theme-ivory/60 font-medium">Subtotal</span>
-                  <span className="font-bold text-theme-ink dark:text-white">₹{totalPrice.toLocaleString('en-IN')}</span>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Color
+                      </p>
+                      <p className="text-theme-ivory">
+                        {customization.color.featured?.name || 'Custom'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Material
+                      </p>
+                      <p className="text-theme-ivory">{customization.material || 'Not selected'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Finish
+                      </p>
+                      <p className="text-theme-ivory">{customization.finish || 'Not selected'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Add-ons
+                      </p>
+                      <p className="text-theme-ivory">
+                        {selectedAddons.length > 0 ? selectedAddons.join(', ') : 'None'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-theme-walnut/70 dark:text-theme-ivory/60 font-medium">Bespoke Adjustments</span>
-                  <span className="text-theme-olive font-bold uppercase tracking-wider text-[10px] bg-theme-olive/10 px-2 py-1 rounded-sm">Included</span>
-                </div>
-                <div className="flex justify-between text-xl font-display pt-4 border-t border-theme-line/50">
-                  <span className="text-theme-ink dark:text-white">Total Studio Price</span>
-                  <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-              <Link
-                href="/checkout"
-                className="mt-8 relative group flex w-full items-center justify-center overflow-hidden rounded-full bg-theme-ink dark:bg-white py-4 text-sm font-bold uppercase tracking-[0.28em] text-white dark:text-theme-ink transition-all hover:scale-[1.02] active:scale-95"
+          {/* Navigation Buttons */}
+          <div className="mt-12 flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              disabled={currentStep === 1}
+              className="rounded-full border border-theme-bronze/40 px-8 py-4 font-semibold text-theme-ivory hover:bg-white/5 disabled:opacity-40 transition-all"
+            >
+              ← Back
+            </button>
+
+            {currentStep === totalSteps ? (
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="rounded-full bg-theme-bronze px-8 py-4 font-semibold text-white hover:bg-theme-bronze/90 disabled:opacity-60 transition-all"
               >
-                <span className="relative z-10">Proceed to Checkout</span>
-                <div className="absolute inset-0 bg-theme-bronze translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out z-0" />
-              </Link>
-
-              <Link
-                href="/#sofas"
-                className="mt-4 block w-full rounded-full border border-theme-line/50 py-4 text-center text-xs font-bold uppercase tracking-[0.25em] text-theme-walnut hover:border-theme-bronze hover:text-theme-bronze dark:text-theme-ivory/70 dark:hover:text-theme-bronze transition-all"
+                {isSubmitting ? 'Submitting...' : 'Submit Customization Request →'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className="rounded-full bg-theme-bronze px-8 py-4 font-semibold text-white hover:bg-theme-bronze/90 transition-all"
               >
-                ← Back to Collections
-              </Link>
-
-              <p className="mt-6 text-center text-[10px] font-semibold uppercase tracking-widest text-theme-walnut/50 dark:text-theme-ivory/40">
-                White-Glove Delivery · 5-Year Warranty
-              </p>
-            </div>
+                Next →
+              </button>
+            )}
           </div>
-        </div>
+        </form>
       </div>
     </main>
   );

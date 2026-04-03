@@ -8,6 +8,7 @@ const initialProducts = [
     description:
       'Layered in deep olive velvet with a softly curved silhouette, this statement sofa anchors the room with gallery-grade presence and cloud-soft comfort.',
     price: 45000,
+    stock: 7,
     imageUrl: '/products/sofa/main.png',
     eyebrow: 'Signature Sofa',
     modelPath: '/3D%20models/teal%20sofa%203d%20model.glb',
@@ -39,6 +40,7 @@ const initialProducts = [
     description:
       'A sculpted lounge chair with curved arms, rich textured upholstery, and a compact footprint that adds depth to reading corners and formal seating areas.',
     price: 18500,
+    stock: 12,
     imageUrl: '/products/chairs/main.png',
     eyebrow: 'Accent Seating',
     modelPath: '/3D%20models/teal+velvet+armchair+3d+model.glb',
@@ -70,6 +72,7 @@ const initialProducts = [
     description:
       'Cut in rich saddle leather with tailored stitching and a quietly engineered recline, it brings lounge-level comfort to a polished living space.',
     price: 32000,
+    stock: 4,
     imageUrl: '/products/recliners/main.png',
     eyebrow: 'Private Lounge',
     modelPath: '/3D%20models/recliner+chair+3d+model.glb',
@@ -101,6 +104,7 @@ const initialProducts = [
     description:
       'A compact accent piece with artisanal texture, warm bronze undertones, and flexible styling that works beside a sofa, bed, or reading chair.',
     price: 4500,
+    stock: 18,
     imageUrl: '/products/pouffes/main.png',
     eyebrow: 'Finishing Touch',
     modelPath: '/3D%20models/teal+pouffies+3d+model.glb',

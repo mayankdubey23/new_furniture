@@ -20,19 +20,24 @@ interface WishlistContextValue {
 const WishlistContext = createContext<WishlistContextValue | null>(null);
 
 export function WishlistProvider({ children }: { children: ReactNode }) {
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = window.localStorage.getItem('wishlist');
-      return saved ? (JSON.parse(saved) as WishlistItem[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('wishlist');
+      setWishlist(saved ? (JSON.parse(saved) as WishlistItem[]) : []);
+    } catch {
+      setWishlist([]);
+    } finally {
+      setHasHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
     localStorage.setItem('wishlist', JSON.stringify(wishlist));
-  }, [wishlist]);
+  }, [wishlist, hasHydrated]);
 
   const value = useMemo(
     () => ({

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
+import ParallaxLayer from '@/components/ParallaxLayer';
 
 const EthosScene = dynamic(() => import('@/components/canvas/EthosScene'), { ssr: false });
 
@@ -67,16 +68,20 @@ export default function About() {
         className="section-shell before:hidden relative w-full overflow-hidden rounded-none border-y border-theme-line/70 bg-[linear-gradient(180deg,rgba(251,247,241,0.9),rgba(247,240,231,0.82))] px-8 py-10 shadow-[0_28px_100px_rgba(49,30,21,0.1)] dark:bg-[linear-gradient(180deg,rgba(34,27,23,0.88),rgba(24,18,15,0.86))] md:px-12 md:py-12"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.14),transparent_36%)]" />
-        <motion.div
-          className="pointer-events-none absolute -left-16 top-10 h-40 w-40 rounded-full bg-theme-bronze/16 blur-[80px]"
-          animate={{ x: [-10, 16, -10], y: [0, 14, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <motion.div
-          className="pointer-events-none absolute bottom-8 right-6 h-44 w-44 rounded-full bg-theme-olive/14 blur-[96px]"
-          animate={{ x: [12, -14, 12], y: [0, -10, 0] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-        />
+        <ParallaxLayer speed={-0.12} className="pointer-events-none absolute inset-0">
+          <motion.div
+            className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-theme-bronze/16 blur-[80px]"
+            animate={{ x: [-10, 16, -10], y: [0, 14, 0] }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </ParallaxLayer>
+        <ParallaxLayer speed={-0.18} className="pointer-events-none absolute inset-0">
+          <motion.div
+            className="absolute bottom-8 right-6 h-44 w-44 rounded-full bg-theme-olive/14 blur-[96px]"
+            animate={{ x: [12, -14, 12], y: [0, -10, 0] }}
+            transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </ParallaxLayer>
 
         <div className="relative z-10 grid gap-8 lg:grid-cols-[0.78fr_1.22fr] lg:items-start">
           <div className="space-y-6 lg:pr-8">

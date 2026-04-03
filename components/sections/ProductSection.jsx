@@ -46,17 +46,28 @@ export default function ProductSection({ id, data, surfaceClassName = 'bg-transp
       if (!blocks?.length) return;
 
       blocks.forEach((block) => {
+        // Create individual scroll trigger per block for better cleanup
         gsap.from(block, {
           scrollTrigger: {
             trigger: block,
             start: 'top 88%',
+            once: true, // Execute only once for better performance
           },
           y: 48,
           opacity: 0,
-          duration: 1.4,
+          duration: 1.2,  // Slightly reduced from 1.4
           ease: 'power3.out',
         });
       });
+
+      // Refresh ScrollTrigger after setup
+      return () => {
+        ScrollTrigger.getAll().forEach(trigger => {
+          if (trigger.vars.trigger?.closest('.ps-block')) {
+            trigger.kill();
+          }
+        });
+      };
     },
     { scope: container }
   );
@@ -71,7 +82,7 @@ export default function ProductSection({ id, data, surfaceClassName = 'bg-transp
     >
       <div ref={container} className="w-full space-y-10 px-8 md:px-12">
         {showIntroCard ? (
-          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 rounded-[2.2rem] border border-theme-line/70 bg-white/34 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:px-10 md:py-10">
+          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 rounded-[2.2rem] border border-theme-line/70 bg-white/40 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-white/6 md:px-10 md:py-10">
             <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
               {data.eyebrow}
             </span>

@@ -8,12 +8,6 @@ declare global {
   } | undefined;
 }
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
-}
-
 let cached = global._mongooseCache;
 
 if (!cached) {
@@ -26,11 +20,21 @@ async function dbConnect(): Promise<Mongoose> {
   }
 
   if (!cached!.promise) {
+    const MONGODB_URI = process.env.MONGODB_URI;
+    
+    if (!MONGODB_URI) {
+      throw new Error(
+        'Please define the MONGODB_URI environment variable. ' +
+        'For local development, add it to .env.local. ' +
+        'For production, set it in your Vercel/hosting dashboard.'
+      );
+    }
+
     const opts = {
       bufferCommands: false,
     };
 
-    cached!.promise = mongoose.connect(MONGODB_URI!, opts).then((m) => m);
+    cached!.promise = mongoose.connect(MONGODB_URI, opts).then((m) => m);
   }
 
   cached!.conn = await cached!.promise;

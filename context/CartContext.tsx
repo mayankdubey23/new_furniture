@@ -23,19 +23,24 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const saved = window.localStorage.getItem('cart');
-      return saved ? (JSON.parse(saved) as CartItem[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('cart');
+      setCart(saved ? (JSON.parse(saved) as CartItem[]) : []);
+    } catch {
+      setCart([]);
+    } finally {
+      setHasHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
     localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+  }, [cart, hasHydrated]);
 
   const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     setCart(prev => {

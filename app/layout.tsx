@@ -1,7 +1,11 @@
 import './globals.css';
+import 'lenis/dist/lenis.css';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';
+import MaintenanceGate from '@/components/MaintenanceGate';
+import PerformanceMonitoring from '@/components/PerformanceMonitoring';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { UserProvider } from '@/context/UserContext';
@@ -20,7 +24,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
+        <PerformanceMonitoring />
         <ThemeProvider>
+          <MaintenanceGate />
           <UserProvider>
             <WishlistProvider>
               <CartProvider>

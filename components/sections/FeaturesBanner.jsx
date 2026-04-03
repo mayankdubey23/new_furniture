@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import ParallaxLayer from '@/components/ParallaxLayer';
 
 const features = [
   {
@@ -32,12 +33,16 @@ export default function FeaturesBanner() {
             transition={{ duration: 0.6, ease: 'easeOut' }}
             className="relative overflow-hidden rounded-[2.2rem] border border-theme-line/70 bg-theme-ink px-7 py-8 text-theme-ivory shadow-[0_24px_80px_rgba(26,22,19,0.24)] md:px-9 md:py-10"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,140,92,0.26),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(102,114,95,0.18),transparent_24%)]" />
-            <motion.div
-              className="pointer-events-none absolute right-8 top-8 h-28 w-28 rounded-full border border-white/12"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-            />
+            <ParallaxLayer speed={-0.08} className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,140,92,0.26),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(102,114,95,0.18),transparent_24%)]" />
+            </ParallaxLayer>
+            <ParallaxLayer speed={-0.14} className="pointer-events-none absolute inset-0">
+              <motion.div
+                className="absolute right-8 top-8 h-28 w-28 rounded-full border border-white/12"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+              />
+            </ParallaxLayer>
 
             <div className="relative z-10">
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.42em] text-theme-sand/80">Luxe System</p>

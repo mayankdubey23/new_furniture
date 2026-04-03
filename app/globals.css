@@ -44,8 +44,13 @@ body {
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-padding-top: 8.75rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Optimize rendering performance */
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 body {
@@ -57,6 +62,99 @@ body {
     linear-gradient(180deg, var(--theme-mist) 0%, var(--theme-ivory) 40%, #efe3d1 72%, #eadcc8 100%);
   color: var(--theme-walnut);
   font-family: var(--font-body-family), sans-serif;
+  will-change: auto;
+}
+
+body * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Improve image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    overflow-x: hidden;
+  }
+  
+  /* Fix form inputs on mobile */
+  input, textarea, select {
+    font-size: 16px !important; /* Prevents zoom on iOS */
+    min-height: 44px;
+  }
+  
+  /* Fix buttons on mobile */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Optimize mobile scrolling */
+@media (max-width: 1024px) {
+  * {
+    scroll-behavior: smooth !important;
+  }
+  
+  body {
+    overscroll-behavior-y: contain;
+  }
+}
+
+/* Improve readability on mobile */
+@media (max-width: 768px) {
+  .text-xl, .text-2xl {
+    letter-spacing: normal;
+  }
+}
+
+/* Optimize video playback */
+video {
+  will-change: auto;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Optimize canvas rendering */
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  will-change: contents;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
 
 body::before {

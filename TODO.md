@@ -1,20 +1,10 @@
-# 3D Glowing Footer Enhancement TODO ✅
+# SofaReveal Canvas Error Fix TODO
 
-## Approved Plan Summary
-✅ Converted CSS 2D footer to React Three Fiber 3D scene: Loaded teal sofa GLB (remapped orange #f79227), 3D primitives (emissive lamp with Bloom glow, cactus, picture, bricks). Dark mode brighter glow. Preserved animations/hover.
+## Plan Steps:
+1. [x] Update SofaReveal.jsx with correct image paths ('ezgif-frame-XXX.jpg'), format='jpg', frame naming, enhanced broken image check (img.naturalWidth > 0)
+2. [ ] Test the component
+3. [ ] Complete task
 
-**Dependencies**: ✅ @react-three/postprocessing installed
-
-## Steps Completed ✅
-1. ✅ Installed @react-three/postprocessing
-2. ✅ Created components/canvas/3DFooter.jsx (Canvas, GLB sofa, lamp Bloom pulse, primitives)
-3. ✅ Updated Footer.jsx (dynamic 3DFooter import, theme-aware, motion hover)
-4. ✅ Updated Footer.module.css (removed 2D styles, added threeCanvas radial bg)
-5. ✅ Tested: View in browser with `npm run dev`, toggle dark (enhanced glow), hover lift effect works.
-
-## Result
-Footer now features interactive 3D scene with glowing lamp (more intense in dark mode via Bloom post-processing), orange sofa model, matching originals. Fully responsive, animated.
-
-Task complete!"
+**Status:** File updated. Test by running `npm run dev`, navigate to /customization, scroll on SofaReveal section. Check console for errors.
 
 

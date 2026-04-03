@@ -64,14 +64,14 @@ function FooterScene({ isDark }) {
 
         <group position={[1.45, 0.48, -0.5]}>
           <mesh>
-            <sphereGeometry args={[0.15, 16, 16]} />
+            <sphereGeometry args={[0.15, 12, 12]} />
             <meshStandardMaterial color="#fff8dc" emissive="#fde68a" emissiveIntensity={1.4} />
           </mesh>
           <pointLight ref={lampLightRef} intensity={glowIntensity} color="#fff8dc" position={[0, 0.3, 0]} />
         </group>
 
         <mesh position={[-1.45, 0.1, -0.2]}>
-          <cylinderGeometry args={[0.06, 0.08, 0.72, 8]} />
+          <cylinderGeometry args={[0.06, 0.08, 0.72, 6]} />
           <meshStandardMaterial color="#7abf71" />
         </mesh>
 
@@ -85,7 +85,7 @@ function FooterScene({ isDark }) {
           <meshStandardMaterial color="#e6ddd2" />
         </mesh>
 
-        <ContactShadows position={[0, 0, 0]} opacity={0.5} scale={10} blur={2} />
+        <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={1.2} far={2.5} />
       </group>
 
       <ambientLight intensity={isDark ? 0.28 : 0.58} />
@@ -119,7 +119,7 @@ export default function ThreeFooter({ isDark = true }) {
       <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />
 
       <div className="relative z-20 mx-auto flex h-full max-w-[96rem] flex-col justify-between px-6 pb-10 pt-24 text-white md:px-10 lg:px-16">
-        <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-white/10 bg-white/5 p-6 backdrop-blur-md md:grid-cols-4 md:gap-12 md:p-8">
+        <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-white/10 bg-white/8 p-6 md:grid-cols-4 md:gap-12 md:p-8">
           <div className="md:col-span-1">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">Luxe Atelier</p>
             <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ivory">LUXE</h2>
