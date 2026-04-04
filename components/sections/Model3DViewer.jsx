@@ -1,11 +1,8 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { useGSAP } from '@gsap/react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import AnimatedHeading from '../AnimatedHeading';
@@ -19,51 +16,9 @@ const ModelViewer = dynamic(() => import('@/components/canvas/ModelViewer'), {
   ),
 });
 
-if (typeof window !== 'undefined' && !window.__scrollTriggerRegistered) {
-  gsap.registerPlugin(ScrollTrigger);
-  window.__scrollTriggerRegistered = true;
-}
-
 export default function Model3DViewer({ id, data, reverseLayout = false, surfaceClassName = 'bg-transparent' }) {
-  const container = useRef();
-  const modelRef = useRef();
-  const textGroupRef = useRef();
   const [shouldLoadModel, setShouldLoadModel] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
-
-  useGSAP(
-    () => {
-      gsap.from(modelRef.current, {
-        scrollTrigger: {
-          trigger: container.current,
-          start: 'top 80%',
-          end: 'top 35%',
-          toggleActions: 'play none none reverse',
-        },
-        x: reverseLayout ? 120 : -120,
-        opacity: 0,
-        rotationY: reverseLayout ? -12 : 12,
-        duration: 1.4,
-        ease: 'power3.out',
-      });
-
-      if (!textGroupRef.current || !textGroupRef.current.children) return;
-      const textElements = gsap.utils.toArray(textGroupRef.current.children);
-      gsap.from(textElements, {
-        scrollTrigger: {
-          trigger: container.current,
-          start: 'top 76%',
-          toggleActions: 'play none none reverse',
-        },
-        y: 42,
-        opacity: 0,
-        duration: 0.9,
-        stagger: 0.12,
-        ease: 'power2.out',
-      });
-    },
-    { scope: container }
-  );
 
   if (!data?.imageUrl && !data?.modelPath) return null;
 
@@ -71,10 +26,8 @@ export default function Model3DViewer({ id, data, reverseLayout = false, surface
     <section
       id={id}
       className={`scroll-mt-36 py-12 md:scroll-mt-40 md:py-16 ${surfaceClassName}`}
-      style={{ contentVisibility: 'auto', containIntrinsicSize: '1px 1100px' }}
     >
       <div
-        ref={container}
         className={`section-shell before:hidden grid w-full gap-8 rounded-none border-y border-theme-line/70 px-8 py-8 md:grid-cols-[1.08fr_0.92fr] md:gap-10 md:px-12 md:py-10 ${
           reverseLayout ? 'md:[&>*:first-child]:order-2' : ''
         }`}
@@ -94,7 +47,6 @@ export default function Model3DViewer({ id, data, reverseLayout = false, surface
 
         <div className="relative z-10 flex items-center justify-center md:col-span-1">
           <motion.div
-            ref={modelRef}
             whileHover={{ y: -8, rotateX: 1.2, rotateY: reverseLayout ? -1.2 : 1.2 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
             className="premium-surface relative w-full rounded-[2rem] p-3 md:p-4"
@@ -167,7 +119,7 @@ export default function Model3DViewer({ id, data, reverseLayout = false, surface
           </motion.div>
         </div>
 
-        <div ref={textGroupRef} className="relative z-0 flex flex-col justify-center md:col-span-1">
+        <div className="relative z-0 flex flex-col justify-center md:col-span-1">
           <div className="rounded-[2rem] border border-theme-line/70 bg-white/38 p-6 shadow-[0_16px_46px_rgba(49,30,21,0.05)] backdrop-blur-sm dark:bg-white/4 md:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">3D View</p>
             <p className="mt-4 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">
@@ -200,7 +152,7 @@ export default function Model3DViewer({ id, data, reverseLayout = false, surface
                 <motion.div whileHover={{ y: -3, scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Link
                     href="/contact"
-                    className="inline-flex w-fit rounded-full bg-theme-ink px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.24em] text-theme-ivory transition duration-300 hover:bg-theme-bronze dark:bg-white dark:text-theme-ink dark:hover:bg-theme-bronze dark:hover:text-white"
+                    className="inline-flex w-fit rounded-full bg-theme-ink px-6 py-3 text-center text-xs font-semibold uppercase tracking-[0.24em] text-theme-ivory transition duration-300 hover:bg-theme-bronze dark:bg-white dark:text-[var(--theme-contrast-ink)] dark:hover:bg-theme-bronze dark:hover:text-white"
                   >
                     Book Consultation
                   </Link>

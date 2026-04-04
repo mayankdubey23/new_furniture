@@ -1,15 +1,15 @@
-ghts too much in text colors so i cant write'use client';
+'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { ReactLenis, useLenis } from 'lenis/react';
 import { usePathname } from 'next/navigation';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useOptimizePerformance } from '@/hooks/useOptimizePerformance';
 
 function LenisBridge() {
   const pathname = usePathname();
   const lenis = useLenis();
-  const frameIdRef = useRef(0);
 
   useLenis(() => {
     ScrollTrigger.update();
@@ -25,7 +25,6 @@ function LenisBridge() {
 
     return () => {
       window.cancelAnimationFrame(refreshId);
-      window.cancelAnimationFrame(frameIdRef.current);
     };
   }, [lenis, pathname]);
 
@@ -33,59 +32,47 @@ function LenisBridge() {
 }
 
 export default function SmoothScrolling({ children }) {
-  // Check if user prefers reduced motion
-  const prefersReducedMotion = typeof window !== 'undefined' 
-    ? window.matchMedia('(prefers-reduced-motion: reduce)').matches 
-    : false;
-
-  // Detect slow connection
-  const isSlowConnection = typeof navigator !== 'undefined' && (
-    navigator.connection?.saveData || 
-    navigator.connection?.effectiveType === 'slow-2g' ||
-    navigator.connection?.effectiveType === '2g'
+  const { shouldReduceAnimations } = useOptimizePerformance();
+  const allowDesktopSmoothScroll = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const mediaQuery = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+      mediaQuery.addEventListener('change', onStoreChange);
+      return () => mediaQuery.removeEventListener('change', onStoreChange);
+    },
+    () => window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches,
+    () => false
   );
 
-  const shouldOptimize = prefersReducedMotion || isSlowConnection;
+  if (!allowDesktopSmoothScroll || shouldReduceAnimations) {
+    return children;
+  }
 
-  // ✅ Performance-optimized Lenis configuration
   return (
     <ReactLenis
       root
       options={{
-        // ✅ Core performance settings
-        autoRaf: true, // Always use RAF for smooth scrolling
+        autoRaf: true,
         smoothWheel: true,
-        smoothTouch: false, // ✅ Disable smooth touch scrolling for better mobile performance
-        
-        // ✅ Reduced interpolation for snappier feel and better performance
-        lerp: shouldOptimize ? 0.1 : 0.07,
-        duration: shouldOptimize ? 0.3 : 0.6,
-        
-        // ✅ Optimized multipliers
+        smoothTouch: false,
+        lerp: 0.1,
+        duration: 0.45,
         wheelMultiplier: 0.85,
         touchMultiplier: 1,
-        
-        // ✅ Disable features that cause lag
-        infinite: false, // ✅ Important: disable infinite scrolling
+        infinite: false,
         overscroll: false,
-        syncTouch: false, // ✅ Disable sync touch for performance
-        
-        // ✅ Basic settings
+        syncTouch: false,
         gestureOrientation: 'vertical',
         allowNestedScroll: true,
         stopInertiaOnNavigate: true,
-        
-        // ✅ Anchor scroll optimization
         anchors: {
           offset: -140,
-          duration: shouldOptimize ? 0.2 : 0.5,
-          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // ✅ Performance-optimized easing
+          duration: 0.35,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         },
-        
-        // ✅ Touch settings for mobile
         touchInertiaMultiplier: 35,
-        normalizeWheel: false, // ✅ Disable wheel normalization for performance
-        prevent: null, // ✅ Don't prevent any default behavior
+        normalizeWheel: false,
+        prevent: null,
       }}
     >
       <LenisBridge />

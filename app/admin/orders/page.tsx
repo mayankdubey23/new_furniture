@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface OrderItem {
   name: string;
@@ -41,14 +41,14 @@ export default function AdminOrders() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOrders();
+    void fetchOrders();
   }, []);
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch('/api/orders', { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
+      const response = await fetch('/api/orders', { credentials: 'include', cache: 'no-store' });
+      if (!response.ok) throw new Error('Failed to fetch');
+      const data = await response.json();
       setOrders(data);
     } catch {
       setOrders([]);
@@ -58,13 +58,18 @@ export default function AdminOrders() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/orders/${id}`, {
+    const response = await fetch(`/api/orders/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status }),
       credentials: 'include',
     });
-    fetchOrders();
+
+    if (!response.ok) {
+      return;
+    }
+
+    void fetchOrders();
   };
 
   if (loading) {
@@ -93,9 +98,8 @@ export default function AdminOrders() {
           {orders.map((order) => (
             <div
               key={order._id}
-              className="rounded-2xl border border-theme-line/40 bg-white/70 shadow-sm dark:bg-white/5 overflow-hidden"
+              className="overflow-hidden rounded-2xl border border-theme-line/40 bg-white/70 shadow-sm dark:bg-white/5"
             >
-              {/* Row */}
               <div className="flex flex-wrap items-center gap-4 p-5">
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-theme-walnut/50 dark:text-theme-ivory/40">
@@ -105,22 +109,28 @@ export default function AdminOrders() {
                     {order.customer?.name ?? 'Guest'}
                   </p>
                   <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">
-                    {order.customer?.email} · {order.customer?.phone}
+                    {order.customer?.email} | {order.customer?.phone}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-theme-bronze">₹{order.totalPrice.toLocaleString('en-IN')}</p>
-                  <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">{order.totalItems} items</p>
+                  <p className="font-bold text-theme-bronze">
+                    Rs. {order.totalPrice.toLocaleString('en-IN')}
+                  </p>
+                  <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">
+                    {order.totalItems} items
+                  </p>
                 </div>
                 <div>
-                  <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${STATUS_COLORS[order.status] ?? ''}`}>
+                  <span
+                    className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${STATUS_COLORS[order.status] ?? ''}`}
+                  >
                     {order.status}
                   </span>
                 </div>
                 <div>
                   <select
                     value={order.status}
-                    onChange={(e) => updateStatus(order._id, e.target.value)}
+                    onChange={(event) => updateStatus(order._id, event.target.value)}
                     className="rounded-lg border border-theme-line/60 bg-white px-3 py-1.5 text-xs font-semibold text-theme-ink outline-none focus:border-theme-bronze dark:bg-theme-ink dark:text-theme-ivory"
                   >
                     <option value="pending">Pending</option>
@@ -144,31 +154,34 @@ export default function AdminOrders() {
                 </button>
               </div>
 
-              {/* Expanded Details */}
-              {expandedId === order._id && (
-                <div className="border-t border-theme-line/40 px-5 py-4 bg-theme-ivory/50 dark:bg-white/5">
+              {expandedId === order._id ? (
+                <div className="border-t border-theme-line/40 bg-theme-ivory/50 px-5 py-4 dark:bg-white/5">
                   <div className="grid gap-6 md:grid-cols-2">
                     <div>
-                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">Delivery Address</p>
-                      <p className="text-sm text-theme-ink dark:text-theme-ivory">
-                        {order.customer?.address}, {order.customer?.city} – {order.customer?.pincode}
+                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">
+                        Delivery Address
                       </p>
-                      {order.notes && (
+                      <p className="text-sm text-theme-ink dark:text-theme-ivory">
+                        {order.customer?.address}, {order.customer?.city} - {order.customer?.pincode}
+                      </p>
+                      {order.notes ? (
                         <p className="mt-2 text-xs italic text-theme-walnut/60 dark:text-theme-ivory/50">
                           Notes: {order.notes}
                         </p>
-                      )}
+                      ) : null}
                     </div>
                     <div>
-                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">Items</p>
+                      <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">
+                        Items
+                      </p>
                       <div className="space-y-1">
-                        {order.items.map((item, i) => (
-                          <div key={i} className="flex justify-between text-sm">
+                        {order.items.map((item, index) => (
+                          <div key={index} className="flex justify-between text-sm">
                             <span className="text-theme-ink dark:text-theme-ivory">
-                              {item.name} × {item.quantity}
+                              {item.name} x {item.quantity}
                             </span>
                             <span className="font-semibold text-theme-walnut/80 dark:text-theme-ivory/80">
-                              ₹{(item.price * item.quantity).toLocaleString('en-IN')}
+                              Rs. {(item.price * item.quantity).toLocaleString('en-IN')}
                             </span>
                           </div>
                         ))}
@@ -176,7 +189,7 @@ export default function AdminOrders() {
                     </div>
                   </div>
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
         </div>
@@ -184,3 +197,4 @@ export default function AdminOrders() {
     </div>
   );
 }
+

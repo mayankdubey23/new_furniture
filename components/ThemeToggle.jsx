@@ -1,17 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 import { useTheme } from './ThemeProvider';
+
+function subscribe() {
+  return () => {};
+}
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export default function ThemeToggle({ scrolled = false }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [isMounted, setIsMounted] = useState(false);
-  
-  // Only show theme-specific icon after component has mounted on client
-  // This prevents hydration mismatch between server and client
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  const isMounted = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   
   const isDark = resolvedTheme === 'dark';
   const buttonClass = scrolled

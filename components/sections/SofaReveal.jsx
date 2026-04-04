@@ -1,126 +1,157 @@
 'use client';
 
-import { useRef, useEffect, useState, useCallback } from 'react';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useEffect, useRef, useState } from 'react';
 
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(ScrollTrigger);
+const FRAME_COUNT = 240;
+const SCROLL_DISTANCE = 4000;
+const CANVAS_WIDTH = 1280;
+const CANVAS_HEIGHT = 720;
+
+function getFrameSrc(index) {
+  return `/sofa-sequence/ezgif-frame-${String(index).padStart(3, '0')}.jpg`;
 }
 
-export default function SofaVideoReveal() {
-  const containerRef = useRef(null);
-  const videoRef = useRef(null);
-  const [isVideoReady, setIsVideoReady] = useState(false);
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
-  // Store the ScrollTrigger instance to kill it on unmount
-  const scrollTriggerInstanceRef = useRef(null);
-
-  const setupScrollTrigger = useCallback(() => {
-    const video = videoRef.current;
-    if (!video || !containerRef.current) return;
-
-    // Kill any existing ScrollTrigger to prevent duplicates
-    if (scrollTriggerInstanceRef.current) {
-      scrollTriggerInstanceRef.current.kill();
-    }
-
-    setIsVideoReady(true);
-    
-    let ctx = gsap.context(() => {
-      // Ek proxy object banayenge video time ko track karne ke liye
-      let scrollObject = { time: 0 };
-
-      const tl = gsap.to(scrollObject, {
-        time: video.duration, // 0 se lekar video ke total seconds tak jayega
-        ease: 'none',
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=3500', // 3500px lamba scroll taaki aaram se reveal ho
-          pin: true,
-          // 1.5 second ka lag (scrub). Video mp4 formats mein scroll ke sath
-          // jhatke (stutter) kha sakti hai. 1.5 use ekdum smooth butter jaisa bana dega.
-          scrub: 1.5,
-          // Add onLeave to handle unmounting
-          onLeave: () => {},
-          onLeaveBack: () => {},
-        },
-        onUpdate: () => {
-          // Jab bhi user scroll karega, video ka time update ho jayega
-          if (video.readyState >= 2) { 
-            video.currentTime = scrollObject.time;
-          }
-        }
-      });
-
-      scrollTriggerInstanceRef.current = tl.scrollTrigger;
-    }, containerRef);
-
-    return () => ctx.revert();
-  }, []);
+export default function SofaReveal() {
+  const sectionRef = useRef(null);
+  const canvasRef = useRef(null);
+  const imagesRef = useRef([]);
+  const frameRef = useRef(0);
+  const rafRef = useRef(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    let loadedCount = 0;
+    let cancelled = false;
 
-    let cleanupFn = null;
+    imagesRef.current = [];
 
-    // Video ka metadata (duration etc.) load hone ka wait karna zaroori hai
-    if (video.readyState >= 1) {
-      cleanupFn = setupScrollTrigger();
-    } else {
-      const handleLoaded = () => {
-        cleanupFn = setupScrollTrigger();
+    for (let i = 1; i <= FRAME_COUNT; i += 1) {
+      const img = new Image();
+      img.src = getFrameSrc(i);
+
+      img.onload = async () => {
+        try {
+          await img.decode();
+        } catch {}
+
+        if (cancelled) return;
+
+        loadedCount += 1;
+        if (loadedCount >= FRAME_COUNT * 0.9) {
+          setImagesLoaded(true);
+        }
       };
-      video.addEventListener('loadedmetadata', handleLoaded);
-      return () => {
-        video.removeEventListener('loadedmetadata', handleLoaded);
-        if (cleanupFn) cleanupFn();
+
+      img.onerror = () => {
+        if (cancelled) return;
+
+        loadedCount += 1;
+        if (loadedCount >= FRAME_COUNT * 0.9) {
+          setImagesLoaded(true);
+        }
       };
+
+      imagesRef.current.push(img);
     }
 
     return () => {
-      if (cleanupFn) cleanupFn();
-      if (scrollTriggerInstanceRef.current) {
-        scrollTriggerInstanceRef.current.kill();
+      cancelled = true;
+      imagesRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!imagesLoaded || !canvasRef.current || !imagesRef.current[0]) return;
+
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d', { alpha: false });
+    if (!context) return;
+
+    canvas.width = CANVAS_WIDTH;
+    canvas.height = CANVAS_HEIGHT;
+
+    const drawFrame = (frameIndex) => {
+      const image = imagesRef.current[frameIndex];
+      if (!image || !image.complete) return;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+
+    const updateFrame = () => {
+      const section = sectionRef.current;
+      if (!section) return;
+
+      const rect = section.getBoundingClientRect();
+      const maxScroll = Math.max(section.offsetHeight - window.innerHeight, 1);
+      const scrolled = clamp(-rect.top, 0, maxScroll);
+      const progress = scrolled / maxScroll;
+      const nextFrame = Math.round(progress * (FRAME_COUNT - 1));
+
+      if (nextFrame !== frameRef.current) {
+        frameRef.current = nextFrame;
+        drawFrame(nextFrame);
+        return;
+      }
+
+      if (frameRef.current === 0) {
+        drawFrame(0);
       }
     };
-  }, [setupScrollTrigger]);
+
+    const requestUpdate = () => {
+      window.cancelAnimationFrame(rafRef.current);
+      rafRef.current = window.requestAnimationFrame(updateFrame);
+    };
+
+    drawFrame(0);
+    requestUpdate();
+
+    window.addEventListener('scroll', requestUpdate, { passive: true });
+    window.addEventListener('resize', requestUpdate);
+
+    return () => {
+      window.cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('scroll', requestUpdate);
+      window.removeEventListener('resize', requestUpdate);
+    };
+  }, [imagesLoaded]);
 
   return (
-    <section ref={containerRef} className="relative h-screen w-full bg-zinc-950 overflow-hidden flex items-center justify-center">
-      
-      {/* Loading state agar video aane mein time lag raha ho */}
-      {!isVideoReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-zinc-950 z-20">
-          <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-theme-bronze border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-theme-bronze text-sm uppercase tracking-widest font-bold">Loading Video...</p>
+    <section
+      ref={sectionRef}
+      className="relative w-full bg-zinc-950"
+      style={{ height: `calc(100svh + ${SCROLL_DISTANCE}px)` }}
+    >
+      <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
+        {!imagesLoaded && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-zinc-950">
+            <div className="flex flex-col items-center gap-4">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-theme-bronze border-t-transparent" />
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-theme-bronze">
+                Optimizing Experience...
+              </p>
+            </div>
           </div>
+        )}
+
+        <canvas
+          ref={canvasRef}
+          className="h-full w-full object-cover will-change-transform"
+          style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
+        />
+
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-start pt-32">
+          <h2 className="text-center font-display text-5xl leading-tight text-white drop-shadow-2xl md:text-[5rem]">
+            Unveil The <br /> Masterpiece
+          </h2>
+          <p className="mt-6 text-sm font-bold uppercase tracking-[0.3em] text-white/80 drop-shadow-md">
+            Scroll to uncover
+          </p>
         </div>
-      )}
-
-      {/* THE VIDEO ELEMENT */}
-      <video
-        ref={videoRef}
-        src="/sofa-video.mp4" // <-- APNE VIDEO KA SAHI PATH YAHAN DAALEIN
-        className="w-full h-full object-cover"
-        muted // Mute karna zaroori hai warna browser block kar dega
-        playsInline // iPhones ke liye zaroori
-        preload="auto"
-      />
-
-      {/* Foreground Text Overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-start pt-32 pointer-events-none z-10">
-        <h2 className="text-5xl md:text-[5rem] font-display text-white drop-shadow-2xl text-center leading-tight">
-          Unveil The <br/> Masterpiece
-        </h2>
-        <p className="mt-6 text-sm uppercase tracking-[0.3em] font-bold text-white/80">
-          Scroll to uncover
-        </p>
       </div>
-
     </section>
   );
 }

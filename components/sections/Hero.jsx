@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useSyncExternalStore } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion } from 'framer-motion';
@@ -19,14 +19,21 @@ export default function Hero() {
   const orbOneRef = useRef();
   const orbTwoRef = useRef();
   const videoRef = useRef();
-  const [isMobile, setIsMobile] = useState(false);
   // Use refs instead of state so scroll events don't trigger re-renders or GSAP re-runs
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
+  const isMobile = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const mediaQuery = window.matchMedia('(max-width: 767px)');
+      mediaQuery.addEventListener('change', onStoreChange);
+      return () => mediaQuery.removeEventListener('change', onStoreChange);
+    },
+    () => window.matchMedia('(max-width: 767px)').matches,
+    () => false
+  );
 
   useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-
     const handleScroll = () => {
       isScrollingRef.current = true;
       clearTimeout(scrollTimeoutRef.current);

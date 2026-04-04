@@ -1,12 +1,13 @@
-metimes 'use client';
+'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { gsap } from 'gsap';
+import { useOptimizePerformance } from '@/hooks/useOptimizePerformance';
 
 function FooterScene({ isDark, isVisible }) {
   const sofaGroup = useRef(null);
@@ -22,8 +23,8 @@ function FooterScene({ isDark, isVisible }) {
         child.material.color.setHex(0xc78c5c);
         child.material.emissive = new THREE.Color(0x26120a);
         child.material.emissiveIntensity = 0.08;
-        child.castShadow = false; // ✅ Disabled shadows for performance
-        child.receiveShadow = false; // ✅ Disabled shadows for performance
+        child.castShadow = false;
+        child.receiveShadow = false;
       }
     });
 
@@ -55,7 +56,6 @@ function FooterScene({ isDark, isVisible }) {
       });
     }
 
-    // Clean up infinite animation on unmount or when not visible
     return () => {
       lampTween?.kill();
     };
@@ -103,9 +103,19 @@ function FooterScene({ isDark, isVisible }) {
 
 export default function ThreeFooter({ isDark = true }) {
   const footerRef = useRef(null);
-  // ✅ Only mount the Canvas when the footer enters the viewport.
-  // This stops the Three.js render loop from running while the user is above the fold.
   const [canvasVisible, setCanvasVisible] = useState(false);
+  const { shouldReduceAnimations } = useOptimizePerformance();
+  const supportsInteractiveCanvas = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const mediaQuery = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
+      mediaQuery.addEventListener('change', onStoreChange);
+      return () => mediaQuery.removeEventListener('change', onStoreChange);
+    },
+    () => window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches,
+    () => false
+  );
+  const shouldRenderCanvas = canvasVisible && supportsInteractiveCanvas && !shouldReduceAnimations;
 
   useEffect(() => {
     const el = footerRef.current;
@@ -113,7 +123,6 @@ export default function ThreeFooter({ isDark = true }) {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        // ✅ Only render when footer is actually visible to save GPU
         setCanvasVisible(entry.isIntersecting);
       },
       { threshold: 0.05, rootMargin: '100px' }
@@ -129,29 +138,23 @@ export default function ThreeFooter({ isDark = true }) {
       className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]"
     >
       <div className="absolute inset-0 z-0 pointer-events-none">
-        {canvasVisible && (
+        {shouldRenderCanvas && (
           <Canvas
             camera={{ position: [0, 1.5, 5], fov: 45 }}
-            // ✅ Performance optimizations: disabled antialias, use high-performance mode
-            gl={{ 
-              toneMapping: THREE.ACESFilmicToneMapping, 
-              antialias: false, 
+            gl={{
+              toneMapping: THREE.ACESFilmicToneMapping,
+              antialias: false,
               powerPreference: 'high-performance',
               failIfMajorPerformanceCaveat: false,
             }}
-            dpr={[1, 2]} // ✅ Limit pixel ratio for performance
+            dpr={[1, 2]}
           >
             <Suspense fallback={null}>
               <Environment preset="studio" />
-              <FooterScene isDark={isDark} isVisible={canvasVisible} />
+              <FooterScene isDark={isDark} isVisible={shouldRenderCanvas} />
               <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} autoRotate autoRotateSpeed={0.3} />
               <EffectComposer disableNormalPass>
-                <Bloom 
-                  luminanceThreshold={0.6} 
-                  luminanceSmoothing={0.9} 
-                  intensity={0.8} // ✅ Reduced bloom intensity for performance
-                  mipmapBlur 
-                />
+                <Bloom luminanceThreshold={0.65} luminanceSmoothing={0.92} intensity={0.55} mipmapBlur />
               </EffectComposer>
             </Suspense>
           </Canvas>
@@ -178,9 +181,9 @@ export default function ThreeFooter({ isDark = true }) {
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Collections</h3>
             <ul className="space-y-3 text-sm text-white/68">
               <li><Link href="/#sofa-3d-view-start" className="transition-colors hover:text-theme-bronze">Sofas</Link></li>
-              <li><Link href="/#chairs-start" className="transition-colors hover:text-theme-bronze">Chairs</Link></li>
+              <li><Link href="/#chair-3d-view-start" className="transition-colors hover:text-theme-bronze">Chairs</Link></li>
               <li><Link href="/#recliner-3d-view-start" className="transition-colors hover:text-theme-bronze">Recliners</Link></li>
-              <li><Link href="/#pouffes-start" className="transition-colors hover:text-theme-bronze">Pouffes</Link></li>
+              <li><Link href="/#pouffe-3d-view-start" className="transition-colors hover:text-theme-bronze">Pouffes</Link></li>
             </ul>
           </div>
 
@@ -211,7 +214,7 @@ export default function ThreeFooter({ isDark = true }) {
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm text-white/44 md:flex-row">
-          <p>© {new Date().getFullYear()} Luxe Furniture. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Luxe Furniture. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="transition-colors hover:text-white">Privacy Policy</Link>
             <Link href="/terms" className="transition-colors hover:text-white">Terms of Service</Link>

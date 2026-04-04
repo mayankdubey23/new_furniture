@@ -113,7 +113,7 @@ export default function About() {
                 <motion.span
                   key={item}
                   whileHover={{ y: -4, scale: 1.03 }}
-                  className="rounded-full border border-theme-bronze/22 bg-white/55 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-theme-bronze shadow-[0_8px_24px_rgba(49,30,21,0.06)] dark:bg-white/5"
+                  className="rounded-full border border-theme-bronze/22 bg-white/55 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-theme-bronze shadow-[0_8px_24px_rgba(49,30,21,0.06)] dark:bg-theme-mist/15"
                 >
                   {item}
                 </motion.span>
@@ -131,7 +131,7 @@ export default function About() {
                 <motion.div
                   key={item.label}
                   whileHover={{ y: -6 }}
-                  className="rounded-[1.45rem] border border-theme-bronze/14 bg-white/62 px-4 py-4 shadow-[0_12px_32px_rgba(49,30,21,0.06)] dark:bg-white/5"
+                  className="rounded-[1.45rem] border border-theme-bronze/14 bg-white/62 px-4 py-4 shadow-[0_12px_32px_rgba(49,30,21,0.06)] dark:bg-theme-mist/15"
                 >
                   <p className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze/78">{item.label}</p>
                   <p className="mt-3 font-display text-3xl text-theme-ink dark:text-theme-ivory">{item.value}</p>
@@ -220,7 +220,7 @@ export default function About() {
                 <motion.div
                   key={item}
                   whileHover={{ y: -4, scale: 1.01 }}
-                  className="rounded-[1.35rem] border border-theme-bronze/18 bg-white/72 px-4 py-4 text-center shadow-[0_10px_28px_rgba(49,30,21,0.06)] dark:bg-white/6"
+                  className="rounded-[1.35rem] border border-theme-bronze/18 bg-white/72 px-4 py-4 text-center shadow-[0_10px_28px_rgba(49,30,21,0.06)] dark:bg-theme-mist/15"
                 >
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze/82">{item}</p>
                 </motion.div>

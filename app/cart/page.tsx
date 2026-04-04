@@ -79,7 +79,7 @@ export default function CartPage() {
             </Link>
             <Link
               href="/checkout"
-              className="w-full text-center rounded-full bg-theme-ink py-3 text-sm font-bold uppercase tracking-[0.28em] text-white hover:bg-theme-bronze transition-all dark:bg-white dark:text-theme-ink"
+              className="w-full text-center rounded-full bg-theme-ink py-3 text-sm font-bold uppercase tracking-[0.28em] text-white hover:bg-theme-bronze transition-all dark:bg-white dark:text-[var(--theme-contrast-ink)]"
             >
               Proceed to Checkout
             </Link>

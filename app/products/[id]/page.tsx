@@ -1,18 +1,19 @@
 import ProductSection from '@/components/sections/ProductSection';
+import { getProductById } from '@/lib/productStore';
 import { notFound } from 'next/navigation';
 
 interface Params {
   id: string;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({ params }: { params: Promise<Params> }) {
   const { id } = await params;
-  let product;
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/products/${id}`, { cache: 'no-store' });
-    if (!res.ok) throw new Error();
-    product = await res.json();
-  } catch {
+
+  const product = await getProductById(id);
+
+  if (!product) {
     notFound();
   }
 

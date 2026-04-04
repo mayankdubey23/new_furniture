@@ -1,3 +1,5 @@
+import type { ProductMedia } from '@/lib/productCatalog';
+
 export interface AdminColorEntry {
   name: string;
   image: string;
@@ -5,6 +7,7 @@ export interface AdminColorEntry {
 
 export interface AdminProduct {
   _id: string;
+  id: string;
   name: string;
   price: number;
   stock?: number;
@@ -14,6 +17,7 @@ export interface AdminProduct {
   eyebrow: string;
   modelPath?: string | null;
   images: string[];
+  media: ProductMedia;
   colors: AdminColorEntry[];
   specs: {
     material: string;

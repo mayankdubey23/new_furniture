@@ -1,0 +1,432 @@
+openapi: 3.0.3
+info:
+  title: Luxe Admin Catalog API
+  version: 1.0.0
+  description: |
+    Core backend contract for admin product management, uploads, settings, and orders.
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Products
+  - name: Uploads
+  - name: Settings
+  - name: Orders
+
+paths:
+  /api/products:
+    get:
+      tags: [Products]
+      summary: List products
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum: [sofa, chair, recliner, pouffe]
+      responses:
+        '200':
+          description: Product list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+    post:
+      tags: [Products]
+      summary: Create product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductMutation'
+      responses:
+        '201':
+          description: Product created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/ApiError'
+
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product by id
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          $ref: '#/components/responses/ApiError'
+    put:
+      tags: [Products]
+      summary: Update product
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductMutation'
+      responses:
+        '200':
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/ApiError'
+        '404':
+          $ref: '#/components/responses/ApiError'
+    delete:
+      tags: [Products]
+      summary: Delete product
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Delete result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        '401':
+          $ref: '#/components/responses/ApiError'
+        '404':
+          $ref: '#/components/responses/ApiError'
+
+  /api/admin/uploads:
+    post:
+      tags: [Uploads]
+      summary: Upload product asset
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, category, productName, slot, kind]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                category:
+                  type: string
+                productName:
+                  type: string
+                slot:
+                  type: string
+                kind:
+                  type: string
+                  enum: [image, model]
+      responses:
+        '200':
+          description: Uploaded path
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  path:
+                    type: string
+        '400':
+          $ref: '#/components/responses/ApiError'
+        '401':
+          $ref: '#/components/responses/ApiError'
+
+  /api/admin/settings:
+    get:
+      tags: [Settings]
+      summary: Get admin settings
+      responses:
+        '200':
+          description: Settings document
+    put:
+      tags: [Settings]
+      summary: Update admin settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminSettings'
+      responses:
+        '200':
+          description: Updated settings
+        '401':
+          $ref: '#/components/responses/ApiError'
+
+  /api/orders:
+    get:
+      tags: [Orders]
+      summary: List orders for admin
+      responses:
+        '200':
+          description: Order list
+    post:
+      tags: [Orders]
+      summary: Create order from checkout
+      responses:
+        '201':
+          description: Order created
+        '400':
+          $ref: '#/components/responses/ApiError'
+
+  /api/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get order by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Order
+        '404':
+          $ref: '#/components/responses/ApiError'
+    put:
+      tags: [Orders]
+      summary: Update order status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [pending, paid, shipped, delivered]
+      responses:
+        '200':
+          description: Updated order
+        '401':
+          $ref: '#/components/responses/ApiError'
+        '404':
+          $ref: '#/components/responses/ApiError'
+
+components:
+  parameters:
+    ProductId:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+
+  responses:
+    ApiError:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+
+  schemas:
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    ProductColor:
+      type: object
+      properties:
+        name:
+          type: string
+        image:
+          type: string
+      required: [name, image]
+
+    ProductSpecs:
+      type: object
+      properties:
+        material:
+          type: string
+        foam:
+          type: string
+        dimensions:
+          type: string
+        weight:
+          type: string
+        warranty:
+          type: string
+      required: [material, dimensions, weight, warranty]
+
+    ProductMediaViews:
+      type: object
+      properties:
+        main:
+          type: string
+        cover:
+          type: string
+        left:
+          type: string
+        right:
+          type: string
+        top:
+          type: string
+        detail:
+          type: string
+      required: [main]
+
+    ProductMedia:
+      type: object
+      properties:
+        views:
+          $ref: '#/components/schemas/ProductMediaViews'
+        gallery:
+          type: array
+          items:
+            type: string
+      required: [views, gallery]
+
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+        id:
+          type: string
+        category:
+          type: string
+          enum: [sofa, chair, recliner, pouffe]
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: number
+        imageUrl:
+          type: string
+        eyebrow:
+          type: string
+        modelPath:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductColor'
+        specs:
+          $ref: '#/components/schemas/ProductSpecs'
+        media:
+          $ref: '#/components/schemas/ProductMedia'
+      required:
+        - _id
+        - id
+        - category
+        - name
+        - description
+        - price
+        - stock
+        - imageUrl
+        - eyebrow
+        - images
+        - colors
+        - specs
+        - media
+
+    ProductMutation:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [sofa, chair, recliner, pouffe]
+        name:
+          type: string
+        description:
+          type: string
+        price:
+          type: number
+        stock:
+          type: number
+        imageUrl:
+          type: string
+        eyebrow:
+          type: string
+        modelPath:
+          type: string
+          nullable: true
+        images:
+          type: array
+          items:
+            type: string
+        colors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductColor'
+        specs:
+          $ref: '#/components/schemas/ProductSpecs'
+        media:
+          $ref: '#/components/schemas/ProductMedia'
+      required:
+        - category
+        - name
+        - description
+        - price
+        - stock
+        - imageUrl
+        - eyebrow
+        - images
+        - colors
+        - specs
+        - media
+
+    AdminSettings:
+      type: object
+      properties:
+        maintenanceMode:
+          type: boolean
+        maintenanceMessage:
+          type: string
+        notifications:
+          type: object
+          properties:
+            orderAlerts:
+              type: boolean
+            lowStockAlerts:
+              type: boolean
+        adminProfile:
+          type: object
+          properties:
+            displayName:
+              type: string
+            email:
+              type: string
+

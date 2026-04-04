@@ -82,7 +82,7 @@ function StatCard({
     <div className="rounded-[1.8rem] border border-theme-line/60 bg-white/72 p-5 shadow-[0_18px_40px_rgba(49,30,21,0.06)] dark:bg-white/5">
       <div className="flex items-center justify-between">
         <p className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze">{label}</p>
-        <div className="rounded-2xl border border-theme-line/60 bg-theme-ink p-2 text-white dark:bg-white dark:text-theme-ink">
+        <div className="rounded-2xl border border-theme-line/60 bg-theme-ink p-2 text-white dark:bg-white dark:text-[var(--theme-contrast-ink)]">
           <Icon className="h-4 w-4" />
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function AdminDashboardPage() {
     try {
       const [productsRes, ordersRes, settingsRes] = await Promise.all([
         fetch('/api/products', { cache: 'no-store' }),
-        fetch('/api/orders', { credentials: 'include' }),
+        fetch('/api/orders', { credentials: 'include', cache: 'no-store' }),
         fetch('/api/admin/settings', { cache: 'no-store' }),
       ]);
 
@@ -178,7 +178,7 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </div>
-            <div className="rounded-[1.8rem] border border-theme-line/60 bg-theme-ink p-5 text-theme-ivory shadow-[0_18px_48px_rgba(26,22,19,0.16)] dark:bg-white dark:text-theme-ink">
+            <div className="rounded-[1.8rem] border border-theme-line/60 bg-theme-ink p-5 text-theme-ivory shadow-[0_18px_48px_rgba(26,22,19,0.16)] dark:bg-white dark:text-[var(--theme-contrast-ink)]">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze">Operational Status</p>
               <div className="mt-4 space-y-3 text-sm leading-7">
                 <p>{pendingOrders} pending order{pendingOrders !== 1 ? 's' : ''} awaiting review.</p>
@@ -261,7 +261,7 @@ export default function AdminDashboardPage() {
         </SectionShell>
         </div>
 
-        <SectionShell eyebrow="Store Controls" title="Maintenance & Settings" action={<button onClick={handleSaveSettings} disabled={savingSettings} className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-theme-ink">Save Controls</button>}>
+        <SectionShell eyebrow="Store Controls" title="Maintenance & Settings" action={<button onClick={handleSaveSettings} disabled={savingSettings} className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]">Save Controls</button>}>
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="rounded-[1.6rem] border border-theme-line/50 bg-white/70 p-5 dark:bg-white/4">
               <div className="flex items-start justify-between gap-4">
@@ -288,7 +288,7 @@ export default function AdminDashboardPage() {
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             {[{ label: 'Role Based Access', value: 'Admin', icon: ShieldCheck }, { label: 'Security Model', value: 'JWT Session', icon: Settings2 }, { label: 'Experience Mode', value: 'Luxury UI', icon: Sparkles }].map((item) => {
               const Icon = item.icon;
-              return <div key={item.label} className="rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/62 p-4 dark:bg-white/5"><div className="flex items-center gap-3"><div className="rounded-2xl bg-theme-ink p-2 text-white dark:bg-white dark:text-theme-ink"><Icon className="h-4 w-4" /></div><div><p className="text-[0.66rem] uppercase tracking-[0.24em] text-theme-bronze">{item.label}</p><p className="mt-1 text-sm font-semibold text-theme-ink dark:text-theme-ivory">{item.value}</p></div></div></div>;
+              return <div key={item.label} className="rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/62 p-4 dark:bg-white/5"><div className="flex items-center gap-3"><div className="rounded-2xl bg-theme-ink p-2 text-white dark:bg-white dark:text-[var(--theme-contrast-ink)]"><Icon className="h-4 w-4" /></div><div><p className="text-[0.66rem] uppercase tracking-[0.24em] text-theme-bronze">{item.label}</p><p className="mt-1 text-sm font-semibold text-theme-ink dark:text-theme-ivory">{item.value}</p></div></div></div>;
             })}
           </div>
         </SectionShell>
@@ -298,7 +298,7 @@ export default function AdminDashboardPage() {
         <ProductStudio products={products} onRefresh={refreshDashboard} />
       </div>
 
-      <SectionShell eyebrow="Store Operations" title="Order Management" action={<Link href="/admin/orders" className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze dark:bg-white dark:text-theme-ink">Open Full Orders <ArrowRight className="h-3.5 w-3.5" /></Link>}>
+      <SectionShell eyebrow="Store Operations" title="Order Management" action={<Link href="/admin/orders" className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze dark:bg-white dark:text-[var(--theme-contrast-ink)]">Open Full Orders <ArrowRight className="h-3.5 w-3.5" /></Link>}>
         <div className="grid gap-4 lg:grid-cols-3">
           {orders.slice(0, 3).map((order) => (
             <div key={order._id} className="rounded-[1.6rem] border border-theme-line/50 bg-white/72 p-5 dark:bg-white/5">

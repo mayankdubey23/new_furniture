@@ -83,7 +83,7 @@ export default function FeaturesBanner() {
                 <div className="relative z-10 flex h-full flex-col justify-between gap-8">
                   <div className="flex items-center justify-between">
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{feature.number}</p>
-                    <div className="h-10 w-10 rounded-2xl border border-theme-bronze/16 bg-white/62 dark:bg-white/6" />
+                    <div className="h-10 w-10 rounded-2xl border border-theme-bronze/16 bg-white/62 dark:bg-theme-mist/15" />
                   </div>
                   <div>
                     <h3 className="font-display text-[1.9rem] leading-none text-theme-ink dark:text-theme-ivory">{feature.title}</h3>

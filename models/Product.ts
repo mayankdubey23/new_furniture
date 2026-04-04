@@ -1,4 +1,5 @@
 import { Schema, model, models } from 'mongoose';
+import { PRODUCT_CATEGORIES } from '@/lib/productCatalog';
 
 export interface IProduct {
   category: string;
@@ -10,6 +11,17 @@ export interface IProduct {
   eyebrow: string;
   modelPath?: string | null;
   images: string[];
+  media?: {
+    views: {
+      main: string;
+      cover?: string;
+      left?: string;
+      right?: string;
+      top?: string;
+      detail?: string;
+    };
+    gallery: string[];
+  };
   colors: { name: string; image: string }[];
   specs: {
     material: string;
@@ -21,7 +33,7 @@ export interface IProduct {
 }
 
 const ProductSchema = new Schema<IProduct>({
-  category: { type: String, required: true },
+  category: { type: String, enum: PRODUCT_CATEGORIES, required: true },
   name: { type: String, required: true },
   description: { type: String, required: true },
   price: { type: Number, required: true },
@@ -30,6 +42,17 @@ const ProductSchema = new Schema<IProduct>({
   eyebrow: { type: String, required: true },
   modelPath: { type: String, default: null },
   images: [{ type: String }],
+  media: {
+    views: {
+      main: { type: String, required: true },
+      cover: String,
+      left: String,
+      right: String,
+      top: String,
+      detail: String,
+    },
+    gallery: [{ type: String }],
+  },
   colors: [{
     name: { type: String, required: true },
     image: { type: String, required: true },
@@ -41,7 +64,7 @@ const ProductSchema = new Schema<IProduct>({
     weight: { type: String, required: true },
     warranty: { type: String, required: true },
   },
-});
+}, { timestamps: true });
 
 export default models.Product || model('Product', ProductSchema);
 

@@ -1,6 +1,5 @@
 import './globals.css';
 import 'lenis/dist/lenis.css';
-import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';

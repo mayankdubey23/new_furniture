@@ -7,6 +7,7 @@ export default function PerformanceMonitoring() {
     <>
       {process.env.NODE_ENV === 'production' && (
         <Script
+          id="performance-monitoring"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `

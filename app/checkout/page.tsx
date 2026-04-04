@@ -286,7 +286,7 @@ export default function CheckoutPage() {
             <button
               type="submit"
               disabled={status === 'loading'}
-              className="relative w-full overflow-hidden rounded-full bg-theme-ink py-4 text-sm font-bold uppercase tracking-[0.28em] text-white transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-60 dark:bg-white dark:text-theme-ink"
+              className="relative w-full overflow-hidden rounded-full bg-theme-ink py-4 text-sm font-bold uppercase tracking-[0.28em] text-white transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]"
             >
               {status === 'loading' ? 'Placing Order...' : `Place Order · ₹${totalPrice.toLocaleString('en-IN')}`}
             </button>

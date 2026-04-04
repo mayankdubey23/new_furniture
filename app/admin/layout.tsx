@@ -8,6 +8,7 @@ import {
   Box,
   LogOut,
   Menu,
+  Sparkles,
   ShoppingBag,
   Store,
   Users,
@@ -20,12 +21,14 @@ const navItems = [
   { href: '/admin#products', label: 'Products', icon: Box },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin#customers', label: 'Customers', icon: Users },
+  { href: '/admin/customizations', label: 'Customizations', icon: Sparkles },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hash, setHash] = useState('');
   const router = useRouter();
   const pathname = usePathname();
 
@@ -44,10 +47,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   }, [router, isLoginPage]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const syncHash = () => setHash(window.location.hash);
+    syncHash();
+
+    window.addEventListener('hashchange', syncHash);
+    return () => window.removeEventListener('hashchange', syncHash);
+  }, [pathname]);
+
   const currentSection = useMemo(() => {
     if (pathname === '/admin/orders') return 'Orders';
+    if (pathname === '/admin/customizations') return 'Customizations';
+    if (pathname === '/admin' && hash === '#products') return 'Products';
+    if (pathname === '/admin' && hash === '#customers') return 'Customers';
     return 'Dashboard';
-  }, [pathname]);
+  }, [hash, pathname]);
 
   if (isLoginPage) return <>{children}</>;
 
@@ -108,12 +124,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 item.label === 'Overview'
                   ? pathname === '/admin'
                   : item.label === 'Products'
-                    ? false
+                    ? pathname === '/admin' && hash === '#products'
                     : item.label === 'Customers'
-                      ? false
-                  : item.href === '/admin/orders'
-                    ? pathname.startsWith('/admin/orders')
-                    : false;
+                      ? pathname === '/admin' && hash === '#customers'
+                      : item.href === '/admin/orders'
+                        ? pathname.startsWith('/admin/orders')
+                        : item.href === '/admin/customizations'
+                          ? pathname.startsWith('/admin/customizations')
+                          : false;
 
               return (
                 <Link
@@ -122,7 +140,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   onClick={() => setMenuOpen(false)}
                   className={`flex items-center gap-3 rounded-[1.25rem] px-4 py-3 text-sm font-semibold transition ${
                     active
-                      ? 'bg-theme-ink text-white shadow-[0_14px_34px_rgba(26,22,19,0.18)] dark:bg-white dark:text-theme-ink'
+                      ? 'bg-theme-ink text-white shadow-[0_14px_34px_rgba(26,22,19,0.18)] dark:bg-white dark:text-[var(--theme-contrast-ink)]'
                       : 'text-theme-walnut/75 hover:bg-white/70 hover:text-theme-bronze dark:text-theme-ivory/72 dark:hover:bg-white/6'
                   }`}
                 >
@@ -136,7 +154,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="mt-8 rounded-[1.8rem] border border-theme-line/50 bg-[linear-gradient(145deg,rgba(255,255,255,0.8),rgba(247,239,228,0.78))] p-5 dark:bg-[linear-gradient(145deg,rgba(47,36,30,0.46),rgba(24,18,15,0.72))]">
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">Permissions</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {['Products', 'Orders', 'Customers', 'Settings'].map((item) => (
+              {['Products', 'Orders', 'Customers', 'Customizations', 'Settings'].map((item) => (
                 <span
                   key={item}
                   className="rounded-full border border-theme-line/60 bg-white/72 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/70"
@@ -157,7 +175,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </Link>
             <button
               onClick={handleLogout}
-              className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze dark:bg-white dark:text-theme-ink"
+              className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze dark:bg-white dark:text-[var(--theme-contrast-ink)]"
             >
               <LogOut className="h-3.5 w-3.5" />
               Logout

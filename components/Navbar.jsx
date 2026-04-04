@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useLenis } from "lenis/react";
 import ThemeToggle from "./ThemeToggle";
@@ -54,6 +54,18 @@ const TrashIcon = (props) => (
   </svg>
 );
 
+function subscribe() {
+  return () => {};
+}
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
 // Memoized Cart Item Component
 const CartItemRow = ({ item, onRemove, onUpdateQuantity }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
@@ -92,9 +104,10 @@ function Navbar() {
   const { wishlist, removeFromWishlist, totalWishlistItems } = useWishlist();
   const { user, logout } = useUser();
   const lenis = useLenis();
+  const hasHydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
   
-  const isHomePage = pathname === "/";
-  const isSolidNav = !isHomePage || scrolled;
+  const isHomePage = hasHydrated ? pathname === "/" : true;
+  const isSolidNav = hasHydrated ? (!isHomePage || scrolled) : false;
   const isDarkTheme = resolvedTheme === 'dark';
   
   // Memoized color/style values
@@ -121,15 +134,23 @@ function Navbar() {
 
   const navLinks = useMemo(() => [
     { name: "Sofas", href: "/#sofa-3d-view-start", targetId: "sofa-3d-view-start" },
-    { name: "Chairs", href: "/#chairs-start", targetId: "chairs-start" },
+    { name: "Chairs", href: "/#chair-3d-view-start", targetId: "chair-3d-view-start" },
     { name: "Recliners", href: "/#recliner-3d-view-start", targetId: "recliner-3d-view-start" },
-    { name: "Pouffes", href: "/#pouffes-start", targetId: "pouffes-start" },
+    { name: "Pouffes", href: "/#pouffe-3d-view-start", targetId: "pouffe-3d-view-start" },
     { name: "Customization", href: "/customization" },
     { name: "Contact", href: "/contact" }
   ], []);
 
-  useLenis(({ scroll }) => {
-    setScrolled(scroll > 60);
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 60);
+    };
+    
+    // Set initial state
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToSection = useCallback((id) => {
@@ -178,7 +199,7 @@ function Navbar() {
 
           {/* Icons */}
           <div className="flex items-center gap-3">
-            <ThemeToggle scrolled={scrolled} />
+            <ThemeToggle scrolled={hasHydrated && scrolled} />
 
             {/* Wishlist */}
             <button onClick={() => setWishlistOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Wishlist" style={{ color: navStyles.iconColor }}>
@@ -294,7 +315,7 @@ function Navbar() {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <ThemeToggle scrolled={scrolled} />
+              <ThemeToggle scrolled={hasHydrated && scrolled} />
             </div>
           </div>
         </div>
@@ -312,13 +333,13 @@ function Navbar() {
                 </AnimatedHeading>
               </div>
               <button onClick={handleClose} className="rounded-full p-2 hover:bg-theme-sand/30 transition-colors">
-                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ink" />
+                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ivory" />
               </button>
             </div>
             <div className="max-h-[60vh] overflow-auto space-y-3">
               {wishlist.length === 0 ? (
                 <div className="py-12 text-center">
-                  <p className="text-theme-walnut/50 dark:text-theme-ink/45 text-sm">No saved items yet.</p>
+                  <p className="text-theme-walnut/50 dark:text-theme-ivory/60 text-sm">No saved items yet.</p>
                 </div>
               ) : (
                 wishlist.map((item) => (
@@ -351,14 +372,14 @@ function Navbar() {
                 </AnimatedHeading>
               </div>
               <button onClick={handleCartClose} className="rounded-full p-2 hover:bg-theme-sand/30 transition-colors">
-                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ink" />
+                <XIcon className="h-5 w-5 text-theme-walnut dark:text-theme-ivory" />
               </button>
             </div>
 
             <div className="max-h-[50vh] overflow-auto space-y-3">
               {cart.length === 0 ? (
                 <div className="py-12 text-center">
-                  <p className="text-theme-walnut/50 dark:text-theme-ink/45 text-sm">Your cart is empty.</p>
+                  <p className="text-theme-walnut/50 dark:text-theme-ivory/60 text-sm">Your cart is empty.</p>
                   <Link href="/#sofas" onClick={handleCartClose} className="mt-4 inline-block text-sm font-semibold text-theme-bronze hover:underline">
                     Browse collection →
                   </Link>
@@ -373,7 +394,7 @@ function Navbar() {
             {cart.length > 0 && (
               <div className="mt-5 space-y-3">
                 <div className="flex justify-between text-base font-bold border-t border-theme-line pt-4">
-                  <span className="text-theme-walnut dark:text-theme-ink">Total</span>
+                  <span className="text-theme-walnut dark:text-theme-ivory">Total</span>
                   <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
                 </div>
                 <Link

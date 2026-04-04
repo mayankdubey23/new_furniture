@@ -154,7 +154,7 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
               className={`relative flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-full border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze ${
                 saved || wishlistAdded
                   ? 'border-theme-bronze bg-theme-bronze text-white shadow-lg'
-                  : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-white/6 dark:text-theme-ink'
+              : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-theme-mist/15 dark:text-theme-ink'
               }`}
             >
               <HeartIcon filled={saved || wishlistAdded} className="h-5 w-5" />
