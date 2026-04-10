@@ -1,121 +1,88 @@
 'use client';
 
-import { useRef, useEffect, useMemo, Suspense } from 'react';
-import { Canvas, useLoader } from '@react-three/fiber';
-import { OrbitControls, Environment, ContactShadows } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { gsap } from 'gsap';
+import Image from 'next/image';
+import { PRODUCT_SVG_MOTIFS } from '@/lib/productSvgMotifs';
 
-function FooterScene({ isDark }) {
-  const sofaGroup = useRef();
-  const lampRef = useRef();
-  const glowIntensity = isDark ? 2.5 : 1.2;
+const FOOTER_GRAPHICS = [
+  {
+    key: 'sofa',
+    src: PRODUCT_SVG_MOTIFS.sofa,
+    className:
+      'absolute left-1/2 top-12 h-[14rem] w-[19rem] -translate-x-1/2 opacity-[0.17] sm:h-[16rem] sm:w-[24rem] md:top-10 md:h-[20rem] md:w-[30rem] lg:top-8 lg:h-[24rem] lg:w-[38rem]',
+    imageClassName:
+      'object-contain rotate-[-4deg] saturate-[0.82] [filter:drop-shadow(0_18px_40px_rgba(0,0,0,0.28))]',
+    glowClassName:
+      'absolute inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(199,140,92,0.24),transparent_72%)]',
+    sizes: '(min-width: 1280px) 38rem, (min-width: 768px) 30rem, 24rem',
+  },
+  {
+    key: 'chair',
+    src: PRODUCT_SVG_MOTIFS.chair,
+    className:
+      'absolute left-[-3.5rem] top-[12rem] hidden h-[14rem] w-[14rem] opacity-[0.14] md:block lg:left-[1%] lg:top-[10.5rem] lg:h-[20rem] lg:w-[20rem]',
+    imageClassName:
+      'object-contain -rotate-[10deg] saturate-[0.9] [filter:drop-shadow(0_16px_34px_rgba(0,0,0,0.22))]',
+    glowClassName:
+      'absolute inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.12),transparent_70%)]',
+    sizes: '(min-width: 1024px) 20rem, 14rem',
+  },
+  {
+    key: 'recliner',
+    src: PRODUCT_SVG_MOTIFS.recliner,
+    className:
+      'absolute right-[-2.5rem] top-[12rem] hidden h-[13rem] w-[13rem] opacity-[0.15] md:block lg:right-[3%] lg:top-[11rem] lg:h-[17rem] lg:w-[17rem]',
+    imageClassName:
+      'object-contain rotate-[8deg] saturate-[0.88] [filter:drop-shadow(0_16px_34px_rgba(0,0,0,0.22))]',
+    glowClassName:
+      'absolute inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(221,208,189,0.18),transparent_70%)]',
+    sizes: '(min-width: 1024px) 17rem, 13rem',
+  },
+  {
+    key: 'pouffe',
+    src: PRODUCT_SVG_MOTIFS.pouffe,
+    className:
+      'absolute bottom-[5.5rem] right-[12%] h-[7rem] w-[7rem] opacity-[0.18] sm:h-[8rem] sm:w-[8rem] md:bottom-[6rem] md:right-[16%] md:h-[10rem] md:w-[10rem] lg:h-[12rem] lg:w-[12rem]',
+    imageClassName:
+      'object-contain rotate-[-8deg] saturate-[0.9] [filter:drop-shadow(0_18px_36px_rgba(0,0,0,0.24))]',
+    glowClassName:
+      'absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(199,140,92,0.2),transparent_72%)]',
+    sizes: '(min-width: 1024px) 12rem, (min-width: 768px) 10rem, 8rem',
+  },
+  {
+    key: 'cushion',
+    src: PRODUCT_SVG_MOTIFS.cushion,
+    className:
+      'absolute bottom-[7rem] left-[10%] h-[6rem] w-[6rem] opacity-[0.16] sm:h-[7rem] sm:w-[7rem] md:bottom-[8rem] md:h-[8rem] md:w-[8rem] lg:left-[14%] lg:h-[10rem] lg:w-[10rem]',
+    imageClassName:
+      'object-contain -rotate-[14deg] saturate-[0.86] [filter:drop-shadow(0_18px_30px_rgba(0,0,0,0.2))]',
+    glowClassName:
+      'absolute inset-[12%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.14),transparent_72%)]',
+    sizes: '(min-width: 1024px) 10rem, (min-width: 768px) 8rem, 7rem',
+  },
+];
 
-  const gltf = useLoader(GLTFLoader, '/3D models/teal sofa 3d model.glb');
-
-  const clonedScene = useMemo(() => {
-    const clone = gltf.scene.clone(true);
-    clone.traverse((child) => {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.color.setHex(0xf79227); // Orange sofa color
-        child.material.emissive = new THREE.Color(0x331a00);
-        child.material.emissiveIntensity = 0.1;
-        child.castShadow = true;
-        child.receiveShadow = true;
-      }
-    });
-    clone.scale.set(0.8, 0.8, 0.8);
-    clone.position.set(-0.5, 0, 0);
-    clone.rotation.y = Math.PI * 0.1;
-    return clone;
-  }, [gltf]);
-
-  useEffect(() => {
-    if (sofaGroup.current) {
-      gsap.from(sofaGroup.current.scale, {
-        x: 0.6, y: 0.6, z: 0.6,
-        duration: 1.2,
-        ease: 'power3.out'
-      });
-    }
-    if (lampRef.current) {
-      gsap.to(lampRef.current, {
-        intensity: glowIntensity * 1.3,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: 'power2.inOut'
-      });
-    }
-  }, [glowIntensity]);
+export default function ThreeFooter({ isDark = true }) {
+  const imageToneClassName = isDark
+    ? 'brightness-[1.04] contrast-[1.02]'
+    : 'brightness-[0.9] contrast-[0.96]';
 
   return (
-    <>
-      {/* Sofa */}
-      <group ref={sofaGroup}>
-        <primitive object={clonedScene} />
-      </group>
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <div className="absolute inset-x-[8%] top-8 h-48 rounded-full bg-[radial-gradient(circle,rgba(199,140,92,0.12),transparent_72%)] blur-3xl" />
 
-      {/* Lamp */}
-      <group position={[1.2, 0.2, -0.5]}>
-        <mesh ref={lampRef}>
-          <sphereGeometry args={[0.15, 16, 16]} />
-          <meshStandardMaterial color="#fffde7" emissive="#fde047" emissiveIntensity={1.5} />
-        </mesh>
-        <pointLight ref={lampRef} intensity={glowIntensity} color="#fffde7" position={[0, 0.3, 0]} />
-      </group>
-
-      {/* Cactus */}
-      <mesh position={[-1.2, -0.3, 0]}>
-        <cylinderGeometry args={[0.05, 0.08, 0.6, 8]} />
-        <meshStandardMaterial color="#71C26D" />
-      </mesh>
-
-      {/* Picture frame */}
-      <mesh position={[0.3, 0.4, -1]}>
-        <planeGeometry args={[0.4, 0.3]} />
-        <meshStandardMaterial color="#f5f6f7" transparent opacity={0.8} />
-      </mesh>
-
-      {/* Bricks */}
-      <mesh position={[-0.8, -0.5, -0.8]}>
-        <boxGeometry args={[0.6, 0.05, 0.3]} />
-        <meshStandardMaterial color="#e2e3e4" />
-      </mesh>
-
-      <ContactShadows position={[0, -0.5, 0]} opacity={0.4} scale={5} blur={1.5} />
-      <ambientLight intensity={isDark ? 0.4 : 0.8} />
-      <directionalLight position={[2, 3, 2]} intensity={1} />
-      <pointLight position={[-2, 1, -2]} intensity={0.6} />
-    </>
-  );
-}
-
-export default function ThreeFooter({ isDark = false }) {
-  return (
-    <div className="threeCanvas relative h-[200px] w-[400px] overflow-hidden rounded-xl">
-      <Canvas
-        camera={{ position: [2, 1.5, 3], fov: 45 }}
-        gl={{ toneMapping: THREE.ACESFilmicToneMapping, antialias: false }}
-      >
-        <Suspense fallback={null}>
-          <Environment preset="studio" />
-          <FooterScene isDark={isDark} />
-          <OrbitControls 
-            enablePan={false} 
-            enableZoom={false} 
-            enableRotate={false} 
-            autoRotate 
-            autoRotateSpeed={0.5}
+      {FOOTER_GRAPHICS.map((graphic) => (
+        <div key={graphic.key} className={graphic.className}>
+          <div className={graphic.glowClassName} />
+          <Image
+            src={graphic.src}
+            alt=""
+            fill
+            unoptimized
+            sizes={graphic.sizes}
+            className={`${graphic.imageClassName} ${imageToneClassName}`}
           />
-          <EffectComposer>
-            <Bloom luminanceThreshold={0.7} luminanceSmoothing={0.6} intensity={1.2} />
-          </EffectComposer>
-        </Suspense>
-      </Canvas>
+        </div>
+      ))}
     </div>
   );
 }

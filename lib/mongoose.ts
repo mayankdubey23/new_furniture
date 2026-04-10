@@ -1,7 +1,7 @@
 import mongoose, { type Mongoose } from 'mongoose';
 
 declare global {
-  // eslint-disable-next-line no-var
+
   var _mongooseCache: {
     conn: Mongoose | null;
     promise: Promise<Mongoose> | null;
@@ -21,7 +21,7 @@ async function dbConnect(): Promise<Mongoose> {
 
   if (!cached!.promise) {
     const MONGODB_URI = process.env.MONGODB_URI;
-    
+
     if (!MONGODB_URI) {
       throw new Error(
         'Please define the MONGODB_URI environment variable. ' +

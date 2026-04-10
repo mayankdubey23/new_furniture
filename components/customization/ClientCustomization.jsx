@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getApiUrl } from '@/lib/api/browser';
 
-// Featured colors for all products
+
 const FEATURED_COLORS = [
   { name: 'Cognac Leather', hex: '#8B5E3C' },
   { name: 'Midnight Navy', hex: '#1F2A44' },
@@ -14,7 +15,7 @@ const FEATURED_COLORS = [
   { name: 'Forest Green', hex: '#2F5D50' },
 ];
 
-// Material options
+
 const MATERIALS = [
   'Leather',
   'Velvet',
@@ -23,7 +24,7 @@ const MATERIALS = [
   'Premium Fabric',
 ];
 
-// Finish options
+
 const FINISHES = [
   'Dark Walnut',
   'Natural Oak',
@@ -32,20 +33,13 @@ const FINISHES = [
   'Polished Nickel',
 ];
 
-// Product-specific add-ons
-const PRODUCT_ADDONS = {
-  recliner: ['Manual Glide', 'Power Motor'],
-  pouffe: ['Hidden Seam', 'Contrast Piping'],
-  sofa: ['Extended Depth', 'Premium Cushion Fill', 'Left or Right Chaise'],
-  chair: ['Swivel Base', 'Accent Stitching'],
-};
 
 export default function LuxeCustomizationStudio() {
   const containerRef = useRef();
   const formRef = useRef();
   const progressRef = useRef([]);
 
-  // Form state
+
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
@@ -88,7 +82,7 @@ export default function LuxeCustomizationStudio() {
 
   const totalSteps = 5;
 
-  // GSAP animations
+
   useGSAP(
     () => {
       gsap.from('.step-badge', {
@@ -128,7 +122,7 @@ export default function LuxeCustomizationStudio() {
   const handleNextStep = () => {
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1);
-      // Scroll to top of form container instead of full page
+
       if (formRef.current) {
         formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -138,7 +132,7 @@ export default function LuxeCustomizationStudio() {
   const handlePrevStep = () => {
     if (currentStep > 1) {
       setCurrentStep((prev) => prev - 1);
-      // Scroll to top of form container instead of full page
+
       if (formRef.current) {
         formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
@@ -171,7 +165,7 @@ export default function LuxeCustomizationStudio() {
         expectedTimeline: customization.delivery.timeline,
       };
 
-      const response = await fetch('/api/customizations', {
+      const response = await fetch(getApiUrl('/api/customizations'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -192,7 +186,7 @@ export default function LuxeCustomizationStudio() {
     }
   };
 
-  // Success state
+
   if (submitted) {
     return (
       <main className="relative min-h-screen overflow-hidden px-6 pb-20 pt-32 md:px-10 lg:px-20">
@@ -204,7 +198,7 @@ export default function LuxeCustomizationStudio() {
             animate={{ opacity: 1, scale: 1 }}
             className="rounded-2xl border border-theme-bronze/30 bg-theme-ink/40 px-8 py-16 text-center backdrop-blur-md"
           >
-            {/* Success Badge */}
+
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -235,7 +229,7 @@ export default function LuxeCustomizationStudio() {
               Our team will review your preferences shortly and contact you soon.
             </p>
 
-            {/* Reference ID */}
+
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -248,7 +242,7 @@ export default function LuxeCustomizationStudio() {
               <p className="font-mono text-lg text-theme-ivory">{referenceId}</p>
             </motion.div>
 
-            {/* Trust Badges */}
+
             <div className="mb-10 grid grid-cols-3 gap-4">
               <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-4 backdrop-blur-sm">
                 <p className="text-2xl mb-1">✓</p>
@@ -282,13 +276,13 @@ export default function LuxeCustomizationStudio() {
 
   return (
     <main ref={containerRef} className="relative min-h-screen overflow-hidden px-4 pb-20 pt-28 sm:px-6 md:px-10 lg:px-20">
-      {/* Ambient Backgrounds */}
+
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_30%),linear-gradient(115deg,rgba(18,14,11,0.95)_10%,rgba(48,32,23,0.6)_50%,rgba(18,14,11,0.95)_100%)]" />
       <div className="pointer-events-none absolute left-[-8rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-theme-bronze/10 blur-[150px]" />
       <div className="pointer-events-none absolute right-[-4rem] top-[20rem] h-[25rem] w-[25rem] rounded-full bg-theme-olive/10 blur-[150px]" />
 
       <div className="relative z-10 mx-auto max-w-4xl">
-        {/* Hero Header */}
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -306,7 +300,7 @@ export default function LuxeCustomizationStudio() {
           </p>
         </motion.div>
 
-        {/* Progress Indicator */}
+
         <div className="mb-16 flex justify-center gap-2">
           {Array.from({ length: totalSteps }).map((_, i) => (
             <motion.div
@@ -331,10 +325,10 @@ export default function LuxeCustomizationStudio() {
           ))}
         </div>
 
-        {/* Form */}
+
         <form ref={formRef} onSubmit={handleSubmit} className="mx-auto max-w-4xl">
           <AnimatePresence mode="wait">
-            {/* Step 1: Customer Info */}
+
             {currentStep === 1 && (
               <motion.div
                 key="step-1"
@@ -382,7 +376,7 @@ export default function LuxeCustomizationStudio() {
               </motion.div>
             )}
 
-            {/* Step 2: Featured Colors */}
+
             {currentStep === 2 && (
               <motion.div
                 key="step-2"
@@ -445,7 +439,7 @@ export default function LuxeCustomizationStudio() {
                   </div>
                 </div>
 
-                {/* Custom Color Section */}
+
                 <motion.div
                   className="rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-8 backdrop-blur-md md:p-12"
                 >
@@ -556,7 +550,7 @@ export default function LuxeCustomizationStudio() {
               </motion.div>
             )}
 
-            {/* Step 3: Material & Finish */}
+
             {currentStep === 3 && (
               <motion.div
                 key="step-3"
@@ -623,7 +617,7 @@ export default function LuxeCustomizationStudio() {
               </motion.div>
             )}
 
-            {/* Step 4: Add-ons & Notes */}
+
             {currentStep === 4 && (
               <motion.div
                 key="step-4"
@@ -690,7 +684,7 @@ export default function LuxeCustomizationStudio() {
               </motion.div>
             )}
 
-            {/* Step 5: Delivery & Review */}
+
             {currentStep === 5 && (
               <motion.div
                 key="step-5"
@@ -781,7 +775,7 @@ export default function LuxeCustomizationStudio() {
                   </div>
                 </div>
 
-                {/* Review Summary */}
+
                 <div className="rounded-2xl border border-theme-bronze/20 bg-theme-bronze/10 p-8 backdrop-blur-md md:p-12">
                   <h2 className="mb-6 font-display text-2xl text-theme-ivory">
                     Request Summary
@@ -822,7 +816,7 @@ export default function LuxeCustomizationStudio() {
             )}
           </AnimatePresence>
 
-          {/* Navigation Buttons */}
+
           <div className="mt-12 flex items-center justify-between gap-4">
             <button
               type="button"

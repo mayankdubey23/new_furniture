@@ -1,0 +1,18 @@
+{
+  "/api/site-content": "/siteContent",
+  "/api/products": "/products",
+  "/api/products/:id": "/products/:id",
+  "/api/orders": "/orders",
+  "/api/orders/:id": "/orders/:id",
+  "/api/notifications": "/notifications",
+  "/api/customizations": "/customizations",
+  "/api/admin/customizations": "/customizations",
+  "/api/admin/settings": "/adminSettings",
+  "/api/admin/catalog-options": "/catalogOptions",
+  "/api/brands": "/brands",
+  "/api/brands/:id": "/brands/:id",
+  "/api/maincategories": "/mainCategories",
+  "/api/maincategories/:id": "/mainCategories/:id",
+  "/api/subcategories": "/subCategories",
+  "/api/subcategories/:id": "/subCategories/:id"
+}

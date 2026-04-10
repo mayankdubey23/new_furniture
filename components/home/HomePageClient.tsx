@@ -2,13 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import CushionBackdrop from '@/components/decor/CushionBackdrop';
 import Hero from '@/components/sections/Hero';
-import FeaturesBanner from '@/components/sections/FeaturesBanner';
-import type { ProductRecord } from '@/lib/productCatalog';
+import {
+  getProductCollectionTargetId,
+  type ProductRecord,
+  type StorefrontCollectionLink,
+} from '@/lib/productCatalog';
+import type { SiteContent } from '@/lib/content/siteContent';
 
-const About = dynamic(() => import('@/components/sections/About'), {
-  loading: () => <SectionSkeleton height="60vh" />,
-});
+gsap.registerPlugin(ScrollTrigger);
+
 const Product3D = dynamic(() => import('@/components/product/Product3D'), {
   loading: () => <SectionSkeleton height="80vh" />,
 });
@@ -61,6 +67,45 @@ function LazySection({
     return () => observer.disconnect();
   }, [rootMargin]);
 
+  useEffect(() => {
+    if (!shouldRender) {
+      return;
+    }
+
+    const element = wrapperRef.current;
+    let rafId = 0;
+    let timeoutId = 0;
+
+    const refreshScrollTriggers = () => {
+      window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    };
+
+    refreshScrollTriggers();
+    timeoutId = window.setTimeout(refreshScrollTriggers, 220);
+
+    if (!element || typeof ResizeObserver === 'undefined') {
+      return () => {
+        window.cancelAnimationFrame(rafId);
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      refreshScrollTriggers();
+    });
+
+    resizeObserver.observe(element);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
+  }, [shouldRender]);
+
   return (
     <div
       id={id}
@@ -73,61 +118,54 @@ function LazySection({
   );
 }
 
-export default function HomePageClient({ products }: { products: ProductRecord[] }) {
-  const sofaData = products.find((product) => product.category === 'sofa') ?? products[0];
-  const chairData = products.find((product) => product.category === 'chair') ?? products[0];
-  const reclinerData = products.find((product) => product.category === 'recliner') ?? products[0];
-  const pouffeData = products.find((product) => product.category === 'pouffe') ?? products[0];
-
+export default function HomePageClient({
+  products,
+  collections,
+  siteContent,
+}: {
+  products: ProductRecord[];
+  collections: StorefrontCollectionLink[];
+  siteContent: SiteContent;
+}) {
   return (
-    <main className="page-strata w-full overflow-clip bg-transparent">
+    <main className="page-strata relative isolate w-full overflow-clip bg-transparent">
+      <CushionBackdrop variant="home" className="-z-10" />
+
       <section className="w-full">
-        <Hero />
-      </section>
-      <section className="w-full">
-        <FeaturesBanner />
+        <Hero content={siteContent.hero} />
       </section>
 
-      <LazySection minHeight="60vh">
-        <About />
-      </LazySection>
+      <div id="collections">
+        {products.map((product, index) => {
+          const targetId = collections[index]?.targetId || getProductCollectionTargetId(product);
+          const surfaceClassName =
+            index % 2 === 0 ? 'bg-transparent' : 'bg-theme-mist/55 dark:bg-theme-mist/20';
 
-      <LazySection id="sofa-3d-view-start" minHeight="80vh" rootMargin="300px">
-        <Product3D id="sofa-3d-view" data={sofaData} surfaceClassName="bg-transparent" />
-        <ProductSection id="sofas" data={sofaData} surfaceClassName="bg-transparent" />
-      </LazySection>
+          return (
+            <LazySection
+              key={product.id}
+              id={targetId}
+              minHeight="80vh"
+              rootMargin={index === 0 ? '300px' : '400px'}
+            >
+              <Product3D
+                id={`${targetId}-3d`}
+                data={product}
+                surfaceClassName={surfaceClassName}
+              />
+              <ProductSection
+                id={`${targetId}-details`}
+                data={product}
+                surfaceClassName={surfaceClassName}
+              />
+            </LazySection>
+          );
+        })}
+      </div>
 
-      <LazySection id="chair-3d-view-start" minHeight="80vh">
-        <Product3D
-          id="chair-3d-view"
-          data={chairData}
-          surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20"
-        />
-        <ProductSection
-          id="chairs"
-          data={chairData}
-          surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20"
-        />
-      </LazySection>
-
-      <LazySection id="recliner-3d-view-start" minHeight="80vh">
-        <Product3D id="recliner-3d-view" data={reclinerData} surfaceClassName="bg-transparent" />
-        <ProductSection id="recliners" data={reclinerData} surfaceClassName="bg-transparent" />
-      </LazySection>
-
-      <LazySection id="pouffe-3d-view-start" minHeight="80vh">
-        <Product3D
-          id="pouffe-3d-view"
-          data={pouffeData}
-          surfaceClassName="bg-theme-mist/55 dark:bg-theme-mist/20"
-        />
-        <ProductSection id="pouffes" data={pouffeData} surfaceClassName="bg-transparent" />
-      </LazySection>
-
-      <LazySection minHeight="40vh">
-        <Footer />
+      <LazySection id="site-footer-trigger" minHeight="40vh">
+        <Footer collections={collections} content={siteContent.footer} />
       </LazySection>
     </main>
   );
 }
-

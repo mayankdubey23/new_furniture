@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion } from 'framer-motion';
@@ -18,17 +18,22 @@ export default function Hero() {
   const overlayRef = useRef();
   const orbOneRef = useRef();
   const orbTwoRef = useRef();
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth < 768);
-  }, []);
+  const isMobile = useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const mediaQuery = window.matchMedia('(max-width: 767px)');
+      mediaQuery.addEventListener('change', onStoreChange);
+      return () => mediaQuery.removeEventListener('change', onStoreChange);
+    },
+    () => window.matchMedia('(max-width: 767px)').matches,
+    () => false
+  );
 
   useGSAP(
     () => {
       const timeline = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
-      // Simplified animations
+
       timeline
         .fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.8 }, 0)
         .from('.hero-piece-left', { x: -180, y: 24, rotate: -9, opacity: 0, duration: 1.05, ease: 'expo.out' }, '-=0.55')
@@ -37,7 +42,7 @@ export default function Hero() {
         .from('.hero-piece-bottom', { y: 140, x: -28, rotate: 7, opacity: 0, duration: 0.95, ease: 'expo.out' }, '-=0.88')
         .from('.hero-piece-depth', { scale: 0.5, rotateX: -60, opacity: 0, duration: 1.05, ease: 'expo.out' }, '-=0.82');
 
-      // Only on desktop, with better throttling (50ms intervals instead of per-frame)
+
       if (!isMobile && container.current) {
         let lastMoveTime = 0;
         const THROTTLE_MS = 50;
@@ -59,10 +64,10 @@ export default function Hero() {
           gsap.to(orbTwoRef.current, { x: -xPos * 0.6, y: -yPos * 0.6, duration: 2.8, ease: 'power2.out', overwrite: 'auto' });
         };
 
-        // Use passive listener for better scroll performance
+
         container.current.addEventListener('mousemove', handleMouseMove, { passive: true });
 
-        // Subtle continuous rotation - only on desktops
+
         gsap.to(orbOneRef.current, { rotation: 360, duration: 50, repeat: -1, ease: 'linear', overwrite: false });
         gsap.to(orbTwoRef.current, { rotation: -360, duration: 60, repeat: -1, ease: 'linear', overwrite: false });
 
@@ -76,32 +81,33 @@ export default function Hero() {
 
   return (
     <section ref={container} id="hero" className="relative h-[100svh] overflow-hidden bg-theme-ink">
-      {/* Video background with lazy loading */}
+
       <div className="absolute inset-0 w-full h-full">
         <video
+          aria-hidden="true"
           autoPlay
           loop
           muted
           playsInline
           preload="none"
           poster="/hero-poster.jpg"
-          className="h-full w-full object-cover object-center"
-          style={{ objectFit: 'cover' }}
+          disablePictureInPicture
+          className="block h-full w-full min-h-full min-w-full object-cover object-center"
         >
           <source src="/Furniture_Assembles.mp4" type="video/mp4" />
         </video>
       </div>
 
-      {/* Overlay gradient */}
+
       <div
         ref={overlayRef}
         className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_25%),linear-gradient(115deg,rgba(18,14,11,0.6)_10%,rgba(18,14,11,0.2)_45%,rgba(18,14,11,0.65)_100%)]"
       />
 
-      {/* Content */}
+
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[90rem] items-center px-6 pt-24 sm:px-10 md:px-14 md:pt-28 lg:px-20 lg:pt-32">
         <div className="max-w-[34rem] pb-10 sm:pb-12 lg:pb-14">
-          {/* Badge - simplified, no backdrop blur */}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -112,7 +118,7 @@ export default function Hero() {
             Sculpted Interiors
           </motion.div>
 
-          {/* Title */}
+
           <div className="space-y-1 font-display text-[2.8rem] leading-[0.86] sm:text-[3.5rem] md:text-[4.25rem] lg:text-[4.9rem] xl:text-[5.3rem]">
             {titleRows.map((piece) => (
               <div key={piece.text}>
@@ -121,7 +127,7 @@ export default function Hero() {
             ))}
           </div>
 
-          {/* Description */}
+
           <motion.p
             initial={{ opacity: 0, y: 22 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,7 +139,7 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Animated orbs - using opacity instead of heavy blur */}
+
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           ref={orbOneRef}
@@ -150,7 +156,7 @@ export default function Hero() {
         />
       </div>
 
-      {/* Scroll indicator */}
+
       <div className="pointer-events-none absolute inset-0 z-10">
         <motion.div
           initial={{ opacity: 0, y: 18 }}

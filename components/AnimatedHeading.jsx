@@ -2,11 +2,11 @@
 
 import { motion } from 'framer-motion';
 
-/**
- * AnimatedHeading — lightweight entrance animation per line.
- * ✅ Removed heavy 3D transforms (rotateX/rotateY/skewX) that created composite layers
- *    for every heading on the page. Simple opacity+y is handled by the compositor.
- */
+
+
+
+
+
 export default function AnimatedHeading({
   as: Tag = 'h2',
   lines = undefined,

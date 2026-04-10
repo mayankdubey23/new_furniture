@@ -8,6 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from 'react';
+import { getApiUrl } from '@/lib/api/browser';
 
 export interface AuthUser {
   name: string;
@@ -29,7 +30,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/user/me', { credentials: 'include' });
+      const res = await fetch(getApiUrl('/api/auth/user/me'), { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setUser({ name: data.name, email: data.email });
@@ -49,12 +50,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch('/api/auth/user/logout', {
+      await fetch(getApiUrl('/api/auth/user/logout'), {
         method: 'POST',
         credentials: 'include',
       });
     } catch {
-      // ignore
+
     }
     setUser(null);
   }, []);

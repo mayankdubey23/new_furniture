@@ -1,5 +1,6 @@
 ﻿import { Suspense } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
+import CushionBackdrop from '@/components/decor/CushionBackdrop';
 
 export const metadata = {
   title: 'Login | Luxe Decor',
@@ -25,8 +26,10 @@ function LoginSkeleton() {
 
 export default function LoginPage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-transparent px-4 pb-24 pt-28 sm:px-6 lg:px-8">
-      {/* Decorative glows */}
+    <main className="relative isolate min-h-screen overflow-hidden bg-transparent px-4 pb-24 pt-28 sm:px-6 lg:px-8">
+      <CushionBackdrop variant="auth" className="-z-10" />
+
+
       <div className="pointer-events-none absolute left-[-8rem] top-[4rem] h-[28rem] w-[28rem] rounded-full bg-theme-bronze/18 blur-[130px]" />
       <div className="pointer-events-none absolute right-[-6rem] top-[10rem] h-[24rem] w-[24rem] rounded-full bg-theme-olive/12 blur-[110px]" />
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-[16rem] w-[32rem] -translate-x-1/2 rounded-full bg-theme-sand/30 blur-[100px]" />

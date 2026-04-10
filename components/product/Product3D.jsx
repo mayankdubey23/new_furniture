@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion } from 'framer-motion';
 import AnimatedHeading from '../AnimatedHeading';
+import { PRODUCT_SVG_MOTIFS } from '@/lib/productSvgMotifs';
 
 const ModelViewer = dynamic(() => import('@/components/canvas/ModelViewer'), {
   ssr: false,
@@ -19,31 +20,62 @@ const ModelViewer = dynamic(() => import('@/components/canvas/ModelViewer'), {
 export default function Product3D({ id, data, reverseLayout = false, surfaceClassName = 'bg-transparent', showIntroCard = true }) {
   const [shouldLoadModel, setShouldLoadModel] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
+  const showHeadingChairMotif = String(data?.category || '').trim().toLowerCase() === 'chair';
 
   if (!data?.imageUrl && !data?.modelPath) return null;
 
   return (
     <section
       id={id}
-      className={`scroll-mt-36 py-12 md:scroll-mt-40 md:py-16 ${surfaceClassName}`}
+      className={`relative z-[20] isolate overflow-hidden scroll-mt-36 py-12 md:scroll-mt-40 md:py-16 ${surfaceClassName}`}
     >
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(40,29,23,0.76),rgba(40,29,23,0.58))]" />
+        <div className="absolute left-1/2 top-6 h-36 w-[28rem] max-w-[64vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(166,124,91,0.12),transparent_72%)] blur-3xl" />
+        <div className="absolute inset-y-[18%] right-[3%] hidden w-[42%] rounded-[2.3rem] bg-[linear-gradient(180deg,rgba(26,20,16,0.22),rgba(26,20,16,0.12))] md:block" />
+      </div>
+
       <div
-        className={`section-shell before:hidden grid w-full gap-8 rounded-none border-y border-theme-line/70 px-8 py-8 md:grid-cols-[1.08fr_0.92fr] md:gap-10 md:px-12 md:py-10 ${
+        className={`relative z-10 section-shell before:hidden grid w-full gap-8 rounded-none border-y border-theme-line/70 px-8 py-8 md:grid-cols-[1.08fr_0.92fr] md:gap-10 md:px-12 md:py-10 ${
           reverseLayout ? 'md:[&>*:first-child]:order-2' : ''
         }`}
         style={{ perspective: 1000 }}
       >
         {showIntroCard ? (
-          <div id={`${id}-start`} className="ps-block scroll-mt-36 md:scroll-mt-40 md:col-span-2 rounded-[2.2rem] border border-theme-line/70 bg-white/50 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-theme-mist/15 md:px-10 md:py-10">
-            <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
-              {data.eyebrow}
-            </span>
-            <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
-              {data.name}
-            </AnimatedHeading>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
-              {data.description}
-            </p>
+          <div
+            id={`${id}-start`}
+            className="ps-block relative overflow-hidden scroll-mt-36 md:scroll-mt-40 md:col-span-2 rounded-[2.2rem] border border-theme-line/70 bg-white/50 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-theme-mist/15 md:px-10 md:py-10"
+          >
+            {showHeadingChairMotif ? (
+              <motion.div
+                aria-hidden="true"
+                className="pointer-events-none absolute right-[-1.5rem] top-[-1rem] hidden h-32 w-32 opacity-[0.14] md:block lg:right-6 lg:top-1/2 lg:h-52 lg:w-52 lg:-translate-y-1/2"
+                animate={{ x: [0, -50, 0], y: [0, -24, 0], rotate: [6, 11, 6], scale: [1, 1.04, 1] }}
+                transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <div className="absolute inset-[14%] rounded-full bg-[radial-gradient(circle,rgba(165,106,63,0.2),transparent_72%)] blur-2xl" />
+                <Image
+                  src={PRODUCT_SVG_MOTIFS.chair}
+                  alt=""
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 13rem, 8rem"
+                  className="object-contain mix-blend-multiply saturate-[0.82]"
+                />
+              </motion.div>
+            ) : null}
+
+            <div className="relative z-10">
+              <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
+                {data.eyebrow}
+              </span>
+              <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
+                {data.name}
+              </AnimatedHeading>
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
+                {data.description}
+              </p>
+            </div>
           </div>
         ) : null}
 
@@ -102,7 +134,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.15))]" />
 
-          <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80">
+              <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80">
                 {data.modelPath ? 'Interactive 3D View' : 'Product Preview'}
               </div>
             </div>

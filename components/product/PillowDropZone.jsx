@@ -4,7 +4,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Matter from 'matter-js';
 
-// The base color palettes
+
 const PILLOW_PRESETS = [
   { radius: 55, colorA: '#0f5b66', colorB: '#158091', seam: '#e7d6c0', label: 'Velvet' },
   { radius: 48, colorA: '#a56a3f', colorB: '#c68b5d', seam: '#f0deca', label: 'Bronze' },
@@ -20,23 +20,27 @@ const PILLOW_PRESETS = [
   { radius: 58, colorA: '#31483d', colorB: '#57705f', seam: '#efe2d3', label: 'Moss' },
 ];
 
-// Set exactly how many you want here!
+
 const TOTAL_PILLOWS = 28;
+
+function seededUnit(index, salt = 1) {
+  const value = Math.sin((index + 1) * 12.9898 + salt * 78.233) * 43758.5453;
+  return value - Math.floor(value);
+}
 
 export default function PillowDropZone({ title = 'Comfort Motion', subtitle = 'Drag the cushions around the stage.' }) {
   const containerRef = useRef(null);
   const pillowNodesRef = useRef([]);
   const engineRef = useRef(null);
 
-  // Generate the full list of 28 pillows by looping through the presets
+
   const activePillows = useMemo(() => {
     return Array.from({ length: TOTAL_PILLOWS }).map((_, index) => {
       const preset = PILLOW_PRESETS[index % PILLOW_PRESETS.length];
       return {
         ...preset,
         id: `pillow-instance-${index}`,
-        // Add a tiny bit of random size variation for a more natural look
-        radius: preset.radius * (0.85 + Math.random() * 0.3), 
+        radius: preset.radius * (0.85 + seededUnit(index, 1) * 0.3),
       };
     });
   }, []);
@@ -58,22 +62,22 @@ export default function PillowDropZone({ title = 'Comfort Motion', subtitle = 'D
     const ground = Matter.Bodies.rectangle(width / 2, height + 50, width + 200, 100, wallOptions);
     const leftWall = Matter.Bodies.rectangle(-50, height / 2, 100, height * 2, wallOptions);
     const rightWall = Matter.Bodies.rectangle(width + 50, height / 2, 100, height * 2, wallOptions);
-    
+
     Matter.World.add(world, [ground, leftWall, rightWall]);
 
     // 3. Create Pillow Bodies
     const pillowBodies = activePillows.map((pillow, index) => {
-      const startX = Math.random() * (width - pillow.radius * 2) + pillow.radius;
+      const startX = seededUnit(index, 2) * (width - pillow.radius * 2) + pillow.radius;
       // Stagger the drops so they rain down nicely instead of all at once
-      const startY = -100 - (index * 70); 
+      const startY = -100 - (index * 70);
 
       return Matter.Bodies.circle(startX, startY, pillow.radius, {
         restitution: 0.6, // Bounciness
         friction: 0.05,
         frictionAir: 0.01,
         density: 0.04,
-        angle: Math.random() * Math.PI * 2,
-        render: { visible: false } 
+        angle: seededUnit(index, 3) * Math.PI * 2,
+        render: { visible: false }
       });
     });
 

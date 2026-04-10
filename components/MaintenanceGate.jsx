@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { getApiUrl } from '@/lib/api/browser';
 
 const ALLOWED_PREFIXES = ['/admin'];
 
@@ -17,7 +18,7 @@ export default function MaintenanceGate() {
         pathname === '/maintenance' || ALLOWED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
       try {
-        const response = await fetch('/api/admin/settings', { cache: 'no-store' });
+        const response = await fetch(getApiUrl('/api/admin/settings'), { cache: 'no-store' });
         if (!response.ok) return;
 
         const settings = await response.json();
@@ -32,7 +33,7 @@ export default function MaintenanceGate() {
           router.replace('/');
         }
       } catch {
-        // Ignore maintenance fetch failures and allow normal navigation.
+
       }
     };
 

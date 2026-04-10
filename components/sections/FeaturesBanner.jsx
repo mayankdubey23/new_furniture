@@ -21,7 +21,12 @@ const features = [
   },
 ];
 
-export default function FeaturesBanner() {
+
+
+
+export default function FeaturesBanner({ collectionNames = [] }) {
+  const badges = [...collectionNames.slice(0, 5), 'Customization'].filter(Boolean);
+
   return (
     <section className="py-12 md:py-16">
       <div className="w-full px-0">
@@ -37,7 +42,7 @@ export default function FeaturesBanner() {
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(199,140,92,0.26),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(102,114,95,0.18),transparent_24%)]" />
             </ParallaxLayer>
             <ParallaxLayer speed={-0.14} className="pointer-events-none absolute inset-0">
-              {/* ✅ CSS animation runs on compositor thread — no JS frame overhead */}
+
               <div
                 className="absolute right-8 top-8 h-28 w-28 rounded-full border border-white/12 animate-[spin_18s_linear_infinite]"
               />
@@ -49,12 +54,12 @@ export default function FeaturesBanner() {
                 One furniture studio for every room.
               </h2>
               <p className="mt-5 max-w-lg text-sm leading-7 text-theme-ivory/72 md:text-base">
-                A cleaner, more app-like flow inspired by modern premium product sites, adapted to your furniture world and your existing
-                visual palette.
+                A live catalogue flow driven by your admin collections, so the storefront grows and changes
+                with the products you actually publish.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                {['Sofas', 'Chairs', 'Recliners', 'Pouffes', 'Customization'].map((item) => (
+                {badges.map((item) => (
                   <motion.span
                     key={item}
                     whileHover={{ y: -3, scale: 1.03 }}

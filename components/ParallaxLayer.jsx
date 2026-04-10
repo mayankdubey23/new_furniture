@@ -3,15 +3,15 @@
 import { useEffect, useRef } from 'react';
 import { useLenis } from 'lenis/react';
 
-/**
- * ParallaxLayer — GPU-composited parallax via translate3d.
- *
- * ✅ Performance notes:
- * - The rAF dedup flag prevents multiple layout reads per frame when several
- *   ParallaxLayer instances exist on the same page.
- * - getBoundingClientRect() is cached between Lenis ticks using a 100ms stale check,
- *   avoiding forced-layout every scroll frame.
- */
+
+
+
+
+
+
+
+
+
 export default function ParallaxLayer({
   children,
   className = '',
@@ -20,7 +20,7 @@ export default function ParallaxLayer({
 }) {
   const layerRef = useRef(null);
   const tickingRef = useRef(false);
-  // Cache the rect — recompute at most every 100ms (not every 16ms scroll tick)
+
   const rectCacheRef = useRef({ top: 0, height: 0, stamp: 0 });
 
   useLenis(
@@ -36,7 +36,7 @@ export default function ParallaxLayer({
         const now = performance.now();
         let { top, height, stamp } = rectCacheRef.current;
 
-        // Recompute rect at most every 100ms
+
         if (now - stamp > 100) {
           const rect = element.getBoundingClientRect();
           top = rect.top;

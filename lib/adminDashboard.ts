@@ -1,4 +1,5 @@
-import type { ProductMedia } from '@/lib/productCatalog';
+import type { CatalogEntityRecord } from '@/lib/catalogEntities';
+import type { ProductMedia, ProductSpecs } from '@/lib/productCatalog';
 
 export interface AdminColorEntry {
   name: string;
@@ -19,13 +20,25 @@ export interface AdminProduct {
   images: string[];
   media: ProductMedia;
   colors: AdminColorEntry[];
-  specs: {
-    material: string;
-    foam?: string;
-    dimensions: string;
-    weight: string;
-    warranty: string;
-  };
+  specs: ProductSpecs;
+  mainCategoryId?: string | null;
+  subCategoryId?: string | null;
+  brandId?: string | null;
+  mainCategory?: CatalogEntityRecord | null;
+  subCategory?: CatalogEntityRecord | null;
+  brand?: CatalogEntityRecord | null;
+  mainCategoryName?: string;
+  subCategoryName?: string;
+  brandName?: string;
+  basePrice?: number;
+  discount?: number;
+  finalPrice?: number;
+  inStock?: boolean;
+  stockQuantity?: number;
+  size?: string[];
+  pic?: string[];
+  color?: string[];
+  active?: boolean;
 }
 
 export interface AdminOrderItem {
@@ -40,6 +53,10 @@ export interface AdminOrderCustomer {
   name: string;
   email: string;
   phone: string;
+  country?: string;
+  state?: string;
+  addressLine1?: string;
+  addressLine2?: string;
   address: string;
   city: string;
   pincode: string;
@@ -50,6 +67,12 @@ export interface AdminOrder {
   totalPrice: number;
   totalItems: number;
   status: 'pending' | 'paid' | 'shipped' | 'delivered';
+  paymentMethod?: 'cod' | 'razorpay';
+  paymentStatus?: 'pending' | 'paid' | 'failed';
+  paymentProvider?: 'razorpay';
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  paidAt?: string;
   createdAt: string;
   items: AdminOrderItem[];
   customer: AdminOrderCustomer;

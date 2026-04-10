@@ -5,6 +5,7 @@ import NextImage from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
 import AnimatedHeading from '../AnimatedHeading';
+import ZoomLensImage from './ZoomLensImage';
 
 function ColorSwatch({ color, isActive, onClick }) {
   return (
@@ -187,28 +188,15 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             ))}
           </div>
 
-          <div className="relative mt-auto aspect-[16/9] overflow-hidden rounded-xl border border-theme-line bg-theme-sand/20">
-            {displayImage?.startsWith('http') ? (
-              <img
-                src={displayImage}
-                alt={currentColor?.name || data.name}
-                className="h-full w-full object-contain transition-all duration-500"
-              />
-            ) : (
-              <NextImage
-                src={displayImage || data.imageUrl}
-                alt={currentColor?.name || data.name}
-                fill
-                className="object-contain transition-all duration-500"
-                sizes="(max-width: 768px) 100vw, 40vw"
-              />
-            )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-theme-ink/40 to-transparent px-4 py-3">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-theme-ivory/80">
-                {currentColor?.name}
-              </p>
-            </div>
-          </div>
+          <ZoomLensImage
+            key={displayImage || data.imageUrl}
+            src={displayImage || data.imageUrl}
+            alt={currentColor?.name || data.name}
+            label={currentColor?.name || data.colors?.[0]?.name || data.name}
+            containerClassName="mt-auto aspect-[16/9] rounded-xl border border-theme-line bg-theme-sand/20"
+            imageClassName="h-full w-full object-contain transition-all duration-500"
+            sizes="(max-width: 768px) 100vw, 40vw"
+          />
         </div>
       </div>
     </div>

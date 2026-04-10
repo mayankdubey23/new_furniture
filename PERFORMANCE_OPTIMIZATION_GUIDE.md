@@ -228,7 +228,7 @@ anchors.duration: shouldOptimize ? 0.25 : 0.6
 
 1. **`components/sections/SofaReveal.jsx`** ⭐
    - Frame reduction, smart preloading, responsive canvas
-   
+
 2. **`components/sections/HeroOptimized.jsx`** ⭐
    - Blur replacement, mousemove throttling, style memoization
 
@@ -285,6 +285,6 @@ For questions or issues with these optimizations, refer to:
 
 ---
 
-**Last Updated**: April 3, 2026  
-**Status**: ✅ Complete and Production-Ready  
+**Last Updated**: April 3, 2026
+**Status**: ✅ Complete and Production-Ready
 **Team**: Performance Optimization Task

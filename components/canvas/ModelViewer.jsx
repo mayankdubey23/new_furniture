@@ -29,7 +29,8 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
     box.getSize(size);
 
     const maxAxis = Math.max(size.x, size.y, size.z) || 1;
-    const scale = 2.45 / maxAxis;
+
+    const scale = 3.8 / maxAxis;
     const shadowOffset = -((size.y * scale) / 2) - 0.08;
 
     return {
@@ -48,6 +49,7 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
 
     groupRef.current.scale.set(0.55, 0.55, 0.55);
     groupRef.current.rotation.y = reverseSafeAngle(groupRef.current.rotation.y);
+
     gsap.to(groupRef.current.scale, {
       x: 1,
       y: 1,
@@ -63,8 +65,7 @@ function GLBModel({ glbPath, isVisible, onLoaded }) {
       <Center>
         <primitive object={clonedScene} scale={modelScale} />
       </Center>
-      {/* ✅ blur reduced 2.4 → 1.2: ContactShadows blur is rendered via multi-pass blur shaders */}
-      <ContactShadows position={[0, shadowY, 0]} opacity={0.45} scale={8} blur={1.2} far={3.5} color="#1a1a1a" />
+      <ContactShadows position={[0, shadowY, 0]} opacity={0.45} scale={10} blur={1.2} far={3.5} color="#1a1a1a" />
     </group>
   );
 }
@@ -102,9 +103,9 @@ function OBJModel({ objPath, mtlPath, isVisible }) {
     groupRef.current.position.set(0, 0, 0);
 
     gsap.to(groupRef.current.scale, {
-      x: 0.0035,
-      y: 0.0035,
-      z: 0.0035,
+      x: 0.0055,
+      y: 0.0055,
+      z: 0.0055,
       duration: 1.2,
       ease: 'elastic.out(1, 0.75)',
       onComplete: () => setPopped(true),
@@ -146,8 +147,8 @@ function SceneControls() {
       enableDamping
       dampingFactor={0.08}
       rotateSpeed={0.7}
-      target={[0, 0.2, 0]}
-      minDistance={2.4}
+      target={[0, 0.1, 0]}
+      minDistance={1.8}
       maxDistance={6.5}
       minPolarAngle={0.45}
       maxPolarAngle={Math.PI / 2 - 0.05}
@@ -172,18 +173,20 @@ export default function ModelViewer({ glbPath, objPath, mtlPath, onLoaded }) {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(165,106,63,0.16),_rgba(251,247,241,0.15)_65%,_transparent_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(199,140,92,0.18),_rgba(34,27,23,0.08)_65%,_transparent_100%)]" />
 
       <Canvas
-        frameloop="demand"
         className="relative z-10"
-        camera={{ position: [4.6, 1.9, 4.8], fov: 38, near: 0.1, far: 40 }}
+        camera={{ position: [3.0, 1.2, 3.5], fov: 40, near: 0.1, far: 40 }}
         style={{ width: '100%', height: '100%' }}
         dpr={[1, 1]}
         gl={{ antialias: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping }}
         performance={{ min: 0.4, max: 1 }}
       >
-        <ambientLight intensity={1} />
-        <directionalLight position={[5, 8, 5]} intensity={1.45} />
-        <pointLight position={[-5, 4, -5]} intensity={0.5} />
-        <Environment preset="studio" />
+
+        <ambientLight intensity={0.35} />
+        <directionalLight position={[5, 8, 5]} intensity={0.85} />
+        <pointLight position={[-5, 4, -5]} intensity={0.2} />
+
+
+        <Environment preset="city" />
 
         <Suspense fallback={<LoadingFallback />}>
           {glbPath ? (

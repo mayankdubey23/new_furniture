@@ -11,7 +11,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     await dbConnect();
     const { id } = await params;
-    const product = await Product.findById(id).lean();
+    const product = await Product.findById(id)
+      .populate('mainCategory')
+      .populate('subCategory')
+      .populate('brand')
+      .lean();
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
     return NextResponse.json(normalizeProduct(product), {
       headers: {
@@ -35,7 +39,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const product = await Product.findByIdAndUpdate(id, payload, {
       new: true,
       runValidators: true,
-    }).lean();
+    })
+      .populate('mainCategory')
+      .populate('subCategory')
+      .populate('brand')
+      .lean();
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     revalidateCatalogRoutes(id);

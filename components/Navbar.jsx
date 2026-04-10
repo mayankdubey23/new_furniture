@@ -1,17 +1,22 @@
 'use client';
 
 import Link from "next/link";
-import { useState, useCallback, useMemo, useEffect, useSyncExternalStore } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useLenis } from "lenis/react";
 import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
 import AnimatedHeading from "./AnimatedHeading";
 import { useTheme } from "./ThemeProvider";
 import { useUser } from "@/context/UserContext";
 
-// Memoized Icon Components
+
+
+
+
+
 const HeartIcon = ({ filled = false, className = '' }) => (
   <svg viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" className={className}>
     <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
@@ -66,9 +71,10 @@ function getServerSnapshot() {
   return false;
 }
 
-// Memoized Cart Item Component
+
 const CartItemRow = ({ item, onRemove, onUpdateQuantity }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
+
     <img src={item.image || ""} alt={item.name} className="h-14 w-14 rounded-lg object-cover shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="font-semibold text-sm text-theme-ink truncate">{item.name}</p>
@@ -91,13 +97,19 @@ const CartItemRow = ({ item, onRemove, onUpdateQuantity }) => (
   </div>
 );
 
-function Navbar() {
+
+
+
+/**
+ * @param {{ collections?: import('@/lib/productCatalog').StorefrontCollectionLink[] }} props
+ */
+function Navbar({ collections = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  
+
   const pathname = usePathname();
   const { resolvedTheme } = useTheme();
   const { cart, updateQuantity, removeFromCart, totalItems, totalPrice } = useCart();
@@ -105,12 +117,13 @@ function Navbar() {
   const { user, logout } = useUser();
   const lenis = useLenis();
   const hasHydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
-  
+  const pendingProductScrollResetRef = useRef(false);
+
   const isHomePage = hasHydrated ? pathname === "/" : true;
   const isSolidNav = hasHydrated ? (!isHomePage || scrolled) : false;
   const isDarkTheme = resolvedTheme === 'dark';
-  
-  // Memoized color/style values
+
+
   const navStyles = useMemo(() => ({
     textColor: isSolidNav
       ? (isDarkTheme ? 'var(--theme-ivory)' : 'var(--theme-walnut)')
@@ -132,26 +145,62 @@ function Navbar() {
       : "text-theme-ivory",
   }), [isSolidNav, isDarkTheme]);
 
-  const navLinks = useMemo(() => [
-    { name: "Sofas", href: "/#sofa-3d-view-start", targetId: "sofa-3d-view-start" },
-    { name: "Chairs", href: "/#chair-3d-view-start", targetId: "chair-3d-view-start" },
-    { name: "Recliners", href: "/#recliner-3d-view-start", targetId: "recliner-3d-view-start" },
-    { name: "Pouffes", href: "/#pouffe-3d-view-start", targetId: "pouffe-3d-view-start" },
-    { name: "Customization", href: "/customization" },
-    { name: "Contact", href: "/contact" }
-  ], []);
+  const navLinks = useMemo(() => {
+    const collectionLinks = collections.length
+      ? collections.map((collection) => ({
+          name: collection.name,
+          href: `/products/${encodeURIComponent(collection.productId)}`,
+          isProductLink: true,
+        }))
+      : [{ name: "Collections", href: "/#collections", targetId: "collections" }];
+
+    return [
+      ...collectionLinks,
+      { name: "Customization", href: "/customization" },
+      { name: "Contact", href: "/contact" }
+    ];
+  }, [collections]);
+  const firstCollectionHref = navLinks.find((link) => link.targetId)?.href || "/#collections";
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 60);
     };
-    
+
     // Set initial state
     handleScroll();
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const resetPageScroll = useCallback(() => {
+    lenis?.scrollTo(0, { immediate: true });
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [lenis]);
+
+  useEffect(() => {
+    if (!pendingProductScrollResetRef.current || !pathname.startsWith('/products/')) {
+      return;
+    }
+
+    pendingProductScrollResetRef.current = false;
+
+    let timeoutId = 0;
+    const frameId = window.requestAnimationFrame(() => {
+      resetPageScroll();
+      timeoutId = window.setTimeout(() => {
+        resetPageScroll();
+      }, 50);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [pathname, resetPageScroll]);
 
   const scrollToSection = useCallback((id) => {
     const target = document.getElementById(id);
@@ -163,6 +212,25 @@ function Navbar() {
     }
     setIsOpen(false);
   }, [lenis]);
+
+  const handleNavLinkClick = useCallback((link, event) => {
+    if (link.targetId && isHomePage) {
+      event.preventDefault();
+      scrollToSection(link.targetId);
+      return;
+    }
+
+    if (link.isProductLink) {
+      if (pathname === link.href) {
+        event.preventDefault();
+        resetPageScroll();
+      } else {
+        pendingProductScrollResetRef.current = true;
+      }
+    }
+
+    setIsOpen(false);
+  }, [isHomePage, pathname, resetPageScroll, scrollToSection]);
 
   const handleClose = useCallback(() => setWishlistOpen(false), []);
   const handleCartClose = useCallback(() => setCartOpen(false), []);
@@ -180,14 +248,14 @@ function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop nav */}
+
           <ul className="hidden flex-1 items-center justify-center gap-6 px-6 text-[0.75rem] font-semibold uppercase tracking-[0.28em] lg:gap-8 md:flex">
             {[...navLinks, { name: "Admin", href: "/admin" }].map((link) => (
               <li key={link.name}>
                 <Link
                   href={link.href}
                   scroll={true}
-                  onClick={link.targetId && isHomePage ? (event) => { event.preventDefault(); scrollToSection(link.targetId); } : undefined}
+                  onClick={(event) => handleNavLinkClick(link, event)}
                   className={`whitespace-nowrap transition-colors duration-300 ${navStyles.linkClass}`}
                   style={{ color: navStyles.mutedTextColor }}
                 >
@@ -197,11 +265,12 @@ function Navbar() {
             ))}
           </ul>
 
-          {/* Icons */}
+
           <div className="flex items-center gap-3">
             <ThemeToggle scrolled={hasHydrated && scrolled} />
+            <NotificationBell iconColor={navStyles.iconColor} iconClass={navStyles.iconClass} />
 
-            {/* Wishlist */}
+
             <button onClick={() => setWishlistOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Wishlist" style={{ color: navStyles.iconColor }}>
               <HeartIcon className={`h-5 w-5 ${navStyles.iconClass}`} filled={wishlist.length > 0} />
               {totalWishlistItems > 0 && (
@@ -211,7 +280,7 @@ function Navbar() {
               )}
             </button>
 
-            {/* Cart */}
+
             <button onClick={() => setCartOpen(true)} className="relative rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Cart" style={{ color: navStyles.iconColor }}>
               <ShoppingBagIcon className={`h-5 w-5 ${navStyles.iconClass}`} />
               {totalItems > 0 && (
@@ -221,7 +290,7 @@ function Navbar() {
               )}
             </button>
 
-            {/* Account */}
+
             <div className="relative">
               <button onClick={() => setAccountOpen(!accountOpen)} className="rounded-full p-2 transition-all hover:scale-110 hover:bg-white/8" title="Account" style={{ color: navStyles.iconColor }}>
                 <UserIcon className={`h-5 w-5 ${navStyles.iconClass}`} />
@@ -235,6 +304,13 @@ function Navbar() {
                         <p className="text-theme-walnut/50 dark:text-theme-ivory/40 text-xs mt-0.5 truncate">{user.email}</p>
                       </div>
                       <div className="border-t border-theme-line p-2 space-y-1">
+                        <Link
+                          href="/track-order"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          Track Order
+                        </Link>
                         <button
                           onClick={() => { setAccountOpen(false); logout(); }}
                           className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 hover:bg-red-50/60 transition-colors dark:hover:bg-red-900/20"
@@ -250,6 +326,13 @@ function Navbar() {
                         <p className="text-theme-walnut/50 dark:text-theme-ivory/40 text-xs mt-0.5">Not signed in</p>
                       </div>
                       <div className="border-t border-theme-line p-2 space-y-1">
+                        <Link
+                          href="/track-order"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          Track Order
+                        </Link>
                         <Link
                           href="/login"
                           onClick={() => setAccountOpen(false)}
@@ -272,7 +355,7 @@ function Navbar() {
             </div>
           </div>
 
-          {/* Mobile hamburger */}
+
           <div className="flex items-center gap-3 md:hidden">
             <button onClick={() => setIsOpen(true)} className={`rounded-full border p-2 ${isSolidNav ? (isDarkTheme ? "border-white/20 bg-white/6 text-theme-ivory" : "border-theme-walnut/30 bg-theme-walnut/8 text-theme-walnut") : "border-white/20 bg-white/6 text-theme-ivory"}`} style={{ color: navStyles.iconColor }}>
               <MenuIcon className={`h-6 w-6 ${navStyles.iconClass}`} />
@@ -280,7 +363,7 @@ function Navbar() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+
         <div className={`mx-auto mt-3 w-[calc(100%-1rem)] overflow-hidden rounded-[1.75rem] border shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-500 md:hidden ${
           isOpen ? "border-white/18 bg-[rgba(18,14,11,0.38)] max-h-96 p-5 text-theme-ivory" : "max-h-0 p-0"
         }`}>
@@ -296,21 +379,28 @@ function Navbar() {
                 key={link.name}
                 href={link.href}
                 scroll={true}
-                onClick={link.targetId && isHomePage ? (event) => { event.preventDefault(); scrollToSection(link.targetId); } : () => setIsOpen(false)}
+                onClick={(event) => handleNavLinkClick(link, event)}
                 className="text-theme-ivory/90 hover:text-white"
               >
                 {link.name}
               </Link>
             ))}
+            <Link
+              href="/track-order"
+              onClick={() => setIsOpen(false)}
+              className="text-theme-ivory/90 hover:text-white"
+            >
+              Track Order
+            </Link>
           </div>
           <div className="mt-6 flex gap-4 pt-4 border-t border-white/10 items-center justify-between">
             <div className="flex gap-3">
               <button onClick={() => { setWishlistOpen(true); setIsOpen(false); }} className="flex items-center gap-2 p-3 text-sm text-theme-ivory/90 hover:text-white">
-                <HeartIcon className="h-4 w-4" filled={false} /> 
+                <HeartIcon className="h-4 w-4" filled={false} />
                 <span>Wishlist ({totalWishlistItems})</span>
               </button>
               <button onClick={() => { setCartOpen(true); setIsOpen(false); }} className="flex items-center gap-2 p-3 text-sm text-theme-ivory/90 hover:text-white">
-                <ShoppingBagIcon className="h-4 w-4" /> 
+                <ShoppingBagIcon className="h-4 w-4" />
                 <span>Cart ({totalItems})</span>
               </button>
             </div>
@@ -321,7 +411,7 @@ function Navbar() {
         </div>
       </nav>
 
-      {/* Wishlist Modal */}
+
       {wishlistOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleClose}>
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[rgba(34,27,23,0.98)]" onClick={e => e.stopPropagation()}>
@@ -344,6 +434,7 @@ function Navbar() {
               ) : (
                 wishlist.map((item) => (
                   <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
+
                     <img src={item.image || ""} alt={item.name} className="h-14 w-14 rounded-lg object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-theme-ink truncate">{item.name}</p>
@@ -360,7 +451,7 @@ function Navbar() {
         </div>
       )}
 
-      {/* Cart Modal */}
+
       {cartOpen && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={handleCartClose}>
           <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[rgba(34,27,23,0.98)]" onClick={e => e.stopPropagation()}>
@@ -380,7 +471,7 @@ function Navbar() {
               {cart.length === 0 ? (
                 <div className="py-12 text-center">
                   <p className="text-theme-walnut/50 dark:text-theme-ivory/60 text-sm">Your cart is empty.</p>
-                  <Link href="/#sofas" onClick={handleCartClose} className="mt-4 inline-block text-sm font-semibold text-theme-bronze hover:underline">
+                  <Link href={firstCollectionHref} onClick={handleCartClose} className="mt-4 inline-block text-sm font-semibold text-theme-bronze hover:underline">
                     Browse collection →
                   </Link>
                 </div>
@@ -397,13 +488,25 @@ function Navbar() {
                   <span className="text-theme-walnut dark:text-theme-ivory">Total</span>
                   <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
                 </div>
-                <Link
-                  href="/customization"
-                  onClick={handleCartClose}
-                  className="block w-full rounded-full bg-theme-bronze py-3.5 text-center text-sm font-semibold uppercase tracking-[0.22em] text-white hover:bg-theme-ink transition-all"
-                >
-                  Customize & Checkout
-                </Link>
+                <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-theme-walnut/55 dark:text-theme-ivory/50">
+                  Choose your next step
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Link
+                    href="/customization"
+                    onClick={handleCartClose}
+                    className="block w-full rounded-full border border-theme-line/60 py-3 text-center text-xs font-semibold uppercase tracking-[0.2em] text-theme-walnut hover:border-theme-bronze hover:text-theme-bronze transition-all dark:text-theme-ivory/70 dark:hover:text-theme-bronze"
+                  >
+                    Customize
+                  </Link>
+                  <Link
+                    href="/checkout"
+                    onClick={handleCartClose}
+                    className="block w-full rounded-full bg-theme-bronze py-3 text-center text-sm font-semibold uppercase tracking-[0.22em] text-white hover:bg-theme-ink transition-all"
+                  >
+                    Checkout
+                  </Link>
+                </div>
               </div>
             )}
           </div>

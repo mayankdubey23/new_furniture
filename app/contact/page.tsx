@@ -69,7 +69,7 @@ export default function ContactPage() {
                 Open Customization Studio
               </Link>
               <Link
-                href="/#sofas"
+                href="/#collections"
                 className="block rounded-[1.5rem] bg-theme-bronze px-5 py-4 text-sm font-semibold uppercase tracking-[0.24em] text-white transition-colors hover:bg-theme-ink"
               >
                 Browse Collection

@@ -34,14 +34,14 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
         </p>
       </div>
 
-      {/* Large image preview */}
+
       <div className="relative overflow-hidden rounded-2xl border border-theme-line bg-theme-sand/20 aspect-[16/9]">
         <ColorImage
           src={activeColor?.image}
           alt={activeColor?.name}
           className="h-full w-full object-contain transition-all duration-700"
         />
-        {/* Overlay */}
+
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-theme-ink/65 to-transparent px-6 py-6">
           <p className="text-[0.68rem] font-semibold uppercase tracking-[0.35em] text-theme-ivory/70">
             Current Finish
@@ -52,7 +52,7 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
         </div>
       </div>
 
-      {/* Color swatch cards */}
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {colors.map((color, idx) => {
           const isActive = activeColor?.name === color.name;
@@ -71,7 +71,7 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
               aria-label={`Select ${color.name}`}
               aria-pressed={isActive}
             >
-              {/* Swatch image */}
+
               <div className="relative aspect-[4/3] overflow-hidden">
                 <SwatchImage
                   src={color.image}
@@ -79,7 +79,7 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
                   className={`h-full w-full object-contain transition-transform duration-500 ${isHovered ? 'scale-110' : 'scale-100'}`}
                 />
               </div>
-              {/* Color name bar */}
+
               <div className={`px-3 py-2 text-left transition-colors duration-200 ${
                 isActive ? 'bg-theme-bronze/12' : 'bg-theme-mist/60 dark:bg-theme-mist/30'
               }`}>
@@ -89,7 +89,7 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
                   {color.name}
                 </p>
               </div>
-              {/* Active checkmark */}
+
               {isActive && (
                 <div className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-theme-bronze text-white shadow-md">
                   <svg viewBox="0 0 12 12" fill="none" className="h-3 w-3">

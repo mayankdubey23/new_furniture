@@ -66,8 +66,8 @@ export default function About() {
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.14),transparent_36%)]" />
 
-        {/* ✅ Replaced animated blur-[80px]/blur-[96px] orbs with static gradients.
-            Those blur filters forced GPU repaints every animation frame. */}
+
+
         <ParallaxLayer speed={-0.12} className="pointer-events-none absolute inset-0">
           <div className="absolute -left-16 top-10 h-40 w-40 rounded-full bg-gradient-to-br from-theme-bronze/14 to-transparent" />
         </ParallaxLayer>
@@ -127,7 +127,7 @@ export default function About() {
               transition={{ duration: 0.55, delay: 0.18 }}
               className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3"
             >
-              {editorialHighlights.map((item, index) => (
+              {editorialHighlights.map((item) => (
                 <motion.div
                   key={item.label}
                   whileHover={{ y: -6 }}

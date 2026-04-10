@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useViewportMode } from '@/hooks/useViewportMode';
 
 const FRAME_COUNT = 240;
-const SCROLL_DISTANCE = 4000;
-const CANVAS_WIDTH = 1280;
-const CANVAS_HEIGHT = 720;
+const MAX_CANVAS_DPR = 2;
+const SCROLL_DISTANCES = {
+  desktop: 4000,
+  tablet: 3200,
+  mobile: 2400,
+};
 
 function getFrameSrc(index) {
   return `/sofa-sequence/ezgif-frame-${String(index).padStart(3, '0')}.jpg`;
@@ -15,6 +19,43 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function drawImageCover(context, image, frameWidth, frameHeight) {
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+
+  if (!sourceWidth || !sourceHeight) {
+    return;
+  }
+
+  const frameRatio = frameWidth / frameHeight;
+  const imageRatio = sourceWidth / sourceHeight;
+
+  let sourceX = 0;
+  let sourceY = 0;
+  let cropWidth = sourceWidth;
+  let cropHeight = sourceHeight;
+
+  if (imageRatio > frameRatio) {
+    cropWidth = sourceHeight * frameRatio;
+    sourceX = (sourceWidth - cropWidth) / 2;
+  } else {
+    cropHeight = sourceWidth / frameRatio;
+    sourceY = (sourceHeight - cropHeight) / 2;
+  }
+
+  context.drawImage(
+    image,
+    sourceX,
+    sourceY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    frameWidth,
+    frameHeight
+  );
+}
+
 export default function SofaReveal() {
   const sectionRef = useRef(null);
   const canvasRef = useRef(null);
@@ -22,6 +63,8 @@ export default function SofaReveal() {
   const frameRef = useRef(0);
   const rafRef = useRef(0);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const viewportMode = useViewportMode();
+  const scrollDistance = SCROLL_DISTANCES[viewportMode];
 
   useEffect(() => {
     let loadedCount = 0;
@@ -70,14 +113,42 @@ export default function SofaReveal() {
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d', { alpha: false });
     if (!context) return;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
 
-    canvas.width = CANVAS_WIDTH;
-    canvas.height = CANVAS_HEIGHT;
+    let canvasMetrics = {
+      width: 1,
+      height: 1,
+      dpr: 1,
+    };
+    let forceRedraw = true;
+
+    const resizeCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      const width = Math.max(1, Math.round(rect.width));
+      const height = Math.max(1, Math.round(rect.height));
+      const dpr = Math.min(window.devicePixelRatio || 1, MAX_CANVAS_DPR);
+
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      canvasMetrics = { width, height, dpr };
+      forceRedraw = true;
+    };
 
     const drawFrame = (frameIndex) => {
       const image = imagesRef.current[frameIndex];
       if (!image || !image.complete) return;
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+      const { width, height, dpr } = canvasMetrics;
+
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = '#09090b';
+      context.fillRect(0, 0, width, height);
+      drawImageCover(context, image, width, height);
     };
 
     const updateFrame = () => {
@@ -90,8 +161,9 @@ export default function SofaReveal() {
       const progress = scrolled / maxScroll;
       const nextFrame = Math.round(progress * (FRAME_COUNT - 1));
 
-      if (nextFrame !== frameRef.current) {
+      if (nextFrame !== frameRef.current || forceRedraw) {
         frameRef.current = nextFrame;
+        forceRedraw = false;
         drawFrame(nextFrame);
         return;
       }
@@ -106,24 +178,30 @@ export default function SofaReveal() {
       rafRef.current = window.requestAnimationFrame(updateFrame);
     };
 
+    const handleResize = () => {
+      resizeCanvas();
+      requestUpdate();
+    };
+
+    resizeCanvas();
     drawFrame(0);
     requestUpdate();
 
     window.addEventListener('scroll', requestUpdate, { passive: true });
-    window.addEventListener('resize', requestUpdate);
+    window.addEventListener('resize', handleResize);
 
     return () => {
       window.cancelAnimationFrame(rafRef.current);
       window.removeEventListener('scroll', requestUpdate);
-      window.removeEventListener('resize', requestUpdate);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [imagesLoaded]);
+  }, [imagesLoaded, viewportMode]);
 
   return (
     <section
       ref={sectionRef}
       className="relative w-full bg-zinc-950"
-      style={{ height: `calc(100svh + ${SCROLL_DISTANCE}px)` }}
+      style={{ height: `calc(100svh + ${scrollDistance}px)` }}
     >
       <div className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden">
         {!imagesLoaded && (
@@ -139,7 +217,7 @@ export default function SofaReveal() {
 
         <canvas
           ref={canvasRef}
-          className="h-full w-full object-cover will-change-transform"
+          className="block h-full w-full will-change-transform"
           style={{ backfaceVisibility: 'hidden', transform: 'translateZ(0)' }}
         />
 

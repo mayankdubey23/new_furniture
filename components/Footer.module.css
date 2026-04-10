@@ -6,29 +6,29 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  /* Uses a variable for the background, defaulting to light mode */
-  background-color: var(--footer-bg, #fdfdfd); 
+
+  background-color: var(--footer-bg, #fdfdfd);
   padding-bottom: 2rem;
   overflow: hidden;
   transition: background-color 0.4s ease;
-  
+
   --border: #485566;
   --sofa: #f79227;
   --cactus: #71C26D;
 }
 
-/* --- DARK MODE OVERRIDES --- */
-/* This listens for a 'dark' class on your main HTML/Body tag */
+
+
 :global(.dark) .footerWrapper {
-  --footer-bg: #111827; /* Dark background */
-  --border: #64748b;    /* Slightly lighter outlines so the art pops */
+  --footer-bg: #111827;
+  --border: #64748b;
 }
 
 :global(.dark) .footerContent {
-  color: #94a3b8; /* Lighter text for dark mode */
+  color: #94a3b8;
 }
 
-/* The Magic: Make the lamp glow in dark mode */
+
 @import './GlowingFooterEnhancement.css';
 :global(.dark) .lamp {
   background-color: #fffde7;

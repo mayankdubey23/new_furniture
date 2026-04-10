@@ -1,9 +1,9 @@
-/* Enhanced glowing lamp - more intense glow */
+
 :global(.dark) .lamp {
   background-color: #fffde7 !important;
-  box-shadow: 
-    inset -15px 0 0 0 #fde047, 
-    inset -30px 0 0 0 #fef08a, 
+  box-shadow:
+    inset -15px 0 0 0 #fde047,
+    inset -30px 0 0 0 #fef08a,
     inset -45px 0 0 0 #fef9c3,
     inset -60px 0 0 0 #fef3c7,
     0 0 60px 30px rgba(253, 224, 71, 0.6),
@@ -17,7 +17,7 @@
   to { box-shadow: inset -15px 0 0 0 #ffed4a, inset -30px 0 0 0 #fef08a, inset -45px 0 0 0 #fff3c7, 0 0 80px 40px rgba(255, 237, 74, 0.8), 0 0 120px 60px rgba(255, 237, 74, 0.45), 0 0 180px 90px rgba(255, 237, 74, 0.25); }
 }
 
-/* Slightly enhance sofa glare */
+
 .sofaGlare::after {
   box-shadow: 225px 0 0 0 #faad5b, 0 0 20px rgba(250, 173, 91, 0.5);
 }

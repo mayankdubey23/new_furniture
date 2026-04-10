@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getApiUrl } from '@/lib/api/browser';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -11,9 +12,9 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Redirect to dashboard if already authenticated
+
   useEffect(() => {
-    fetch('/api/auth/verify', { credentials: 'include' }).then((res) => {
+    fetch(getApiUrl('/api/auth/verify'), { credentials: 'include' }).then((res) => {
       if (res.ok) router.replace('/admin');
     });
   }, [router]);
@@ -23,7 +24,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    const res = await fetch('/api/auth', {
+    const res = await fetch(getApiUrl('/api/auth'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -45,12 +46,12 @@ export default function AdminLogin() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-theme-ivory px-4 dark:bg-theme-ink">
-      {/* Decorative glows */}
+
       <div className="pointer-events-none absolute left-[-8rem] top-[-6rem] h-[28rem] w-[28rem] rounded-full bg-theme-bronze/14 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-[-4rem] right-[-4rem] h-[22rem] w-[22rem] rounded-full bg-theme-olive/10 blur-[100px]" />
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* Logo */}
+
         <div className="mb-10 text-center">
           <Link
             href="/"
@@ -66,7 +67,7 @@ export default function AdminLogin() {
           </h1>
         </div>
 
-        {/* Card */}
+
         <div className="rounded-[2rem] border border-theme-line/50 bg-white/80 p-8 shadow-[0_25px_80px_rgba(49,30,21,0.12)] dark:bg-white/5">
           {error && (
             <div className="mb-5 rounded-xl border border-red-400/30 bg-red-50/80 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">

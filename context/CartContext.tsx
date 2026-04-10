@@ -2,8 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
+export type CartItemId = string | number;
+
 export interface CartItem {
-  id: number;
+  id: CartItemId;
   name: string;
   price: number;
   image: string;
@@ -13,8 +15,8 @@ export interface CartItem {
 interface CartContextValue {
   cart: CartItem[];
   addToCart: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
-  updateQuantity: (id: number, delta: number) => void;
-  removeFromCart: (id: number) => void;
+  updateQuantity: (id: CartItemId, delta: number) => void;
+  removeFromCart: (id: CartItemId) => void;
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
@@ -54,7 +56,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const updateQuantity = useCallback((id: number, delta: number) => {
+  const updateQuantity = useCallback((id: CartItemId, delta: number) => {
     setCart(prev =>
       prev.map(p =>
         p.id === id ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
@@ -62,7 +64,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
-  const removeFromCart = useCallback((id: number) => {
+  const removeFromCart = useCallback((id: CartItemId) => {
     setCart(prev => prev.filter(p => p.id !== id));
   }, []);
 

@@ -6,40 +6,40 @@ import Customization from '@/models/Customization';
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const body = await request.json();
-    
-    // Validate required fields
+
+
     if (!body.customerName || !body.customerEmail || !body.customerPhone) {
       return NextResponse.json(
         { error: 'Customer name, email, and phone are required' },
         { status: 400 }
       );
     }
-    
+
     if (!body.productName) {
       return NextResponse.json(
         { error: 'Product name is required' },
         { status: 400 }
       );
     }
-    
-    // Convert productId to ObjectId - handle both string and ObjectId formats
+
+
     let productId;
     try {
       if (body.productId) {
         productId = new ObjectId(body.productId);
       } else {
-        // Create a new ObjectId if not provided
+
         productId = new ObjectId();
       }
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { error: 'Invalid product ID format' },
         { status: 400 }
       );
     }
-    
+
     const customization = new Customization({
       customerName: body.customerName.trim(),
       customerEmail: body.customerEmail.toLowerCase().trim(),
@@ -63,9 +63,9 @@ export async function POST(request: NextRequest) {
       expectedTimeline: body.expectedTimeline,
       status: 'pending',
     });
-    
+
     await customization.save();
-    
+
     return NextResponse.json(
       {
         success: true,
@@ -86,20 +86,20 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const email = request.nextUrl.searchParams.get('email');
-    
+
     if (!email) {
       return NextResponse.json(
         { error: 'Email parameter is required' },
         { status: 400 }
       );
     }
-    
+
     const customizations = await Customization.find({ customerEmail: email.toLowerCase() })
       .sort({ createdAt: -1 })
       .lean();
-    
+
     return NextResponse.json({ customizations });
   } catch (error) {
     console.error('Error fetching customizations:', error);

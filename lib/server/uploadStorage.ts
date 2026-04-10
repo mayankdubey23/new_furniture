@@ -6,10 +6,20 @@ export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avi
 export const MODEL_EXTENSIONS = new Set(['.glb', '.gltf']);
 
 export const PRODUCT_UPLOAD_ROOT =
-  process.env.PRODUCT_UPLOAD_ROOT || path.join(process.cwd(), 'public', 'uploads', 'products');
+  process.env.PRODUCT_UPLOAD_ROOT ||
+  path.join('public', 'uploads', 'products');
 
 export const PRODUCT_UPLOAD_PUBLIC_BASE =
   process.env.PRODUCT_UPLOAD_PUBLIC_BASE || '/uploads/products';
+
+export const CATALOG_UPLOAD_ROOT =
+  process.env.CATALOG_UPLOAD_ROOT ||
+  path.join('public', 'uploads');
+
+export const CATALOG_UPLOAD_PUBLIC_BASE =
+  process.env.CATALOG_UPLOAD_PUBLIC_BASE || '/uploads';
+
+export type CatalogUploadCollection = 'maincategory' | 'subcategory' | 'brand';
 
 export function sanitizeUploadSegment(value: string, fallback: string) {
   return slugify(value) || fallback;
@@ -65,6 +75,45 @@ export function buildProductUploadTarget({
   };
 }
 
+export function buildCatalogUploadTarget({
+  collection,
+  entityName,
+  extension,
+}: {
+  collection: CatalogUploadCollection;
+  entityName: string;
+  extension: string;
+}) {
+  const safeCollection = sanitizeUploadSegment(collection, 'catalog');
+  const safeEntityName = sanitizeUploadSegment(entityName, 'item');
+  const directory = path.join(CATALOG_UPLOAD_ROOT, safeCollection);
+  const filename = `${Date.now()}${safeEntityName}${extension}`;
+  const absolutePath = path.join(directory, filename);
+  const publicPath = `${CATALOG_UPLOAD_PUBLIC_BASE}/${safeCollection}/${filename}`;
+
+  return {
+    directory,
+    absolutePath,
+    publicPath,
+  };
+}
+
+async function persistUpload(target: {
+  directory: string;
+  absolutePath: string;
+  publicPath: string;
+}, file: File) {
+  await mkdir(target.directory, { recursive: true });
+
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(target.absolutePath, buffer);
+
+  return {
+    ok: true as const,
+    path: target.publicPath,
+  };
+}
+
 export async function saveProductUpload({
   file,
   category,
@@ -99,14 +148,32 @@ export async function saveProductUpload({
     extension,
   });
 
-  await mkdir(target.directory, { recursive: true });
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(target.absolutePath, buffer);
-
-  return {
-    ok: true as const,
-    path: target.publicPath,
-  };
+  return persistUpload(target, file);
 }
 
+export async function saveCatalogUpload({
+  file,
+  collection,
+  entityName,
+}: {
+  file: File;
+  collection: CatalogUploadCollection;
+  entityName: string;
+}) {
+  const extension = getUploadExtension(file);
+
+  if (!IMAGE_EXTENSIONS.has(extension)) {
+    return {
+      ok: false as const,
+      error: 'Only JPG, PNG, WEBP, and AVIF files are supported.',
+    };
+  }
+
+  const target = buildCatalogUploadTarget({
+    collection,
+    entityName,
+    extension,
+  });
+
+  return persistUpload(target, file);
+}

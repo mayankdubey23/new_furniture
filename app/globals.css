@@ -50,7 +50,7 @@ html {
   scroll-padding-top: 8.75rem;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* Optimize rendering performance */
+
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
@@ -72,7 +72,7 @@ body * {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Reduce motion for accessibility */
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
@@ -82,54 +82,54 @@ body * {
   }
 }
 
-/* Improve image rendering */
+
 img {
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
 }
 
-/* Mobile responsiveness */
+
 @media (max-width: 640px) {
   html {
     font-size: 14px;
   }
-  
+
   body {
     overflow-x: hidden;
   }
-  
-  /* Fix form inputs on mobile */
+
+
   input, textarea, select {
-    font-size: 16px !important; /* Prevents zoom on iOS */
+    font-size: 16px !important;
     min-height: 44px;
   }
-  
-  /* Fix buttons on mobile */
+
+
   button {
     min-height: 44px;
     min-width: 44px;
   }
 }
 
-/* Optimize mobile scrolling */
+
 @media (max-width: 1024px) {
   * {
     scroll-behavior: smooth !important;
   }
-  
+
   body {
     overscroll-behavior-y: contain;
   }
 }
 
-/* Improve readability on mobile */
+
 @media (max-width: 768px) {
   .text-xl, .text-2xl {
     letter-spacing: normal;
   }
 }
 
-/* Optimize video playback */
+
 video {
   will-change: auto;
   backface-visibility: hidden;
@@ -138,7 +138,7 @@ video {
   -webkit-transform: translateZ(0);
 }
 
-/* Optimize canvas rendering */
+
 canvas {
   image-rendering: -webkit-optimize-contrast;
   will-change: contents;
@@ -159,7 +159,7 @@ html.lenis body {
   overscroll-behavior: contain;
 }
 
-/* ✅ GPU-composited decorative overlays — transform:translateZ(0) prevents scroll repaints */
+
 body::before {
   content: "";
   position: fixed;
@@ -217,8 +217,8 @@ body::after {
     0 12px 40px rgba(49, 30, 21, 0.05);
 }
 
-/* ✅ Removed backdrop-filter:blur(18px) — it forced GPU repaints on every scroll frame
-   and created stacking context issues. Compensated with higher bg opacity. */
+
+
 .premium-surface {
   background: linear-gradient(180deg, rgba(251, 247, 241, 0.95), rgba(243, 235, 224, 0.88));
   border: 1px solid var(--theme-line);
@@ -239,6 +239,43 @@ body::after {
   opacity: 0.7;
 }
 
+@keyframes cushionDrift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.03);
+  }
+}
+
+@keyframes cushionDriftReverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(-14px, 12px, 0) scale(0.98);
+  }
+}
+
+.cushion-drift-slow {
+  animation: cushionDrift 20s ease-in-out infinite;
+  will-change: transform;
+}
+
+.cushion-drift-reverse {
+  animation: cushionDriftReverse 24s ease-in-out infinite;
+  will-change: transform;
+}
+
+.cushion-drift-delayed {
+  animation: cushionDrift 26s ease-in-out -9s infinite;
+  will-change: transform;
+}
+
 .dark .premium-surface {
   background: linear-gradient(180deg, rgba(53, 42, 35, 0.96), rgba(24, 18, 15, 0.92));
 }
@@ -252,4 +289,12 @@ body::after {
 ::selection {
   background: rgba(165, 106, 63, 0.22);
   color: var(--theme-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cushion-drift-slow,
+  .cushion-drift-reverse,
+  .cushion-drift-delayed {
+    animation: none;
+  }
 }

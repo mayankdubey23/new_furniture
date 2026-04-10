@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
+import { getApiUrl } from '@/lib/api/browser';
 
 const navItems = [
   { href: '/admin', label: 'Overview', icon: BarChart3 },
@@ -37,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (isLoginPage) return;
 
-    fetch('/api/auth/verify', { credentials: 'include' }).then((res) => {
+    fetch(getApiUrl('/api/auth/verify'), { credentials: 'include' }).then((res) => {
       if (res.ok) {
         setIsAuthenticated(true);
       } else {
@@ -80,7 +81,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (!isAuthenticated) return null;
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await fetch(getApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
     router.push('/admin/login');
     router.refresh();
   };

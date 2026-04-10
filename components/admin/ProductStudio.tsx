@@ -1,12 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import {
   AlertCircle,
-  Box,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Download,
   Loader2,
   Pencil,
@@ -17,25 +14,31 @@ import {
   UploadCloud,
   X,
 } from 'lucide-react';
+import type { CatalogOptionsResponse } from '@/lib/catalogEntities';
 import {
   extractAdditionalGalleryImages,
-  isProductCategory,
   prepareProductMutationInput,
-  PRODUCT_CATEGORIES,
   type ProductColorEntry,
-  type ProductMediaViews,
   type ProductViewKey,
 } from '@/lib/productCatalog';
 import type { AdminProduct } from '@/lib/adminDashboard';
 import { downloadCsv, formatCurrency } from '@/lib/adminDashboard';
+import { getApiUrl } from '@/lib/api/browser';
 
 type ProductForm = {
   name: string;
-  category: '' | (typeof PRODUCT_CATEGORIES)[number];
   description: string;
-  price: string;
-  stock: string;
+  mainCategoryId: string;
+  subCategoryId: string;
+  brandId: string;
   eyebrow: string;
+  basePrice: string;
+  discount: string;
+  finalPrice: string;
+  stockQuantity: string;
+  inStock: boolean;
+  active: boolean;
+  sizeInput: string;
   modelPath: string;
   views: Record<ProductViewKey, string>;
   gallery: string[];
@@ -49,46 +52,30 @@ type ProductForm = {
   };
 };
 
-const categories = ['all', ...PRODUCT_CATEGORIES] as const;
-const viewCards: Array<{ key: ProductViewKey; label: string; hint: string }> = [
-  { key: 'main', label: 'Main View', hint: 'Primary storefront image' },
-  { key: 'cover', label: 'Cover View', hint: 'Front angle or lifestyle cover' },
-  { key: 'left', label: 'Left View', hint: 'Left profile upload' },
-  { key: 'right', label: 'Right View', hint: 'Right profile upload' },
-  { key: 'top', label: 'Top View', hint: 'Top-down or overview image' },
-  { key: 'detail', label: 'Detail View', hint: 'Legs, texture, or close-up' },
-];
+const VIEW_KEYS: ProductViewKey[] = ['main', 'cover', 'left', 'right', 'top', 'detail'];
 
-function createEmptyViews(): Record<ProductViewKey, string> {
+function emptyForm(): ProductForm {
   return {
-    main: '',
-    cover: '',
-    left: '',
-    right: '',
-    top: '',
-    detail: '',
+    name: '',
+    description: '',
+    mainCategoryId: '',
+    subCategoryId: '',
+    brandId: '',
+    eyebrow: '',
+    basePrice: '',
+    discount: '0',
+    finalPrice: '',
+    stockQuantity: '0',
+    inStock: true,
+    active: true,
+    sizeInput: '',
+    modelPath: '',
+    views: { main: '', cover: '', left: '', right: '', top: '', detail: '' },
+    gallery: [],
+    colors: [{ name: '', image: '' }],
+    specs: { material: '', foam: '', dimensions: '', weight: '', warranty: '' },
   };
 }
-
-const emptyForm: ProductForm = {
-  name: '',
-  category: '',
-  description: '',
-  price: '',
-  stock: '0',
-  eyebrow: '',
-  modelPath: '',
-  views: createEmptyViews(),
-  gallery: [],
-  colors: [{ name: '', image: '' }],
-  specs: {
-    material: '',
-    foam: '',
-    dimensions: '',
-    weight: '',
-    warranty: '',
-  },
-};
 
 function inputClass(error?: boolean) {
   return `w-full rounded-2xl border px-4 py-3 text-sm outline-none transition dark:bg-white/5 dark:text-theme-ivory ${
@@ -102,32 +89,16 @@ function labelClass() {
   return 'mb-1.5 block text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/66 dark:text-theme-ivory/60';
 }
 
-function AssetPreview({ src, alt }: { src: string; alt: string }) {
-  if (!src) {
-    return (
-      <div className="flex h-full items-center justify-center rounded-[1.25rem] border border-dashed border-theme-line/60 bg-theme-ivory/45 text-center text-xs font-semibold uppercase tracking-[0.22em] text-theme-walnut/45 dark:bg-white/5 dark:text-theme-ivory/35">
-        No asset
-      </div>
-    );
-  }
-
-  return (
-    <div className="h-full overflow-hidden rounded-[1.25rem] border border-theme-line/50 bg-white/70">
-      <img src={src} alt={alt} className="h-full w-full object-cover" />
-    </div>
-  );
-}
-
 function UploadButton({
   busy,
   accept,
+  label,
   onSelect,
-  label = 'Upload',
 }: {
   busy: boolean;
   accept: string;
+  label: string;
   onSelect: (file: File) => void;
-  label?: string;
 }) {
   return (
     <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-theme-line/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-theme-walnut/72 transition hover:border-theme-bronze hover:text-theme-bronze dark:bg-white/6 dark:text-theme-ivory/68">
@@ -140,9 +111,7 @@ function UploadButton({
         disabled={busy}
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
-          if (file) {
-            onSelect(file);
-          }
+          if (file) onSelect(file);
           event.currentTarget.value = '';
         }}
       />
@@ -150,79 +119,123 @@ function UploadButton({
   );
 }
 
-function buildViewState(views?: Partial<ProductMediaViews> | null) {
-  return {
-    ...createEmptyViews(),
-    ...(views?.main ? { main: views.main } : {}),
-    ...(views?.cover ? { cover: views.cover } : {}),
-    ...(views?.left ? { left: views.left } : {}),
-    ...(views?.right ? { right: views.right } : {}),
-    ...(views?.top ? { top: views.top } : {}),
-    ...(views?.detail ? { detail: views.detail } : {}),
-  };
+function optionName(options: CatalogOptionsResponse[keyof CatalogOptionsResponse], id: string) {
+  return options.find((entry) => entry._id === id)?.name || '';
 }
 
 export default function ProductStudio({
   products,
+  catalogOptions,
   onRefresh,
 }: {
   products: AdminProduct[];
+  catalogOptions: CatalogOptionsResponse;
   onRefresh: () => Promise<void>;
 }) {
   const [form, setForm] = useState<ProductForm>(emptyForm);
-  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<(typeof categories)[number]>('all');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [mainCategoryFilter, setMainCategoryFilter] = useState('all');
+  const [saving, setSaving] = useState(false);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
-
     return [...products]
       .filter((product) => {
-        const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-        const matchesSearch =
-          !query ||
-          [product.name, product.category, product.description, product.eyebrow]
-            .join(' ')
-            .toLowerCase()
-            .includes(query);
-        return matchesCategory && matchesSearch;
+        const matchesFilter =
+          mainCategoryFilter === 'all' || product.mainCategoryId === mainCategoryFilter;
+        const text = [
+          product.name,
+          product.description,
+          product.mainCategoryName,
+          product.subCategoryName,
+          product.brandName,
+          product.category,
+        ]
+          .join(' ')
+          .toLowerCase();
+        return matchesFilter && (!query || text.includes(query));
       })
-      .sort((left, right) => left.category.localeCompare(right.category) || left.name.localeCompare(right.name));
-  }, [products, search, categoryFilter]);
+      .sort((a, b) => (a.mainCategoryName || a.category).localeCompare(b.mainCategoryName || b.category) || a.name.localeCompare(b.name));
+  }, [products, search, mainCategoryFilter]);
 
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm(emptyForm());
     setEditingId(null);
     setApiError('');
     setSuccessMessage('');
   };
 
+  const setView = (key: ProductViewKey, value: string) =>
+    setForm((current) => ({ ...current, views: { ...current.views, [key]: value } }));
+
+  const uploadAsset = async (file: File, slot: string, kind: 'image' | 'model' = 'image') => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('slot', slot);
+    fd.append('kind', kind);
+    fd.append('category', optionName(catalogOptions.mainCategories, form.mainCategoryId) || form.name || 'general');
+    fd.append('productName', form.name || 'draft-product');
+    const response = await fetch(getApiUrl('/api/admin/uploads'), {
+      method: 'POST',
+      body: fd,
+      credentials: 'include',
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error || 'Upload failed');
+    return String(data?.path || '');
+  };
+
+  const handleUpload = async (key: string, callback: (path: string) => void, file: File, kind: 'image' | 'model' = 'image') => {
+    setUploadingKey(key);
+    setApiError('');
+    try {
+      const path = await uploadAsset(file, key, kind);
+      callback(path);
+      setSuccessMessage('Asset uploaded.');
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setUploadingKey(null);
+    }
+  };
+
   const openEdit = (product: AdminProduct) => {
     setForm({
       name: product.name,
-      category: isProductCategory(product.category) ? product.category : '',
       description: product.description,
-      price: String(product.price),
-      stock: String(product.stock ?? 0),
-      eyebrow: product.eyebrow,
+      mainCategoryId: product.mainCategoryId || product.mainCategory?._id || '',
+      subCategoryId: product.subCategoryId || product.subCategory?._id || '',
+      brandId: product.brandId || product.brand?._id || '',
+      eyebrow: product.eyebrow || '',
+      basePrice: String(product.basePrice ?? product.price),
+      discount: String(product.discount ?? 0),
+      finalPrice: String(product.finalPrice ?? product.price),
+      stockQuantity: String(product.stockQuantity ?? product.stock ?? 0),
+      inStock: product.inStock ?? (product.stockQuantity ?? product.stock ?? 0) > 0,
+      active: product.active ?? true,
+      sizeInput: (product.size || []).join(', '),
       modelPath: product.modelPath || '',
-      views: buildViewState(product.media?.views),
+      views: {
+        main: product.media?.views?.main || '',
+        cover: product.media?.views?.cover || '',
+        left: product.media?.views?.left || '',
+        right: product.media?.views?.right || '',
+        top: product.media?.views?.top || '',
+        detail: product.media?.views?.detail || '',
+      },
       gallery: extractAdditionalGalleryImages(product),
-      colors: product.colors.length ? product.colors : [{ name: '', image: '' }],
+      colors: product.colors?.length ? product.colors : [{ name: '', image: '' }],
       specs: {
-        material: product.specs.material,
-        foam: product.specs.foam || '',
-        dimensions: product.specs.dimensions,
-        weight: product.specs.weight,
-        warranty: product.specs.warranty,
+        material: product.specs?.material || '',
+        foam: product.specs?.foam || '',
+        dimensions: product.specs?.dimensions || '',
+        weight: product.specs?.weight || '',
+        warranty: product.specs?.warranty || '',
       },
     });
     setEditingId(product._id);
@@ -231,234 +244,98 @@ export default function ProductStudio({
     setSuccessMessage('');
   };
 
-  const uploadAsset = async ({
-    file,
-    slot,
-    kind = 'image',
-  }: {
-    file: File;
-    slot: string;
-    kind?: 'image' | 'model';
-  }) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('slot', slot);
-    formData.append('kind', kind);
-    formData.append('category', form.category || 'general');
-    formData.append('productName', form.name || 'draft-product');
-
-    const response = await fetch('/api/admin/uploads', {
-      method: 'POST',
-      body: formData,
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this product?')) return;
+    setApiError('');
+    const response = await fetch(getApiUrl(`/api/products/${id}`), {
+      method: 'DELETE',
       credentials: 'include',
     });
-    const data = await response.json();
-
+    const data = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error(data?.error || 'Upload failed');
-    }
-
-    return String(data.path || '');
-  };
-
-  const handleViewUpload = async (viewKey: ProductViewKey, file: File) => {
-    setUploadingKey(`view-${viewKey}`);
-    setApiError('');
-
-    try {
-      const uploadedPath = await uploadAsset({ file, slot: viewKey });
-      setForm((current) => ({
-        ...current,
-        views: {
-          ...current.views,
-          [viewKey]: uploadedPath,
-        },
-      }));
-      setSuccessMessage(`${viewCards.find((card) => card.key === viewKey)?.label || 'Image'} uploaded.`);
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Upload failed');
-    } finally {
-      setUploadingKey(null);
-    }
-  };
-
-  const handleGalleryUpload = async (file: File) => {
-    setUploadingKey('gallery');
-    setApiError('');
-
-    try {
-      const uploadedPath = await uploadAsset({
-        file,
-        slot: `gallery-${form.gallery.length + 1}`,
-      });
-      setForm((current) => ({
-        ...current,
-        gallery: [...current.gallery, uploadedPath],
-      }));
-      setSuccessMessage('Gallery image uploaded.');
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Upload failed');
-    } finally {
-      setUploadingKey(null);
-    }
-  };
-
-  const handleColorUpload = async (index: number, file: File) => {
-    setUploadingKey(`color-${index}`);
-    setApiError('');
-
-    try {
-      const uploadedPath = await uploadAsset({
-        file,
-        slot: `color-${index + 1}`,
-      });
-      setForm((current) => ({
-        ...current,
-        colors: current.colors.map((entry, entryIndex) =>
-          entryIndex === index ? { ...entry, image: uploadedPath } : entry
-        ),
-      }));
-      setSuccessMessage('Color swatch uploaded.');
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Upload failed');
-    } finally {
-      setUploadingKey(null);
-    }
-  };
-
-  const handleModelUpload = async (file: File) => {
-    setUploadingKey('model');
-    setApiError('');
-
-    try {
-      const uploadedPath = await uploadAsset({
-        file,
-        slot: 'model',
-        kind: 'model',
-      });
-      setForm((current) => ({
-        ...current,
-        modelPath: uploadedPath,
-      }));
-      setSuccessMessage('3D model uploaded.');
-    } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Upload failed');
-    } finally {
-      setUploadingKey(null);
-    }
-  };
-
-  const handleDelete = async (ids: string[]) => {
-    if (!window.confirm(`Delete ${ids.length} product${ids.length !== 1 ? 's' : ''}?`)) {
+      setApiError(data?.error || 'Delete failed');
       return;
     }
-
-    setApiError('');
-    setSuccessMessage('');
-
-    const responses = await Promise.all(
-      ids.map(async (id) => {
-        const response = await fetch(`/api/products/${id}`, {
-          method: 'DELETE',
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          const data = await response.json().catch(() => null);
-          throw new Error(data?.error || 'Delete failed');
-        }
-
-        return response;
-      })
-    ).catch((error: Error) => {
-      setApiError(error.message);
-      return null;
-    });
-
-    if (!responses) {
-      return;
-    }
-
-    setSelectedIds([]);
-    setSuccessMessage(`Deleted ${ids.length} product${ids.length !== 1 ? 's' : ''}.`);
+    setSuccessMessage('Product deleted.');
     await onRefresh();
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
     setApiError('');
     setSuccessMessage('');
-
     try {
+      if (!form.mainCategoryId || !form.subCategoryId || !form.brandId) {
+        throw new Error('Please select a main category, subcategory, and brand.');
+      }
+
       const payload = prepareProductMutationInput({
         name: form.name,
-        category: form.category,
         description: form.description,
-        price: form.price,
-        stock: form.stock,
+        mainCategory: form.mainCategoryId,
+        subCategory: form.subCategoryId,
+        brand: form.brandId,
+        mainCategoryName: optionName(catalogOptions.mainCategories, form.mainCategoryId),
+        subCategoryName: optionName(catalogOptions.subCategories, form.subCategoryId),
+        brandName: optionName(catalogOptions.brands, form.brandId),
         eyebrow: form.eyebrow,
+        basePrice: form.basePrice,
+        discount: form.discount,
+        finalPrice: form.finalPrice,
+        stockQuantity: form.stockQuantity,
+        inStock: form.inStock,
+        active: form.active,
+        size: form.sizeInput.split(',').map((entry) => entry.trim()).filter(Boolean),
         modelPath: form.modelPath,
-        media: {
-          views: form.views,
-          gallery: form.gallery,
-        },
+        media: { views: form.views, gallery: form.gallery },
         colors: form.colors,
         specs: form.specs,
       });
 
-      const response = await fetch(editingId ? `/api/products/${editingId}` : '/api/products', {
+      const wasEditing = Boolean(editingId);
+      const response = await fetch(getApiUrl(editingId ? `/api/products/${editingId}` : '/api/products'), {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(data?.error || 'Failed to save product');
-      }
+      if (!response.ok) throw new Error(data?.error || 'Failed to save product');
 
       resetForm();
       setShowForm(false);
-      setSuccessMessage(editingId ? 'Product updated successfully.' : 'Product created successfully.');
+      setSuccessMessage(wasEditing ? 'Product updated.' : 'Product created.');
       await onRefresh();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Something went wrong');
+      setApiError(error instanceof Error ? error.message : 'Save failed');
     } finally {
       setSaving(false);
     }
   };
 
-  const completedViewCount = viewCards.filter((card) => form.views[card.key]).length;
-
   return (
     <section className="rounded-[2rem] border border-theme-line/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.82),rgba(247,239,228,0.74))] p-6 shadow-[0_24px_70px_rgba(49,30,21,0.08)] dark:bg-[linear-gradient(145deg,rgba(47,36,30,0.46),rgba(24,18,15,0.76))] md:p-7">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">
-            Catalogue Studio
-          </p>
-          <h2 className="mt-2 font-display text-3xl text-theme-ink dark:text-theme-ivory">
-            Product Management
-          </h2>
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">Catalogue Studio</p>
+          <h2 className="mt-2 font-display text-3xl text-theme-ink dark:text-theme-ivory">Product Management</h2>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/62">
-            Manage live storefront products, upload named product views, attach 3D models, and keep
-            color variants in sync with the site.
+            Products now use linked main categories, subcategories, and brands.
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={() =>
               downloadCsv(
-                'luxe-products.csv',
+                'catalog-products.csv',
                 filteredProducts.map((product) => ({
                   name: product.name,
-                  category: product.category,
-                  price: product.price,
-                  stock: product.stock ?? 0,
-                  mainImage: product.media?.views?.main || product.imageUrl,
-                  modelPath: product.modelPath || '',
+                  mainCategory: product.mainCategoryName || '',
+                  subCategory: product.subCategoryName || '',
+                  brand: product.brandName || '',
+                  price: product.finalPrice ?? product.price,
+                  stock: product.stockQuantity ?? product.stock ?? 0,
                 }))
               )
             }
@@ -468,14 +345,10 @@ export default function ProductStudio({
             Export
           </button>
           <button
-            onClick={
-              showForm
-                ? () => {
-                    setShowForm(false);
-                    resetForm();
-                  }
-                : () => setShowForm(true)
-            }
+            onClick={() => {
+              if (showForm) resetForm();
+              setShowForm((current) => !current);
+            }}
             className="inline-flex items-center gap-2 rounded-full bg-theme-bronze px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-ink"
           >
             {showForm ? <X className="h-3.5 w-3.5" /> : <PlusCircle className="h-3.5 w-3.5" />}
@@ -490,7 +363,6 @@ export default function ProductStudio({
           {apiError}
         </div>
       ) : null}
-
       {successMessage ? (
         <div className="mb-5 flex items-center gap-3 rounded-[1.2rem] border border-emerald-400/30 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-700">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
@@ -498,7 +370,7 @@ export default function ProductStudio({
         </div>
       ) : null}
 
-      <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_auto]">
+      <div className="mb-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
         <div className="flex items-center gap-3 rounded-full border border-theme-line/60 bg-white/70 px-4 py-3 dark:bg-white/5">
           <Search className="h-4 w-4 text-theme-bronze" />
           <input
@@ -509,612 +381,200 @@ export default function ProductStudio({
           />
         </div>
         <select
-          value={categoryFilter}
-          onChange={(event) => setCategoryFilter(event.target.value as (typeof categories)[number])}
+          value={mainCategoryFilter}
+          onChange={(event) => setMainCategoryFilter(event.target.value)}
           className="rounded-full border border-theme-line/60 bg-white/70 px-4 py-3 text-sm outline-none dark:bg-white/5"
         >
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category === 'all' ? 'All categories' : category}
-            </option>
+          <option value="all">All main categories</option>
+          {catalogOptions.mainCategories.map((entry) => (
+            <option key={entry._id} value={entry._id}>{entry.name}</option>
           ))}
         </select>
-        {selectedIds.length > 0 ? (
-          <button
-            onClick={() => handleDelete(selectedIds)}
-            className="rounded-full border border-red-300/70 bg-red-50/70 px-4 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-red-600"
-          >
-            Delete Selected
-          </button>
-        ) : null}
       </div>
 
       {showForm ? (
-        <form
-          onSubmit={handleSubmit}
-          className="mb-8 rounded-[2rem] border border-theme-line/50 bg-white/74 p-6 shadow-[0_20px_60px_rgba(49,30,21,0.07)] dark:bg-white/5"
-        >
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <form onSubmit={handleSubmit} className="mb-8 rounded-[2rem] border border-theme-line/50 bg-white/74 p-6 shadow-[0_20px_60px_rgba(49,30,21,0.07)] dark:bg-white/5">
+          <div className="grid gap-5 lg:grid-cols-2">
             <div>
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                {editingId ? 'Update Entry' : 'Create Entry'}
-              </p>
-              <h3 className="mt-2 font-display text-3xl text-theme-ink dark:text-theme-ivory">
-                {editingId ? 'Edit Product' : 'New Product'}
-              </h3>
+              <label className={labelClass()}>Product Name</label>
+              <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={inputClass()} />
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="rounded-full border border-theme-line/60 bg-theme-ivory/65 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-theme-walnut/68 dark:bg-white/6 dark:text-theme-ivory/62">
-                {completedViewCount} / {viewCards.length} named views ready
-              </div>
-              <div className="rounded-full border border-theme-line/60 bg-theme-ivory/65 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-theme-walnut/68 dark:bg-white/6 dark:text-theme-ivory/62">
-                {form.colors.filter((entry) => entry.name && entry.image).length} color variants
-              </div>
+            <div>
+              <label className={labelClass()}>Eyebrow / Label</label>
+              <input value={form.eyebrow} onChange={(event) => setForm((current) => ({ ...current, eyebrow: event.target.value }))} className={inputClass()} />
             </div>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <label className={labelClass()}>Product Name</label>
-              <input
-                value={form.name}
-                onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                className={inputClass()}
-              />
-            </div>
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
             <div>
-              <label className={labelClass()}>Category</label>
-              <select
-                value={form.category}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    category: event.target.value as ProductForm['category'],
-                  }))
-                }
-                className={inputClass()}
-              >
-                <option value="">Select category</option>
-                {PRODUCT_CATEGORIES.map((entry) => (
-                  <option key={entry} value={entry}>
-                    {entry}
-                  </option>
-                ))}
+              <label className={labelClass()}>Main Category</label>
+              <select value={form.mainCategoryId} onChange={(event) => setForm((current) => ({ ...current, mainCategoryId: event.target.value }))} className={inputClass(!form.mainCategoryId)}>
+                <option value="">Select main category</option>
+                {catalogOptions.mainCategories.map((entry) => <option key={entry._id} value={entry._id}>{entry.name}</option>)}
               </select>
             </div>
             <div>
-              <label className={labelClass()}>Eyebrow</label>
-              <input
-                value={form.eyebrow}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, eyebrow: event.target.value }))
-                }
-                className={inputClass()}
-              />
+              <label className={labelClass()}>Subcategory</label>
+              <select value={form.subCategoryId} onChange={(event) => setForm((current) => ({ ...current, subCategoryId: event.target.value }))} className={inputClass(!form.subCategoryId)}>
+                <option value="">Select subcategory</option>
+                {catalogOptions.subCategories.map((entry) => <option key={entry._id} value={entry._id}>{entry.name}</option>)}
+              </select>
             </div>
             <div>
-              <label className={labelClass()}>Price</label>
-              <input
-                type="number"
-                value={form.price}
-                onChange={(event) => setForm((current) => ({ ...current, price: event.target.value }))}
-                className={inputClass()}
-              />
-            </div>
-            <div>
-              <label className={labelClass()}>Stock</label>
-              <input
-                type="number"
-                value={form.stock}
-                onChange={(event) => setForm((current) => ({ ...current, stock: event.target.value }))}
-                className={inputClass()}
-              />
-            </div>
-            <div className="lg:col-span-3">
-              <label className={labelClass()}>Description</label>
-              <textarea
-                value={form.description}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, description: event.target.value }))
-                }
-                rows={3}
-                className={`resize-none ${inputClass()}`}
-              />
+              <label className={labelClass()}>Brand</label>
+              <select value={form.brandId} onChange={(event) => setForm((current) => ({ ...current, brandId: event.target.value }))} className={inputClass(!form.brandId)}>
+                <option value="">Select brand</option>
+                {catalogOptions.brands.map((entry) => <option key={entry._id} value={entry._id}>{entry.name}</option>)}
+              </select>
             </div>
           </div>
 
-          <div className="mt-8">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                  Image Views
-                </p>
-                <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">
-                  Upload named product angles so the storefront gallery has stable main, cover, left,
-                  right, top, and detail images.
-                </p>
-              </div>
-            </div>
+          <div className="mt-5">
+            <label className={labelClass()}>Description</label>
+            <textarea rows={4} value={form.description} onChange={(event) => setForm((current) => ({ ...current, description: event.target.value }))} className={inputClass()} />
+          </div>
 
-            <div className="grid gap-4 xl:grid-cols-3">
-              {viewCards.map((card) => (
-                <div
-                  key={card.key}
-                  className="rounded-[1.5rem] border border-theme-line/50 bg-theme-ivory/45 p-4 dark:bg-white/4"
-                >
-                  <div className="mb-3 flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-bronze">
-                        {card.label}
-                      </p>
-                      <p className="mt-1 text-xs text-theme-walnut/56 dark:text-theme-ivory/50">
-                        {card.hint}
-                      </p>
+          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div><label className={labelClass()}>Base Price</label><input type="number" min="0" value={form.basePrice} onChange={(event) => setForm((current) => ({ ...current, basePrice: event.target.value }))} className={inputClass()} /></div>
+            <div><label className={labelClass()}>Discount (%)</label><input type="number" min="0" value={form.discount} onChange={(event) => setForm((current) => ({ ...current, discount: event.target.value }))} className={inputClass()} /></div>
+            <div><label className={labelClass()}>Final Price</label><input type="number" min="0" value={form.finalPrice} onChange={(event) => setForm((current) => ({ ...current, finalPrice: event.target.value }))} className={inputClass()} /></div>
+            <div><label className={labelClass()}>Stock Quantity</label><input type="number" min="0" value={form.stockQuantity} onChange={(event) => setForm((current) => ({ ...current, stockQuantity: event.target.value }))} className={inputClass()} /></div>
+          </div>
+
+          <div className="mt-5 grid gap-5 lg:grid-cols-4">
+            <div className="lg:col-span-2"><label className={labelClass()}>Sizes</label><input value={form.sizeInput} onChange={(event) => setForm((current) => ({ ...current, sizeInput: event.target.value }))} className={inputClass()} placeholder="3 Seater, Compact" /></div>
+            <div className="flex items-center justify-between rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/45 px-5 py-4 dark:bg-white/4"><span className="text-sm font-semibold text-theme-ink dark:text-theme-ivory">In Stock</span><button type="button" onClick={() => setForm((current) => ({ ...current, inStock: !current.inStock }))} className={`relative h-8 w-14 rounded-full transition ${form.inStock ? 'bg-theme-bronze' : 'bg-theme-sand'}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${form.inStock ? 'left-7' : 'left-1'}`} /></button></div>
+            <div className="flex items-center justify-between rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/45 px-5 py-4 dark:bg-white/4"><span className="text-sm font-semibold text-theme-ink dark:text-theme-ivory">Active</span><button type="button" onClick={() => setForm((current) => ({ ...current, active: !current.active }))} className={`relative h-8 w-14 rounded-full transition ${form.active ? 'bg-theme-bronze' : 'bg-theme-sand'}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${form.active ? 'left-7' : 'left-1'}`} /></button></div>
+          </div>
+
+          <div className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-5">
+              <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Views</p>
+                    <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">Main image plus optional view URLs.</p>
+                  </div>
+                  <UploadButton busy={uploadingKey === 'main'} accept="image/png,image/jpeg,image/webp,image/avif" label="Upload Main" onSelect={(file) => handleUpload('main', (path) => setView('main', path), file)} />
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  {VIEW_KEYS.map((key) => (
+                    <div key={key}>
+                      <label className={labelClass()}>{key}</label>
+                      <input value={form.views[key]} onChange={(event) => setView(key, event.target.value)} className={inputClass(key === 'main' && !form.views.main)} placeholder={`/uploads/products/.../${key}.jpg`} />
                     </div>
-                    {form.views[card.key] ? (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setForm((current) => ({
-                            ...current,
-                            views: { ...current.views, [card.key]: '' },
-                          }))
-                        }
-                        className="rounded-full border border-theme-line/60 p-2 text-theme-walnut/50 transition hover:text-red-500 dark:text-theme-ivory/50"
-                        aria-label={`Clear ${card.label}`}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    ) : null}
-                  </div>
-                  <div className="h-40">
-                    <AssetPreview src={form.views[card.key]} alt={card.label} />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <UploadButton
-                      busy={uploadingKey === `view-${card.key}`}
-                      accept="image/png,image/jpeg,image/webp,image/avif"
-                      onSelect={(file) => handleViewUpload(card.key, file)}
-                    />
-                  </div>
-                  <div className="mt-3">
-                    <input
-                      value={form.views[card.key]}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          views: { ...current.views, [card.key]: event.target.value },
-                        }))
-                      }
-                      className={inputClass()}
-                      placeholder="Paste image URL or upload"
-                    />
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                    Additional Gallery
-                  </p>
-                  <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">
-                    Add any extra product shots beyond the named views.
-                  </p>
-                </div>
-                <UploadButton
-                  busy={uploadingKey === 'gallery'}
-                  accept="image/png,image/jpeg,image/webp,image/avif"
-                  onSelect={handleGalleryUpload}
-                  label="Upload Image"
-                />
               </div>
-              <div className="mt-4 space-y-3">
-                {form.gallery.length === 0 ? (
-                  <div className="rounded-[1.2rem] border border-dashed border-theme-line/60 px-4 py-6 text-center text-sm text-theme-walnut/55 dark:text-theme-ivory/50">
-                    No extra gallery images added yet.
+
+              <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Gallery</p>
+                    <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">Extra product images.</p>
                   </div>
-                ) : null}
-                {form.gallery.map((image, index) => (
-                  <div key={`${image}-${index}`} className="grid gap-3 md:grid-cols-[120px_1fr_auto]">
-                    <div className="h-24">
-                      <AssetPreview src={image} alt={`Gallery ${index + 1}`} />
+                  <UploadButton busy={uploadingKey === 'gallery'} accept="image/png,image/jpeg,image/webp,image/avif" label="Upload" onSelect={(file) => handleUpload('gallery', (path) => setForm((current) => ({ ...current, gallery: [...current.gallery, path] })), file)} />
+                </div>
+                <div className="space-y-3">
+                  {form.gallery.map((image, index) => (
+                    <div key={`${image}-${index}`} className="grid gap-3 md:grid-cols-[1fr_auto]">
+                      <input value={image} onChange={(event) => setForm((current) => ({ ...current, gallery: current.gallery.map((entry, entryIndex) => entryIndex === index ? event.target.value : entry) }))} className={inputClass()} />
+                      <button type="button" onClick={() => setForm((current) => ({ ...current, gallery: current.gallery.filter((_, entryIndex) => entryIndex !== index) }))} className="rounded-2xl border border-red-200/70 px-4 py-3 text-red-500"><Trash2 className="h-4 w-4" /></button>
                     </div>
-                    <input
-                      value={image}
-                      onChange={(event) =>
-                        setForm((current) => ({
-                          ...current,
-                          gallery: current.gallery.map((entry, entryIndex) =>
-                            entryIndex === index ? event.target.value : entry
-                          ),
-                        }))
-                      }
-                      className={inputClass()}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setForm((current) => ({
-                          ...current,
-                          gallery: current.gallery.filter((_, entryIndex) => entryIndex !== index),
-                        }))
-                      }
-                      className="rounded-2xl border border-red-200/70 px-4 py-3 text-red-500"
-                      aria-label="Remove gallery image"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  ))}
+                  {form.gallery.length === 0 ? <div className="rounded-[1.2rem] border border-dashed border-theme-line/60 px-4 py-5 text-center text-sm text-theme-walnut/55 dark:text-theme-ivory/50">No gallery images yet.</div> : null}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">3D Model</p>
+                    <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">Optional GLB or GLTF asset.</p>
                   </div>
-                ))}
+                  <UploadButton busy={uploadingKey === 'model'} accept=".glb,.gltf,model/gltf-binary,model/gltf+json" label="Upload" onSelect={(file) => handleUpload('model', (path) => setForm((current) => ({ ...current, modelPath: path })), file, 'model')} />
+                </div>
+                <input value={form.modelPath} onChange={(event) => setForm((current) => ({ ...current, modelPath: event.target.value }))} className={inputClass()} placeholder="/uploads/products/.../model.glb" />
               </div>
-            </div>
 
-            <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                    3D Model Asset
-                  </p>
-                  <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">
-                    Upload a GLB or GLTF file for the interactive viewer.
-                  </p>
+              <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Colors</p>
+                    <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">Finish names and swatch images.</p>
+                  </div>
+                  <button type="button" onClick={() => setForm((current) => ({ ...current, colors: [...current.colors, { name: '', image: '' }] }))} className="text-xs font-semibold uppercase tracking-[0.22em] text-theme-bronze">Add</button>
                 </div>
-                {form.modelPath ? (
-                  <button
-                    type="button"
-                    onClick={() => setForm((current) => ({ ...current, modelPath: '' }))}
-                    className="rounded-full border border-theme-line/60 p-2 text-theme-walnut/50 transition hover:text-red-500 dark:text-theme-ivory/50"
-                    aria-label="Clear model path"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                ) : null}
-              </div>
-              <div className="mt-4 rounded-[1.25rem] border border-theme-line/60 bg-white/65 px-4 py-4 text-sm text-theme-walnut/70 dark:bg-white/5 dark:text-theme-ivory/64">
-                <div className="flex items-center gap-3">
-                  <Box className="h-4 w-4 text-theme-bronze" />
-                  <span className="truncate">{form.modelPath || 'No model uploaded yet.'}</span>
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <UploadButton
-                  busy={uploadingKey === 'model'}
-                  accept=".glb,.gltf,model/gltf-binary,model/gltf+json"
-                  onSelect={handleModelUpload}
-                  label="Upload Model"
-                />
-              </div>
-              <div className="mt-3">
-                <input
-                  value={form.modelPath}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, modelPath: event.target.value }))
-                  }
-                  className={inputClass()}
-                  placeholder="/uploads/products/.../model.glb"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
-              <div className="mb-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                    Color Variants
-                  </p>
-                  <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/58">
-                    Each color entry can have its own swatch image.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      colors: [...current.colors, { name: '', image: '' }],
-                    }))
-                  }
-                  className="text-xs font-semibold uppercase tracking-[0.22em] text-theme-bronze"
-                >
-                  Add Variant
-                </button>
-              </div>
-              <div className="space-y-4">
-                {form.colors.map((color, index) => (
-                  <div
-                    key={`${index}-${color.name}`}
-                    className="rounded-[1.25rem] border border-theme-line/50 bg-white/70 p-4 dark:bg-white/5"
-                  >
-                    <div className="grid gap-4 md:grid-cols-[96px_1fr]">
-                      <div className="h-24">
-                        <AssetPreview src={color.image} alt={color.name || `Color ${index + 1}`} />
-                      </div>
-                      <div className="space-y-3">
-                        <input
-                          value={color.name}
-                          onChange={(event) =>
-                            setForm((current) => ({
-                              ...current,
-                              colors: current.colors.map((entry, entryIndex) =>
-                                entryIndex === index ? { ...entry, name: event.target.value } : entry
-                              ),
-                            }))
-                          }
-                          className={inputClass()}
-                          placeholder="Olive Velvet"
-                        />
-                        <input
-                          value={color.image}
-                          onChange={(event) =>
-                            setForm((current) => ({
-                              ...current,
-                              colors: current.colors.map((entry, entryIndex) =>
-                                entryIndex === index ? { ...entry, image: event.target.value } : entry
-                              ),
-                            }))
-                          }
-                          className={inputClass()}
-                          placeholder="/uploads/products/.../color.png"
-                        />
+                <div className="space-y-3">
+                  {form.colors.map((color, index) => (
+                    <div key={`${index}-${color.name}`} className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                      <input value={color.name} onChange={(event) => setForm((current) => ({ ...current, colors: current.colors.map((entry, entryIndex) => entryIndex === index ? { ...entry, name: event.target.value } : entry) }))} className={inputClass()} placeholder="Olive Velvet" />
+                      <input value={color.image} onChange={(event) => setForm((current) => ({ ...current, colors: current.colors.map((entry, entryIndex) => entryIndex === index ? { ...entry, image: event.target.value } : entry) }))} className={inputClass()} placeholder="/uploads/products/.../color.png" />
+                      <div className="flex gap-2">
+                        <UploadButton busy={uploadingKey === `color-${index}`} accept="image/png,image/jpeg,image/webp,image/avif" label="Swatch" onSelect={(file) => handleUpload(`color-${index}`, (path) => setForm((current) => ({ ...current, colors: current.colors.map((entry, entryIndex) => entryIndex === index ? { ...entry, image: path } : entry) })), file)} />
+                        {form.colors.length > 1 ? <button type="button" onClick={() => setForm((current) => ({ ...current, colors: current.colors.filter((_, entryIndex) => entryIndex !== index) }))} className="rounded-2xl border border-red-200/70 px-4 py-3 text-red-500"><Trash2 className="h-4 w-4" /></button> : null}
                       </div>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <UploadButton
-                        busy={uploadingKey === `color-${index}`}
-                        accept="image/png,image/jpeg,image/webp,image/avif"
-                        onSelect={(file) => handleColorUpload(index, file)}
-                        label="Upload Swatch"
-                      />
-                      {form.colors.length > 1 ? (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setForm((current) => ({
-                              ...current,
-                              colors: current.colors.filter((_, entryIndex) => entryIndex !== index),
-                            }))
-                          }
-                          className="inline-flex items-center gap-2 rounded-full border border-red-200/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-red-500"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          Remove
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                Specifications
-              </p>
-              <div className="mt-4 grid gap-4">
-                <div>
-                  <label className={labelClass()}>Material</label>
-                  <input
-                    value={form.specs.material}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        specs: { ...current.specs, material: event.target.value },
-                      }))
-                    }
-                    className={inputClass()}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass()}>Foam / Fill</label>
-                  <input
-                    value={form.specs.foam}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        specs: { ...current.specs, foam: event.target.value },
-                      }))
-                    }
-                    className={inputClass()}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass()}>Dimensions</label>
-                  <input
-                    value={form.specs.dimensions}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        specs: { ...current.specs, dimensions: event.target.value },
-                      }))
-                    }
-                    className={inputClass()}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass()}>Weight</label>
-                  <input
-                    value={form.specs.weight}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        specs: { ...current.specs, weight: event.target.value },
-                      }))
-                    }
-                    className={inputClass()}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass()}>Warranty</label>
-                  <input
-                    value={form.specs.warranty}
-                    onChange={(event) =>
-                      setForm((current) => ({
-                        ...current,
-                        specs: { ...current.specs, warranty: event.target.value },
-                      }))
-                    }
-                    className={inputClass()}
-                  />
+              <div className="rounded-[1.6rem] border border-theme-line/50 bg-theme-ivory/45 p-5 dark:bg-white/4">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Specifications</p>
+                <div className="mt-4 grid gap-3">
+                  <input value={form.specs.material} onChange={(event) => setForm((current) => ({ ...current, specs: { ...current.specs, material: event.target.value } }))} className={inputClass()} placeholder="Material" />
+                  <input value={form.specs.foam} onChange={(event) => setForm((current) => ({ ...current, specs: { ...current.specs, foam: event.target.value } }))} className={inputClass()} placeholder="Foam / Fill" />
+                  <input value={form.specs.dimensions} onChange={(event) => setForm((current) => ({ ...current, specs: { ...current.specs, dimensions: event.target.value } }))} className={inputClass()} placeholder="Dimensions" />
+                  <input value={form.specs.weight} onChange={(event) => setForm((current) => ({ ...current, specs: { ...current.specs, weight: event.target.value } }))} className={inputClass()} placeholder="Weight" />
+                  <input value={form.specs.warranty} onChange={(event) => setForm((current) => ({ ...current, specs: { ...current.specs, warranty: event.target.value } }))} className={inputClass()} placeholder="Warranty" />
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-white"
-            >
+            <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-white">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
               {saving ? 'Saving' : editingId ? 'Update Product' : 'Create Product'}
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowForm(false);
-                resetForm();
-              }}
-              className="rounded-full border border-theme-line/60 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-theme-walnut/68"
-            >
-              Cancel
-            </button>
+            <button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="rounded-full border border-theme-line/60 px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-theme-walnut/68">Cancel</button>
           </div>
         </form>
       ) : null}
 
       <div className="space-y-3">
-        {filteredProducts.map((product) => {
-          const assetCoverage = viewCards.filter((card) => product.media?.views?.[card.key]).length;
+        {filteredProducts.map((product) => (
+          <div key={product._id} className="rounded-[1.8rem] border border-theme-line/50 bg-white/76 p-5 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="h-16 w-16 overflow-hidden rounded-[1rem] border border-theme-line/50">
+                {product.imageUrl ? (
+                  <>
 
-          return (
-            <div
-              key={product._id}
-              className="overflow-hidden rounded-[1.8rem] border border-theme-line/50 bg-white/76 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5"
-            >
-              <div className="flex flex-wrap items-center gap-4 p-5">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.includes(product._id)}
-                  onChange={() =>
-                    setSelectedIds((current) =>
-                      current.includes(product._id)
-                        ? current.filter((id) => id !== product._id)
-                        : [...current, product._id]
-                    )
-                  }
-                />
-                <div className="h-16 w-16 overflow-hidden rounded-[1rem] border border-theme-line/50">
-                  <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
-                </div>
-                <div className="min-w-[220px] flex-1">
-                  <p className="text-base font-semibold text-theme-ink dark:text-theme-ivory">
-                    {product.name}
-                  </p>
-                  <p className="mt-1 text-xs text-theme-walnut/60 dark:text-theme-ivory/56">
-                    {product.category} | {product.eyebrow}
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-4">
-                  <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">
-                    {formatCurrency(product.price)}
-                  </div>
-                  <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">
-                    Stock {product.stock ?? 0}
-                  </div>
-                  <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">
-                    {product.colors.length} colors
-                  </div>
-                  <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">
-                    {assetCoverage}/{viewCards.length} views
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setExpandedId(expandedId === product._id ? null : product._id)}
-                    className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
-                  >
-                    {expandedId === product._id ? (
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    ) : (
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    )}
-                    Details
-                  </button>
-                  <button
-                    onClick={() => openEdit(product)}
-                    className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete([product._id])}
-                    className="inline-flex items-center gap-1 rounded-full border border-red-300/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-600"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete
-                  </button>
-                </div>
+                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                  </>
+                ) : null}
               </div>
-
-              {expandedId === product._id ? (
-                <div className="border-t border-theme-line/50 bg-theme-ivory/52 px-5 py-5 dark:bg-white/5">
-                  <div className="grid gap-5 lg:grid-cols-3">
-                    <div>
-                      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.26em] text-theme-bronze">
-                        Description
-                      </p>
-                      <p className="mt-2 text-sm leading-7 text-theme-walnut/72 dark:text-theme-ivory/64">
-                        {product.description}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.26em] text-theme-bronze">
-                        Specifications
-                      </p>
-                      <div className="mt-2 space-y-1 text-sm text-theme-walnut/72 dark:text-theme-ivory/64">
-                        <p>Material: {product.specs.material}</p>
-                        {product.specs.foam ? <p>Fill: {product.specs.foam}</p> : null}
-                        <p>Dimensions: {product.specs.dimensions}</p>
-                        <p>Weight: {product.specs.weight}</p>
-                        <p>Warranty: {product.specs.warranty}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.26em] text-theme-bronze">
-                        Asset Readiness
-                      </p>
-                      <div className="mt-2 space-y-2 text-sm text-theme-walnut/72 dark:text-theme-ivory/64">
-                        {viewCards.map((card) => (
-                          <div key={card.key} className="flex items-center justify-between gap-4">
-                            <span>{card.label}</span>
-                            <span className={product.media?.views?.[card.key] ? 'text-emerald-600' : 'text-theme-walnut/45 dark:text-theme-ivory/40'}>
-                              {product.media?.views?.[card.key] ? 'Ready' : 'Missing'}
-                            </span>
-                          </div>
-                        ))}
-                        <div className="flex items-center justify-between gap-4">
-                          <span>3D Model</span>
-                          <span className={product.modelPath ? 'text-emerald-600' : 'text-theme-walnut/45 dark:text-theme-ivory/40'}>
-                            {product.modelPath ? 'Ready' : 'Missing'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              <div className="min-w-[220px] flex-1">
+                <p className="text-base font-semibold text-theme-ink dark:text-theme-ivory">{product.name}</p>
+                <p className="mt-1 text-xs text-theme-walnut/60 dark:text-theme-ivory/56">
+                  {(product.mainCategoryName || product.category) || 'Unassigned'} | {product.subCategoryName || 'No subcategory'} | {product.brandName || 'No brand'}
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-4">
+                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{formatCurrency(product.finalPrice ?? product.price)}</div>
+                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">Stock {product.stockQuantity ?? product.stock ?? 0}</div>
+                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{product.active ?? true ? 'Active' : 'Hidden'}</div>
+                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{product.colors.length} colors</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={() => openEdit(product)} className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"><Pencil className="h-3.5 w-3.5" />Edit</button>
+                <button onClick={() => handleDelete(product._id)} className="inline-flex items-center gap-1 rounded-full border border-red-300/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-600"><Trash2 className="h-3.5 w-3.5" />Delete</button>
+              </div>
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </section>
   );

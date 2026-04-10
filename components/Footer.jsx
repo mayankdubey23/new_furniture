@@ -1,189 +1,66 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { Canvas } from '@react-three/fiber';
-import { ContactShadows, Environment, OrbitControls, useGLTF } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import * as THREE from 'three';
-import { gsap } from 'gsap';
-import { useOptimizePerformance } from '@/hooks/useOptimizePerformance';
+import FooterBurstOverlay from '@/components/decor/FooterBurstOverlay';
+import { DEFAULT_SITE_CONTENT } from '@/lib/content/siteContent';
 
-function FooterScene({ isDark, isVisible }) {
-  const sofaGroup = useRef(null);
-  const lampLightRef = useRef(null);
-  const glowIntensity = isDark ? 2.4 : 1.2;
-  const { scene } = useGLTF('/3D models/teal sofa 3d model.glb');
 
-  const clonedScene = useMemo(() => {
-    const clone = scene.clone(true);
-    clone.traverse((child) => {
-      if (child.isMesh && child.material) {
-        child.material = child.material.clone();
-        child.material.color.setHex(0xc78c5c);
-        child.material.emissive = new THREE.Color(0x26120a);
-        child.material.emissiveIntensity = 0.08;
-        child.castShadow = false;
-        child.receiveShadow = false;
-      }
-    });
 
-    clone.scale.set(0.58, 0.58, 0.58);
-    clone.position.set(-0.45, -0.18, 0);
-    clone.rotation.y = Math.PI * 0.12;
-    return clone;
-  }, [scene]);
 
-  useEffect(() => {
-    let lampTween;
-    if (sofaGroup.current && isVisible) {
-      gsap.from(sofaGroup.current.scale, {
-        x: 0.5,
-        y: 0.5,
-        z: 0.5,
-        duration: 1.1,
-        ease: 'power3.out',
-      });
-    }
 
-    if (lampLightRef.current && isVisible) {
-      lampTween = gsap.to(lampLightRef.current, {
-        intensity: glowIntensity * 1.5,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: 'power2.inOut',
-      });
-    }
 
-    return () => {
-      lampTween?.kill();
-    };
-  }, [glowIntensity, isVisible]);
 
-  return (
-    <>
-      <group position={[0, -0.5, 0]}>
-        <group ref={sofaGroup}>
-          <primitive object={clonedScene} />
-        </group>
 
-        <group position={[1.45, 0.48, -0.5]}>
-          <mesh>
-            <sphereGeometry args={[0.15, 12, 12]} />
-            <meshStandardMaterial color="#fff8dc" emissive="#fde68a" emissiveIntensity={1.4} />
-          </mesh>
-          <pointLight ref={lampLightRef} intensity={glowIntensity} color="#fff8dc" position={[0, 0.3, 0]} />
-        </group>
-
-        <mesh position={[-1.45, 0.1, -0.2]}>
-          <cylinderGeometry args={[0.06, 0.08, 0.72, 6]} />
-          <meshStandardMaterial color="#7abf71" />
-        </mesh>
-
-        <mesh position={[0.52, 0.82, -1.16]}>
-          <planeGeometry args={[0.5, 0.4]} />
-          <meshStandardMaterial color="#f6efe7" transparent opacity={0.82} />
-        </mesh>
-
-        <mesh position={[-0.8, -0.2, -1]}>
-          <boxGeometry args={[0.6, 0.05, 0.3]} />
-          <meshStandardMaterial color="#e6ddd2" />
-        </mesh>
-
-        <ContactShadows position={[0, 0, 0]} opacity={0.35} scale={10} blur={1.2} far={2.5} />
-      </group>
-
-      <ambientLight intensity={isDark ? 0.28 : 0.58} />
-      <directionalLight position={[3, 4, 2]} intensity={1.15} />
-      <pointLight position={[-3, 2, -2]} intensity={0.45} />
-    </>
-  );
-}
-
-export default function ThreeFooter({ isDark = true }) {
-  const footerRef = useRef(null);
-  const [canvasVisible, setCanvasVisible] = useState(false);
-  const { shouldReduceAnimations } = useOptimizePerformance();
-  const supportsInteractiveCanvas = useSyncExternalStore(
-    (onStoreChange) => {
-      if (typeof window === 'undefined') return () => {};
-      const mediaQuery = window.matchMedia('(min-width: 1024px) and (pointer: fine)');
-      mediaQuery.addEventListener('change', onStoreChange);
-      return () => mediaQuery.removeEventListener('change', onStoreChange);
-    },
-    () => window.matchMedia('(min-width: 1024px) and (pointer: fine)').matches,
-    () => false
-  );
-  const shouldRenderCanvas = canvasVisible && supportsInteractiveCanvas && !shouldReduceAnimations;
-
-  useEffect(() => {
-    const el = footerRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setCanvasVisible(entry.isIntersecting);
-      },
-      { threshold: 0.05, rootMargin: '100px' }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
-
+/**
+ * @param {{
+ *   collections?: import('@/lib/productCatalog').StorefrontCollectionLink[],
+ *   content?: import('@/lib/content/siteContent').FooterContent
+ * }} props
+ */
+export default function Footer({ collections = [], content = DEFAULT_SITE_CONTENT.footer }) {
   return (
     <footer
-      ref={footerRef}
+      data-site-footer
       className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]"
     >
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        {shouldRenderCanvas && (
-          <Canvas
-            camera={{ position: [0, 1.5, 5], fov: 45 }}
-            gl={{
-              toneMapping: THREE.ACESFilmicToneMapping,
-              antialias: false,
-              powerPreference: 'high-performance',
-              failIfMajorPerformanceCaveat: false,
-            }}
-            dpr={[1, 2]}
-          >
-            <Suspense fallback={null}>
-              <Environment preset="studio" />
-              <FooterScene isDark={isDark} isVisible={shouldRenderCanvas} />
-              <OrbitControls enablePan={false} enableZoom={false} enableRotate={false} autoRotate autoRotateSpeed={0.3} />
-              <EffectComposer disableNormalPass>
-                <Bloom luminanceThreshold={0.65} luminanceSmoothing={0.92} intensity={0.55} mipmapBlur />
-              </EffectComposer>
-            </Suspense>
-          </Canvas>
-        )}
-      </div>
+      <FooterBurstOverlay
+        videoSrc={content.burstVideo.src}
+        videoType={content.burstVideo.type}
+      />
+
+      <div className="absolute left-1/2 top-8 h-44 w-[38rem] max-w-[72vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(199,140,92,0.1),transparent_72%)] blur-3xl" />
 
       <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />
 
       <div className="relative z-20 mx-auto flex h-full max-w-[96rem] flex-col justify-between px-6 pb-10 pt-24 text-white md:px-10 lg:px-16">
         <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-white/10 bg-white/8 p-6 md:grid-cols-4 md:gap-12 md:p-8">
           <div className="md:col-span-1">
-            <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">Luxe Atelier</p>
-            <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ivory">LUXE</h2>
+            <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{content.brandLabel}</p>
+            <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ivory">{content.brandName}</h2>
             <p className="mb-6 text-sm leading-7 text-white/72">
-              Curated seating, tactile materials, and atmospheric 3D product storytelling for homes that want to feel composed and elevated.
+              {content.description}
             </p>
             <div className="flex flex-wrap gap-2">
-              <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/78">Furniture</span>
-              <span className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/78">3D Ready</span>
+              {content.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/78">
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Collections</h3>
             <ul className="space-y-3 text-sm text-white/68">
-              <li><Link href="/#sofa-3d-view-start" className="transition-colors hover:text-theme-bronze">Sofas</Link></li>
-              <li><Link href="/#chair-3d-view-start" className="transition-colors hover:text-theme-bronze">Chairs</Link></li>
-              <li><Link href="/#recliner-3d-view-start" className="transition-colors hover:text-theme-bronze">Recliners</Link></li>
-              <li><Link href="/#pouffe-3d-view-start" className="transition-colors hover:text-theme-bronze">Pouffes</Link></li>
+              {collections.length ? collections.map((collection) => (
+                <li key={collection.key}>
+                  <Link href={collection.href} className="transition-colors hover:text-theme-bronze">
+                    {collection.name}
+                  </Link>
+                </li>
+              )) : (
+                <li><Link href="/#collections" className="transition-colors hover:text-theme-bronze">Collections</Link></li>
+              )}
             </ul>
           </div>
 
@@ -198,8 +75,8 @@ export default function ThreeFooter({ isDark = true }) {
           </div>
 
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Stay Informed</h3>
-            <p className="mb-4 text-sm leading-7 text-white/68">Get first access to new drops, design notes, and private consultation openings.</p>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">{content.newsletterHeading}</h3>
+            <p className="mb-4 text-sm leading-7 text-white/68">{content.newsletterDescription}</p>
             <div className="flex gap-2">
               <input
                 type="email"

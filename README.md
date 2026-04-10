@@ -1,36 +1,60 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Luxe Furniture Storefront
 
-## Getting Started
+Next.js 16 storefront and admin panel for a luxury furniture catalog with 3D product views, dynamic media, checkout, and admin tooling.
 
-First, run the development server:
+## Commands
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run build
+npm run lint
+npm run typecheck
+npm run mock:server
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Dynamic Data Modes
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The app now supports three data sources:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `internal`: current Next.js routes and Mongo-backed server logic
+- `external`: your separate backend
+- `mock`: JSON Server using `mock-api/db.json`
 
-## Learn More
+Set one of these:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+NEXT_PUBLIC_DATA_SOURCE=internal
+NEXT_PUBLIC_DATA_SOURCE=external
+NEXT_PUBLIC_DATA_SOURCE=mock
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Optional API base URLs:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+NEXT_PUBLIC_EXTERNAL_API_BASE_URL=https://your-backend.example.com
+EXTERNAL_API_BASE_URL=https://your-backend.example.com
+NEXT_PUBLIC_MOCK_API_BASE_URL=http://localhost:4000
+```
 
-## Deploy on Vercel
+## Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `app/`: App Router pages and route handlers
+- `components/`: UI, admin tools, product views, decor, and canvas scenes
+- `lib/api/`: browser and server API helpers
+- `lib/services/`: dynamic data adapters for storefront and site content
+- `lib/content/`: content schemas and defaults
+- `lib/mocks/`: server-only mock database reader
+- `mock-api/`: JSON Server dataset and route aliases
+- `docs/backend-integration.md`: backend handoff notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Dynamic Content
+
+Homepage hero and footer videos are no longer hardcoded in the components. They now come from the site content service, which can be powered by:
+
+- local defaults
+- JSON mock data
+- your external backend
+
+## Backend Handoff
+
+See [docs/backend-integration.md](/docs/backend-integration.md) for the env setup, mock server details, and the minimum endpoints already wired into the storefront.

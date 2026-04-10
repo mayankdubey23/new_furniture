@@ -4,7 +4,6 @@ import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
 import { revalidateCatalogRoutes } from '@/lib/server/catalogRevalidation';
 import {
-  isProductCategory,
   normalizeProduct,
   prepareProductMutationInput,
 } from '@/lib/productCatalog';
@@ -15,8 +14,40 @@ export async function GET(request: NextRequest) {
   try {
     await dbConnect();
     const category = request.nextUrl.searchParams.get('category')?.trim().toLowerCase() ?? '';
-    const query = isProductCategory(category) ? { category } : {};
-    const products = await Product.find(query).sort({ category: 1, name: 1 }).lean();
+    const mainCategory = request.nextUrl.searchParams.get('mainCategory')?.trim() ?? '';
+    const subCategory = request.nextUrl.searchParams.get('subCategory')?.trim() ?? '';
+    const brand = request.nextUrl.searchParams.get('brand')?.trim() ?? '';
+    const activeParam = request.nextUrl.searchParams.get('active');
+    const query: Record<string, unknown> = {};
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (mainCategory) {
+      query.mainCategory = mainCategory;
+    }
+
+    if (subCategory) {
+      query.subCategory = subCategory;
+    }
+
+    if (brand) {
+      query.brand = brand;
+    }
+
+    if (activeParam === 'true') {
+      query.active = true;
+    } else if (activeParam === 'false') {
+      query.active = false;
+    }
+
+    const products = await Product.find(query)
+      .populate('mainCategory')
+      .populate('subCategory')
+      .populate('brand')
+      .sort({ category: 1, name: 1 })
+      .lean();
 
     return NextResponse.json(products.map((product) => normalizeProduct(product)), {
       headers: {
@@ -36,11 +67,16 @@ export async function POST(request: NextRequest) {
     await dbConnect();
     const data = await request.json();
     const payload = prepareProductMutationInput(data);
-    const product = await Product.create(payload);
+    const created = await Product.create(payload);
+    const product = await Product.findById(created._id)
+      .populate('mainCategory')
+      .populate('subCategory')
+      .populate('brand')
+      .lean();
 
-    revalidateCatalogRoutes(String(product._id));
+    revalidateCatalogRoutes(String(created._id));
 
-    return NextResponse.json(normalizeProduct(product.toObject()), {
+    return NextResponse.json(normalizeProduct(product ?? created.toObject()), {
       status: 201,
       headers: {
         'Cache-Control': 'no-store',

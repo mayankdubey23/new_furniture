@@ -12,7 +12,7 @@ export default function CartPage() {
         <div className="max-w-3xl mx-auto text-center">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">Your cart is empty</h1>
           <Link
-            href="/#sofas"
+            href="/#collections"
             className="inline-flex items-center px-6 py-3 border border-transparent text-sm font-semibold uppercase tracking-widest rounded-full text-white bg-theme-bronze hover:bg-theme-ink transition-all"
           >
             Continue Shopping
@@ -29,6 +29,7 @@ export default function CartPage() {
         <div className="space-y-6">
           {cart.map((item) => (
             <div key={item.id} className="flex bg-white/70 dark:bg-white/5 rounded-2xl shadow border border-theme-line/40 overflow-hidden">
+
               <img src={item.image} alt={item.name} className="w-28 h-28 object-cover" />
               <div className="p-5 flex-1">
                 <h3 className="text-base font-semibold text-theme-ink dark:text-white">{item.name}</h3>
@@ -71,17 +72,20 @@ export default function CartPage() {
             <span className="text-theme-bronze">₹{totalPrice.toLocaleString('en-IN')}</span>
           </div>
           <div className="mt-6 flex flex-col gap-3">
+            <p className="text-center text-[11px] font-semibold uppercase tracking-[0.24em] text-theme-walnut/55 dark:text-theme-ivory/50">
+              Customize first or go straight to checkout
+            </p>
             <Link
               href="/customization"
               className="w-full text-center rounded-full border border-theme-line/50 py-3 text-xs font-bold uppercase tracking-[0.25em] text-theme-walnut hover:border-theme-bronze hover:text-theme-bronze dark:text-theme-ivory/70 dark:hover:text-theme-bronze transition-all"
             >
-              Customize Your Pieces
+              Customize
             </Link>
             <Link
               href="/checkout"
               className="w-full text-center rounded-full bg-theme-ink py-3 text-sm font-bold uppercase tracking-[0.28em] text-white hover:bg-theme-bronze transition-all dark:bg-white dark:text-[var(--theme-contrast-ink)]"
             >
-              Proceed to Checkout
+              Checkout
             </Link>
           </div>
         </div>

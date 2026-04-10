@@ -17,7 +17,10 @@ import {
   Users,
   Wallet,
 } from 'lucide-react';
+import CatalogCollectionsStudio from '@/components/admin/CatalogCollectionsStudio';
 import ProductStudio from '@/components/admin/ProductStudio';
+import type { CatalogOptionsResponse } from '@/lib/catalogEntities';
+import { getApiUrl } from '@/lib/api/browser';
 import {
   AdminOrder,
   AdminProduct,
@@ -40,6 +43,12 @@ const defaultSettings: AdminSettingsState = {
     displayName: 'LUXE Administrator',
     email: 'admin@luxe.local',
   },
+};
+
+const defaultCatalogOptions: CatalogOptionsResponse = {
+  mainCategories: [],
+  subCategories: [],
+  brands: [],
 };
 
 function SectionShell({
@@ -96,27 +105,31 @@ export default function AdminDashboardPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [settings, setSettings] = useState<AdminSettingsState>(defaultSettings);
+  const [catalogOptions, setCatalogOptions] = useState<CatalogOptionsResponse>(defaultCatalogOptions);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
 
   const refreshDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const [productsRes, ordersRes, settingsRes] = await Promise.all([
-        fetch('/api/products', { cache: 'no-store' }),
-        fetch('/api/orders', { credentials: 'include', cache: 'no-store' }),
-        fetch('/api/admin/settings', { cache: 'no-store' }),
+      const [productsRes, ordersRes, settingsRes, catalogRes] = await Promise.all([
+        fetch(getApiUrl('/api/products'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/orders'), { credentials: 'include', cache: 'no-store' }),
+        fetch(getApiUrl('/api/admin/settings'), { cache: 'no-store' }),
+        fetch(getApiUrl('/api/admin/catalog-options'), { cache: 'no-store' }),
       ]);
 
-      const [productData, orderData, settingsData] = await Promise.all([
+      const [productData, orderData, settingsData, catalogData] = await Promise.all([
         productsRes.json(),
         ordersRes.ok ? ordersRes.json() : [],
         settingsRes.ok ? settingsRes.json() : defaultSettings,
+        catalogRes.ok ? catalogRes.json() : defaultCatalogOptions,
       ]);
 
       setProducts(Array.isArray(productData) ? productData : []);
       setOrders(Array.isArray(orderData) ? orderData : []);
       setSettings(settingsData?.maintenanceMessage ? settingsData : defaultSettings);
+      setCatalogOptions(catalogData?.mainCategories ? catalogData : defaultCatalogOptions);
     } finally {
       setLoading(false);
     }
@@ -137,7 +150,7 @@ export default function AdminDashboardPage() {
 
   const handleSaveSettings = async () => {
     setSavingSettings(true);
-    const response = await fetch('/api/admin/settings', {
+    const response = await fetch(getApiUrl('/api/admin/settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -294,8 +307,14 @@ export default function AdminDashboardPage() {
         </SectionShell>
       </div>
 
+      <CatalogCollectionsStudio catalogOptions={catalogOptions} onRefresh={refreshDashboard} />
+
       <div id="products">
-        <ProductStudio products={products} onRefresh={refreshDashboard} />
+        <ProductStudio
+          products={products}
+          catalogOptions={catalogOptions}
+          onRefresh={refreshDashboard}
+        />
       </div>
 
       <SectionShell eyebrow="Store Operations" title="Order Management" action={<Link href="/admin/orders" className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze dark:bg-white dark:text-[var(--theme-contrast-ink)]">Open Full Orders <ArrowRight className="h-3.5 w-3.5" /></Link>}>

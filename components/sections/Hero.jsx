@@ -4,22 +4,15 @@ import { useRef, useEffect, useSyncExternalStore } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion } from 'framer-motion';
+import { DEFAULT_SITE_CONTENT } from '@/lib/content/siteContent';
 
-const titleRows = [
-  { text: 'Furniture', className: 'hero-piece hero-piece-left text-theme-ivory' },
-  { text: 'that', className: 'hero-piece hero-piece-top text-theme-ivory/88' },
-  { text: 'arrives', className: 'hero-piece hero-piece-right text-theme-bronze' },
-  { text: 'like', className: 'hero-piece hero-piece-bottom text-theme-ivory/88' },
-  { text: 'art.', className: 'hero-piece hero-piece-depth text-theme-ivory' },
-];
-
-export default function Hero() {
+export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
   const container = useRef();
   const overlayRef = useRef();
   const orbOneRef = useRef();
   const orbTwoRef = useRef();
   const videoRef = useRef();
-  // Use refs instead of state so scroll events don't trigger re-renders or GSAP re-runs
+
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
   const isMobile = useSyncExternalStore(
@@ -71,8 +64,8 @@ export default function Hero() {
           .from('.hero-piece-depth', { scale: 0.7, opacity: 0, duration: 0.75, ease: 'expo.out' }, '-=0.65');
       }
 
-      // Only run mouse tracking on desktop — isScrolling checked via ref, not state,
-      // so this effect only re-runs when isMobile changes (not on every scroll event).
+
+
       if (!isMobile && container.current) {
         let lastMoveTime = 0;
         const THROTTLE_MS = 50;
@@ -100,34 +93,36 @@ export default function Hero() {
         };
       }
     },
-    // ✅ Removed isScrolling from deps — it was causing full GSAP re-init on every scroll
+
     { scope: container, dependencies: [isMobile] }
   );
 
   return (
     <section ref={container} id="hero" className="relative h-[100svh] overflow-hidden bg-theme-ink">
-      {/* Video — preload="none" defers network request until browser is idle */}
+
       <video
         ref={videoRef}
+        aria-hidden="true"
         autoPlay
         loop
         muted
         playsInline
-        preload="none"
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        preload={content.video.preload || 'none'}
+        disablePictureInPicture
+        className="absolute inset-0 block h-full w-full min-h-full min-w-full object-cover object-center"
         style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
         onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0; }}
       >
-        <source src="/Furniture_Assembles.mp4#t=0" type="video/mp4" />
+        <source src={`${content.video.src}#t=0`} type={content.video.type || 'video/mp4'} />
       </video>
 
-      {/* Overlay */}
+
       <div
         ref={overlayRef}
         className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.18),transparent_22%),linear-gradient(115deg,rgba(18,14,11,0.58)_10%,rgba(18,14,11,0.24)_42%,rgba(18,14,11,0.6)_100%)]"
       />
 
-      {/* Content */}
+
       <div className="relative z-10 mx-auto flex h-full w-full max-w-[90rem] items-center px-6 pt-24 sm:px-10 md:px-14 md:pt-28 lg:px-20 lg:pt-32">
         <div className="max-w-[34rem] pb-10 sm:pb-12 lg:pb-14">
           <motion.div
@@ -137,12 +132,12 @@ export default function Hero() {
             className="mb-6 inline-flex items-center gap-3 rounded-full border border-white/14 bg-black/30 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-theme-ivory/80"
           >
             <span className="h-2 w-2 rounded-full bg-theme-bronze" />
-            Sculpted Interiors
+            {content.eyebrow}
           </motion.div>
 
-          {/* ✅ Removed willChange:transform from every span — only animated elements need it */}
+
           <div className="space-y-1 font-display text-[2.8rem] leading-[0.86] sm:text-[3.5rem] md:text-[4.25rem] lg:text-[4.9rem] xl:text-[5.3rem]">
-            {titleRows.map((piece) => (
+            {content.titleRows.map((piece) => (
               <div key={piece.text}>
                 <span className={`inline-block ${piece.className}`}>{piece.text}</span>
               </div>
@@ -155,12 +150,12 @@ export default function Hero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-6 max-w-md text-sm leading-7 text-theme-ivory/72 md:text-base"
           >
-            Discover statement seating, tactile finishes, and gallery-inspired furniture designed to make every room feel curated.
+            {content.description}
           </motion.p>
         </div>
       </div>
 
-      {/* Animated orbs — GPU-composited via transform, no blur filter */}
+
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           ref={orbOneRef}
@@ -176,7 +171,7 @@ export default function Hero() {
         />
       </div>
 
-      {/* Scroll indicator */}
+
       <div className="pointer-events-none absolute inset-0 z-10">
         <motion.div
           initial={{ opacity: 0, y: 18 }}
@@ -184,7 +179,7 @@ export default function Hero() {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 rounded-full border border-white/10 bg-black/25 px-5 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-ivory/65 md:block"
         >
-          Scroll to uncover the collection
+          {content.scrollHint}
         </motion.div>
       </div>
     </section>

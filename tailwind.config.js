@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+
 module.exports = {
   darkMode: 'class',
   content: [
@@ -9,11 +9,11 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'theme-beige': '#F5F5DC',      // Light cream/beige background ke liye
-        'theme-brown': '#5C4033',      // Dark brown text aur borders ke liye
-        'theme-teal': '#008080',       // Teal accents aur buttons ke liye
-        'theme-forest': '#228B22',     // Forest green highlights ke liye
-        'theme-dark-forest': '#1a6b1a' // Hover effects ke liye
+        'theme-beige': '#F5F5DC',
+        'theme-brown': '#5C4033',
+        'theme-teal': '#008080',
+        'theme-forest': '#228B22',
+        'theme-dark-forest': '#1a6b1a'
       },
     },
   },

@@ -58,7 +58,7 @@ function SofaForm({ paused }) {
 
 export default function EthosScene() {
   const wrapperRef = useRef(null);
-  // ✅ Pause useFrame when the canvas is not visible to save GPU cycles
+
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {

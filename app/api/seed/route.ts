@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { seedProducts } from '@/lib/seed';
 
-// Dev-only endpoint: GET /api/seed
-// Seeds the database with initial product data.
+
+
 export async function GET() {
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 });

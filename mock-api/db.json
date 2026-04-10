@@ -1,0 +1,192 @@
+{
+  "siteContent": {
+    "hero": {
+      "eyebrow": "Sculpted Interiors",
+      "titleRows": [
+        { "text": "Furniture", "className": "hero-piece hero-piece-left text-theme-ivory" },
+        { "text": "that", "className": "hero-piece hero-piece-top text-theme-ivory/88" },
+        { "text": "arrives", "className": "hero-piece hero-piece-right text-theme-bronze" },
+        { "text": "like", "className": "hero-piece hero-piece-bottom text-theme-ivory/88" },
+        { "text": "art.", "className": "hero-piece hero-piece-depth text-theme-ivory" }
+      ],
+      "description": "Discover statement seating, tactile finishes, and gallery-inspired furniture designed to make every room feel curated.",
+      "scrollHint": "Scroll to uncover the collection",
+      "video": {
+        "src": "/Furniture_Assembles.mp4",
+        "type": "video/mp4",
+        "poster": "/hero-poster.jpg",
+        "preload": "none"
+      }
+    },
+    "footer": {
+      "brandLabel": "Luxe Atelier",
+      "brandName": "LUXE",
+      "description": "Curated seating, tactile materials, and atmospheric product storytelling for homes that want to feel composed and elevated.",
+      "tags": ["Furniture", "SVG Gallery"],
+      "newsletterHeading": "Stay Informed",
+      "newsletterDescription": "Get first access to new drops, design notes, and private consultation openings.",
+      "burstVideo": {
+        "src": "/Luxury_Pillow_Burst_Animation_Video.footer.mp4",
+        "type": "video/mp4",
+        "preload": "metadata"
+      }
+    }
+  },
+  "products": [
+    {
+      "id": "mock-sofa-milano",
+      "_id": "mock-sofa-milano",
+      "category": "sofa",
+      "name": "Milano Sculpted Sofa",
+      "description": "Layered in deep olive velvet with a softly curved silhouette, this statement sofa anchors the room with gallery-grade presence and cloud-soft comfort.",
+      "price": 45000,
+      "stock": 7,
+      "imageUrl": "/products/sofa/main.png",
+      "eyebrow": "Signature Sofa",
+      "modelPath": "/3D%20models/teal%20sofa%203d%20model.glb",
+      "mainCategoryName": "Sofa",
+      "subCategoryName": "Signature Collection",
+      "brandName": "LUXE Studio",
+      "basePrice": 45000,
+      "discount": 0,
+      "finalPrice": 45000,
+      "inStock": true,
+      "stockQuantity": 7,
+      "size": ["3 Seater"],
+      "pic": [
+        "/products/sofa/main.png",
+        "/products/sofa/cover.png",
+        "/products/sofa/top.png"
+      ],
+      "color": ["Olive Velvet", "Bronze Leather"],
+      "colors": [
+        { "name": "Olive Velvet", "image": "/products/sofa/main.png" },
+        { "name": "Bronze Leather", "image": "/products/sofa/bronge leather.png" }
+      ],
+      "specs": {
+        "material": "Antimicrobial polyester fabric upholstery",
+        "foam": "Foam and spring seat filling",
+        "dimensions": "3-Seater: 225 cm x 99 cm x 91 cm",
+        "weight": "",
+        "warranty": "Vacuum clean; assembly required"
+      },
+      "media": {
+        "views": {
+          "main": "/products/sofa/main.png",
+          "cover": "/products/sofa/cover.png",
+          "top": "/products/sofa/top.png"
+        },
+        "gallery": [
+          "/products/sofa/main.png",
+          "/products/sofa/cover.png",
+          "/products/sofa/top.png"
+        ]
+      },
+      "active": true
+    },
+    {
+      "id": "mock-chair-verona",
+      "_id": "mock-chair-verona",
+      "category": "chair",
+      "name": "Verona Accent Chair",
+      "description": "A sculpted lounge chair with curved arms, rich textured upholstery, and a compact footprint that adds depth to reading corners and formal seating areas.",
+      "price": 18500,
+      "stock": 12,
+      "imageUrl": "/products/chairs/main.png",
+      "eyebrow": "Accent Seating",
+      "modelPath": "/3D%20models/teal+velvet+armchair+3d+model.glb",
+      "mainCategoryName": "Chair",
+      "subCategoryName": "Accent Collection",
+      "brandName": "LUXE Studio",
+      "basePrice": 18500,
+      "discount": 0,
+      "finalPrice": 18500,
+      "inStock": true,
+      "stockQuantity": 12,
+      "size": ["Single"],
+      "pic": [
+        "/products/chairs/main.png",
+        "/products/chairs/cover.png",
+        "/products/chairs/top.png"
+      ],
+      "color": ["Cognac Leather", "Forest Green"],
+      "colors": [
+        { "name": "Cognac Leather", "image": "/products/chairs/Cognac Leather.png" },
+        { "name": "Forest Green", "image": "/products/chairs/Forest Green.png" }
+      ],
+      "specs": {
+        "material": "Fabric upholstery",
+        "foam": "Foam and spring seat filling",
+        "dimensions": "1-Seater: 85 cm x 88 cm x 80 cm",
+        "weight": "",
+        "warranty": "Professional cleaning; assembly required"
+      },
+      "media": {
+        "views": {
+          "main": "/products/chairs/main.png",
+          "cover": "/products/chairs/cover.png",
+          "top": "/products/chairs/top.png"
+        },
+        "gallery": [
+          "/products/chairs/main.png",
+          "/products/chairs/cover.png",
+          "/products/chairs/top.png"
+        ]
+      },
+      "active": true
+    }
+  ],
+  "mainCategories": [
+    { "id": "cat-sofa", "name": "Sofa", "slug": "sofa" },
+    { "id": "cat-chair", "name": "Chair", "slug": "chair" }
+  ],
+  "subCategories": [
+    { "id": "sub-signature", "name": "Signature Collection", "slug": "signature-collection" },
+    { "id": "sub-accent", "name": "Accent Collection", "slug": "accent-collection" }
+  ],
+  "brands": [
+    { "id": "brand-luxe", "name": "LUXE Studio", "slug": "luxe-studio" }
+  ],
+  "orders": [
+    {
+      "id": "order-1001",
+      "customer": {
+        "name": "Aarav Mehta",
+        "email": "aarav@example.com",
+        "phone": "9876543210",
+        "city": "Bengaluru"
+      },
+      "status": "paid",
+      "totalPrice": 45000,
+      "createdAt": "2026-04-01T10:30:00.000Z",
+      "items": [{ "name": "Milano Sculpted Sofa", "quantity": 1, "price": 45000 }]
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notification-1",
+      "title": "New order received",
+      "message": "A new Milano Sculpted Sofa order just came in.",
+      "createdAt": "2026-04-09T09:30:00.000Z",
+      "read": false
+    }
+  ],
+  "customizations": [],
+  "adminSettings": {
+    "maintenanceMode": false,
+    "maintenanceMessage": "We are refreshing the atelier. Please check back shortly."
+  },
+  "catalogOptions": {
+    "mainCategories": [
+      { "id": "cat-sofa", "name": "Sofa" },
+      { "id": "cat-chair", "name": "Chair" }
+    ],
+    "subCategories": [
+      { "id": "sub-signature", "name": "Signature Collection" },
+      { "id": "sub-accent", "name": "Accent Collection" }
+    ],
+    "brands": [
+      { "id": "brand-luxe", "name": "LUXE Studio" }
+    ]
+  }
+}

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { getApiUrl } from '@/lib/api/browser';
 
 interface CustomizationRequest {
   _id: string;
@@ -29,48 +30,47 @@ interface CustomizationRequest {
 
 export default function AdminCustomizationsPage() {
   const [customizations, setCustomizations] = useState<CustomizationRequest[]>([]);
-  const [filteredCustomizations, setFilteredCustomizations] = useState<CustomizationRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<CustomizationRequest | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    fetchCustomizations();
-  }, [statusFilter]);
-
-  const fetchCustomizations = async () => {
+  const fetchCustomizations = useCallback(async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (statusFilter && statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
-      const response = await fetch(`/api/admin/customizations?${params}`);
+      const response = await fetch(getApiUrl(`/api/admin/customizations?${params}`));
       const data = await response.json();
       setCustomizations(data.customizations);
-      setFilteredCustomizations(data.customizations);
     } catch (error) {
       console.error('Error fetching customizations:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter]);
 
   useEffect(() => {
-    const filtered = customizations.filter((item: CustomizationRequest) =>
-      item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredCustomizations(filtered);
-  }, [searchTerm]);
+    void fetchCustomizations();
+  }, [fetchCustomizations]);
+
+  const filteredCustomizations = useMemo(
+    () =>
+      customizations.filter((item: CustomizationRequest) =>
+        item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.productName.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    [customizations, searchTerm]
+  );
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     setUpdatingStatus(true);
     try {
-      const response = await fetch('/api/admin/customizations', {
+      const response = await fetch(getApiUrl('/api/admin/customizations'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
@@ -108,7 +108,7 @@ export default function AdminCustomizationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-theme-ink via-theme-ink/95 to-theme-ink/90 p-6 md:p-10">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
+
         <div className="mb-12">
           <h1 className="font-display text-3xl md:text-4xl text-theme-ivory mb-2">
             Customization Requests
@@ -118,7 +118,7 @@ export default function AdminCustomizationsPage() {
           </p>
         </div>
 
-        {/* Filters */}
+
         <div className="mb-8 grid gap-4 md:grid-cols-3">
           <input
             type="text"
@@ -142,7 +142,7 @@ export default function AdminCustomizationsPage() {
           </select>
         </div>
 
-        {/* Table */}
+
         {loading ? (
           <div className="text-center py-10">
             <p className="text-theme-ivory/60">Loading customizations...</p>
@@ -235,7 +235,7 @@ export default function AdminCustomizationsPage() {
         )}
       </div>
 
-      {/* Detail Modal */}
+
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
           <motion.div
@@ -243,7 +243,7 @@ export default function AdminCustomizationsPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-theme-bronze/20 bg-theme-ink p-8 backdrop-blur-md"
           >
-            {/* Header */}
+
             <div className="mb-6 flex items-start justify-between">
               <div>
                 <h2 className="font-display text-2xl text-theme-ivory">
@@ -259,12 +259,12 @@ export default function AdminCustomizationsPage() {
               </button>
             </div>
 
-            {/* Divider */}
+
             <div className="mb-6 border-t border-theme-bronze/20" />
 
-            {/* Content */}
+
             <div className="space-y-6">
-              {/* Basic Info */}
+
               <div>
                 <h3 className="mb-3 font-semibold text-theme-ivory">Customer Information</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -289,7 +289,7 @@ export default function AdminCustomizationsPage() {
                 </div>
               </div>
 
-              {/* Product Details */}
+
               <div>
                 <h3 className="mb-3 font-semibold text-theme-ivory">Product Details</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -312,7 +312,7 @@ export default function AdminCustomizationsPage() {
                 </div>
               </div>
 
-              {/* Color Info */}
+
               <div>
                 <h3 className="mb-3 font-semibold text-theme-ivory">Color Selection</h3>
                 {selectedItem.selectedFeaturedColor && (
@@ -341,7 +341,7 @@ export default function AdminCustomizationsPage() {
                 )}
               </div>
 
-              {/* Add-ons */}
+
               {selectedItem.selectedAddons?.length > 0 && (
                 <div>
                   <h3 className="mb-3 font-semibold text-theme-ivory">Add-ons</h3>
@@ -358,7 +358,7 @@ export default function AdminCustomizationsPage() {
                 </div>
               )}
 
-              {/* Custom Description */}
+
               {selectedItem.customDescription && (
                 <div>
                   <h3 className="mb-3 font-semibold text-theme-ivory">Custom Notes</h3>
@@ -368,7 +368,7 @@ export default function AdminCustomizationsPage() {
                 </div>
               )}
 
-              {/* Delivery Preferences */}
+
               <div>
                 <h3 className="mb-3 font-semibold text-theme-ivory">Delivery Preferences</h3>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -383,7 +383,7 @@ export default function AdminCustomizationsPage() {
                 </div>
               </div>
 
-              {/* Timestamps */}
+
               <div className="rounded-lg border border-theme-bronze/20 bg-theme-bronze/5 p-4 text-xs">
                 <p className="text-theme-ivory/60">
                   Submitted: {new Date(selectedItem.createdAt).toLocaleDateString()}
@@ -396,7 +396,7 @@ export default function AdminCustomizationsPage() {
               </div>
             </div>
 
-            {/* Status Update */}
+
             <div className="mt-8 border-t border-theme-bronze/20 pt-6">
               <h3 className="mb-4 font-semibold text-theme-ivory">Update Status</h3>
               <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
@@ -419,7 +419,7 @@ export default function AdminCustomizationsPage() {
               </div>
             </div>
 
-            {/* Close Button */}
+
             <button
               onClick={() => setSelectedItem(null)}
               className="mt-6 w-full rounded-lg bg-theme-bronze px-4 py-3 font-semibold text-white hover:bg-theme-bronze/90 transition-colors"

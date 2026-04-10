@@ -5,10 +5,11 @@ import jwt from 'jsonwebtoken';
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
-export async function verifyAdmin(_request?: NextRequest) {
+export async function verifyAdmin(request?: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('admin-token')?.value;
+    const token =
+      request?.cookies.get('admin-token')?.value ??
+      (await cookies()).get('admin-token')?.value;
     if (!token) return null;
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { username: string };
@@ -18,12 +19,12 @@ export async function verifyAdmin(_request?: NextRequest) {
   }
 }
 
-export async function adminMiddleware(_request: NextRequest) {
-  const user = await verifyAdmin();
+export async function adminMiddleware(request: NextRequest) {
+  const user = await verifyAdmin(request);
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  return null; // ok
+  return null;
 }
 
 export async function login(username: string, password: string) {
