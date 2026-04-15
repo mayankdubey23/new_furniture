@@ -1,5 +1,6 @@
 import './globals.css';
 import 'lenis/dist/lenis.css';
+import Script from 'next/script';
 import Navbar from '@/components/Navbar';
 import CushionCascade from '@/components/decor/CushionCascade';
 import SmoothScrolling from '@/components/SmoothScrolling';
@@ -27,6 +28,14 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="bg-theme-ivory text-theme-walnut antialiased">
+        <Script id="scroll-restoration-reset" strategy="beforeInteractive">
+          {`
+            if ('scrollRestoration' in window.history) {
+              window.history.scrollRestoration = 'manual';
+            }
+            window.scrollTo(0, 0);
+          `}
+        </Script>
         <PerformanceMonitoring />
         <ThemeProvider>
           <MaintenanceGate />

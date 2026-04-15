@@ -46,7 +46,7 @@ export async function PUT(
     const data = await request.json();
     const payload = prepareCatalogEntityMutationInput(data, 'Brand');
     const entity = await Brand.findByIdAndUpdate(id, payload, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     }).lean();
 

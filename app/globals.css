@@ -4,6 +4,8 @@
 :root {
   --font-body-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
   --font-display-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Georgia, serif;
+  --site-shell-max: 96rem;
+  --site-shell-gutter: clamp(1.25rem, 0.85rem + 1.15vw, 2.5rem);
   --theme-ivory: #f4eee5;
   --theme-sand: #ddd0bd;
   --theme-walnut: #4f3528;
@@ -201,6 +203,17 @@ body::after {
   font-family: var(--font-display-family), serif;
 }
 
+.site-shell,
+.site-shell-content {
+  width: min(calc(100% - 1rem), var(--site-shell-max));
+  margin-inline: auto;
+}
+
+.site-shell-gutter,
+.site-shell-content {
+  padding-inline: var(--site-shell-gutter);
+}
+
 .section-shell {
   position: relative;
 }
@@ -296,5 +309,12 @@ body::after {
   .cushion-drift-reverse,
   .cushion-drift-delayed {
     animation: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .site-shell,
+  .site-shell-content {
+    width: min(calc(100% - 2rem), var(--site-shell-max));
   }
 }

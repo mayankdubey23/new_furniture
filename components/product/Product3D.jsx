@@ -21,6 +21,8 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
   const [shouldLoadModel, setShouldLoadModel] = useState(false);
   const [modelLoaded, setModelLoaded] = useState(false);
   const showHeadingChairMotif = String(data?.category || '').trim().toLowerCase() === 'chair';
+  const stockQuantity = Number(data?.stockQuantity ?? data?.stock ?? 0);
+  const isOutOfStock = data?.inStock === false || stockQuantity <= 0;
 
   if (!data?.imageUrl && !data?.modelPath) return null;
 
@@ -168,6 +170,9 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
             >
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-theme-sand/70">Starting At</p>
               <p className="mt-3 font-display text-5xl text-theme-ivory">Rs. {data.price.toLocaleString('en-IN')}</p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-theme-sand/76">
+                {isOutOfStock ? 'Currently Out of Stock' : `${stockQuantity} Units Available`}
+              </p>
             </motion.div>
 
             <motion.div

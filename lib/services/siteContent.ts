@@ -1,11 +1,11 @@
 import 'server-only';
 
-import { cache } from 'react';
 import {
   DEFAULT_SITE_CONTENT,
   normalizeSiteContent,
   type SiteContent,
 } from '@/lib/content/siteContent';
+import { getAdminSettings } from '@/lib/services/adminSettings';
 import {
   fetchServerJson,
   getExternalSiteContentPath,
@@ -31,7 +31,16 @@ async function getExternalSiteContent() {
   }
 }
 
-export const getSiteContent = cache(async (): Promise<SiteContent> => {
+async function getInternalSiteContent() {
+  try {
+    const settings = await getAdminSettings();
+    return normalizeSiteContent(settings.siteContent);
+  } catch {
+    return DEFAULT_SITE_CONTENT;
+  }
+}
+
+export async function getSiteContent(): Promise<SiteContent> {
   const source = getServerDataSource();
 
   if (source === 'mock') {
@@ -42,5 +51,5 @@ export const getSiteContent = cache(async (): Promise<SiteContent> => {
     return getExternalSiteContent();
   }
 
-  return DEFAULT_SITE_CONTENT;
-});
+  return getInternalSiteContent();
+}

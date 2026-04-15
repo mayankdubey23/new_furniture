@@ -19,31 +19,23 @@ import {
 } from 'lucide-react';
 import CatalogCollectionsStudio from '@/components/admin/CatalogCollectionsStudio';
 import ProductStudio from '@/components/admin/ProductStudio';
+import StorefrontContentStudio from '@/components/admin/StorefrontContentStudio';
 import type { CatalogOptionsResponse } from '@/lib/catalogEntities';
 import { getApiUrl } from '@/lib/api/browser';
 import {
+  DEFAULT_ADMIN_SETTINGS,
+  normalizeAdminSettings,
+  type AdminSettingsState,
+} from '@/lib/adminSettings';
+import {
   AdminOrder,
   AdminProduct,
-  AdminSettingsState,
   deriveCustomers,
   deriveRevenueSeries,
   deriveTopProducts,
   downloadCsv,
   formatCurrency,
 } from '@/lib/adminDashboard';
-
-const defaultSettings: AdminSettingsState = {
-  maintenanceMode: false,
-  maintenanceMessage: 'Website is under maintenance. Please visit later.',
-  notifications: {
-    orderAlerts: true,
-    lowStockAlerts: true,
-  },
-  adminProfile: {
-    displayName: 'LUXE Administrator',
-    email: 'admin@luxe.local',
-  },
-};
 
 const defaultCatalogOptions: CatalogOptionsResponse = {
   mainCategories: [],
@@ -104,7 +96,7 @@ function StatCard({
 export default function AdminDashboardPage() {
   const [products, setProducts] = useState<AdminProduct[]>([]);
   const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [settings, setSettings] = useState<AdminSettingsState>(defaultSettings);
+  const [settings, setSettings] = useState<AdminSettingsState>(DEFAULT_ADMIN_SETTINGS);
   const [catalogOptions, setCatalogOptions] = useState<CatalogOptionsResponse>(defaultCatalogOptions);
   const [loading, setLoading] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -122,13 +114,13 @@ export default function AdminDashboardPage() {
       const [productData, orderData, settingsData, catalogData] = await Promise.all([
         productsRes.json(),
         ordersRes.ok ? ordersRes.json() : [],
-        settingsRes.ok ? settingsRes.json() : defaultSettings,
+        settingsRes.ok ? settingsRes.json() : DEFAULT_ADMIN_SETTINGS,
         catalogRes.ok ? catalogRes.json() : defaultCatalogOptions,
       ]);
 
       setProducts(Array.isArray(productData) ? productData : []);
       setOrders(Array.isArray(orderData) ? orderData : []);
-      setSettings(settingsData?.maintenanceMessage ? settingsData : defaultSettings);
+      setSettings(normalizeAdminSettings(settingsData));
       setCatalogOptions(catalogData?.mainCategories ? catalogData : defaultCatalogOptions);
     } finally {
       setLoading(false);
@@ -150,16 +142,23 @@ export default function AdminDashboardPage() {
 
   const handleSaveSettings = async () => {
     setSavingSettings(true);
-    const response = await fetch(getApiUrl('/api/admin/settings'), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(settings),
-    });
-    if (response.ok) {
-      setSettings(await response.json());
+    try {
+      const response = await fetch(getApiUrl('/api/admin/settings'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(settings),
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to save storefront settings.');
+      }
+
+      setSettings(normalizeAdminSettings(data));
+    } finally {
+      setSavingSettings(false);
     }
-    setSavingSettings(false);
   };
 
   if (loading) {
@@ -209,6 +208,13 @@ export default function AdminDashboardPage() {
         <StatCard label="Customers" value={String(customers.length)} note="Derived from live order history" icon={Users} />
         <StatCard label="Revenue" value={formatCurrency(totalRevenue)} note="All-time tracked order value" icon={Wallet} />
       </div>
+
+      <StorefrontContentStudio
+        settings={settings}
+        setSettings={setSettings}
+        onSave={handleSaveSettings}
+        saving={savingSettings}
+      />
 
       <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
         <SectionShell eyebrow="Analytics Graph" title="Revenue Pulse" action={<div className="inline-flex items-center gap-2 rounded-full border border-theme-line/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-theme-walnut/66 dark:bg-white/5 dark:text-theme-ivory/64"><BarChart3 className="h-3.5 w-3.5 text-theme-bronze" /> Last 6 Months</div>}>
@@ -274,7 +280,7 @@ export default function AdminDashboardPage() {
         </SectionShell>
         </div>
 
-        <SectionShell eyebrow="Store Controls" title="Maintenance & Settings" action={<button onClick={handleSaveSettings} disabled={savingSettings} className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]">Save Controls</button>}>
+        <SectionShell eyebrow="Store Controls" title="Maintenance & Settings" action={<button onClick={() => { void handleSaveSettings().catch(() => undefined); }} disabled={savingSettings} className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]">Save Controls</button>}>
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="rounded-[1.6rem] border border-theme-line/50 bg-white/70 p-5 dark:bg-white/4">
               <div className="flex items-start justify-between gap-4">

@@ -1,26 +1,18 @@
+import { revalidatePath } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
-import AdminSettings from '@/models/AdminSettings';
 import { adminMiddleware } from '@/lib/auth';
+import { getAdminSettings, saveAdminSettings } from '@/lib/services/adminSettings';
 
-const SETTINGS_KEY = 'global';
-
-async function getOrCreateSettings() {
-  await dbConnect();
-
-  const settings = await AdminSettings.findOneAndUpdate(
-    { key: SETTINGS_KEY },
-    { $setOnInsert: { key: SETTINGS_KEY } },
-    { new: true, upsert: true }
-  ).lean();
-
-  return settings;
-}
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const settings = await getOrCreateSettings();
-    return NextResponse.json(settings);
+    const settings = await getAdminSettings();
+    return NextResponse.json(settings, {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    });
   } catch {
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
@@ -32,29 +24,17 @@ export async function PUT(request: NextRequest) {
 
   try {
     const payload = await request.json();
-    await dbConnect();
+    const settings = await saveAdminSettings(payload);
 
-    const settings = await AdminSettings.findOneAndUpdate(
-      { key: SETTINGS_KEY },
-      {
-        $set: {
-          maintenanceMode: Boolean(payload.maintenanceMode),
-          maintenanceMessage:
-            payload.maintenanceMessage || 'Website is under maintenance. Please visit later.',
-          notifications: {
-            orderAlerts: payload.notifications?.orderAlerts ?? true,
-            lowStockAlerts: payload.notifications?.lowStockAlerts ?? true,
-          },
-          adminProfile: {
-            displayName: payload.adminProfile?.displayName || 'LUXE Administrator',
-            email: payload.adminProfile?.email || 'admin@luxe.local',
-          },
-        },
+    revalidatePath('/', 'layout');
+    revalidatePath('/admin');
+    revalidatePath('/maintenance');
+
+    return NextResponse.json(settings, {
+      headers: {
+        'Cache-Control': 'no-store',
       },
-      { new: true, upsert: true }
-    ).lean();
-
-    return NextResponse.json(settings);
+    });
   } catch {
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }

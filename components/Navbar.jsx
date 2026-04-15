@@ -122,6 +122,7 @@ function Navbar({ collections = [] }) {
   const isHomePage = hasHydrated ? pathname === "/" : true;
   const isSolidNav = hasHydrated ? (!isHomePage || scrolled) : false;
   const isDarkTheme = resolvedTheme === 'dark';
+  const isAdminRoute = pathname?.startsWith('/admin');
 
 
   const navStyles = useMemo(() => ({
@@ -235,11 +236,15 @@ function Navbar({ collections = [] }) {
   const handleClose = useCallback(() => setWishlistOpen(false), []);
   const handleCartClose = useCallback(() => setCartOpen(false), []);
 
+  if (isAdminRoute) {
+    return null;
+  }
+
   return (
     <>
       <nav className="fixed inset-x-0 top-0 z-50">
         <div
-          className={`mx-auto mt-3 flex w-[calc(100%-1rem)] max-w-[96rem] items-center justify-between rounded-[2rem] border px-5 py-3 backdrop-blur-xl transition-all duration-300 md:mt-4 md:w-[calc(100%-2rem)] md:px-6 lg:px-8 ${navStyles.surfaceClass}`}
+          className={`site-shell site-shell-gutter mt-3 flex items-center justify-between gap-4 rounded-[2rem] border py-3 backdrop-blur-xl transition-all duration-300 md:mt-4 md:gap-5 ${navStyles.surfaceClass}`}
           style={{ color: navStyles.textColor }}
         >
           <Link href="/#hero" scroll={true} className="shrink-0">
@@ -248,9 +253,8 @@ function Navbar({ collections = [] }) {
             </span>
           </Link>
 
-
-          <ul className="hidden flex-1 items-center justify-center gap-6 px-6 text-[0.75rem] font-semibold uppercase tracking-[0.28em] lg:gap-8 md:flex">
-            {[...navLinks, { name: "Admin", href: "/admin" }].map((link) => (
+          <ul className="hidden min-w-0 flex-1 items-center justify-center gap-4 px-4 text-[0.68rem] font-semibold uppercase tracking-[0.2em] lg:flex lg:gap-5 lg:text-[0.72rem] lg:tracking-[0.24em] xl:gap-7 xl:text-[0.75rem] xl:tracking-[0.28em]">
+            {navLinks.map((link) => (
               <li key={link.name}>
                 <Link
                   href={link.href}
@@ -266,7 +270,7 @@ function Navbar({ collections = [] }) {
           </ul>
 
 
-          <div className="flex items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
             <ThemeToggle scrolled={hasHydrated && scrolled} />
             <NotificationBell iconColor={navStyles.iconColor} iconClass={navStyles.iconClass} />
 
@@ -356,7 +360,7 @@ function Navbar({ collections = [] }) {
           </div>
 
 
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3 lg:hidden">
             <button onClick={() => setIsOpen(true)} className={`rounded-full border p-2 ${isSolidNav ? (isDarkTheme ? "border-white/20 bg-white/6 text-theme-ivory" : "border-theme-walnut/30 bg-theme-walnut/8 text-theme-walnut") : "border-white/20 bg-white/6 text-theme-ivory"}`} style={{ color: navStyles.iconColor }}>
               <MenuIcon className={`h-6 w-6 ${navStyles.iconClass}`} />
             </button>
@@ -364,7 +368,7 @@ function Navbar({ collections = [] }) {
         </div>
 
 
-        <div className={`mx-auto mt-3 w-[calc(100%-1rem)] overflow-hidden rounded-[1.75rem] border shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-500 md:hidden ${
+        <div className={`site-shell mt-3 overflow-hidden rounded-[1.75rem] border shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-500 lg:hidden ${
           isOpen ? "border-white/18 bg-[rgba(18,14,11,0.38)] max-h-96 p-5 text-theme-ivory" : "max-h-0 p-0"
         }`}>
           <div className="flex items-center justify-between">

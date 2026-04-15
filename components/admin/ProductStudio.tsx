@@ -443,7 +443,7 @@ export default function ProductStudio({
 
           <div className="mt-5 grid gap-5 lg:grid-cols-4">
             <div className="lg:col-span-2"><label className={labelClass()}>Sizes</label><input value={form.sizeInput} onChange={(event) => setForm((current) => ({ ...current, sizeInput: event.target.value }))} className={inputClass()} placeholder="3 Seater, Compact" /></div>
-            <div className="flex items-center justify-between rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/45 px-5 py-4 dark:bg-white/4"><span className="text-sm font-semibold text-theme-ink dark:text-theme-ivory">In Stock</span><button type="button" onClick={() => setForm((current) => ({ ...current, inStock: !current.inStock }))} className={`relative h-8 w-14 rounded-full transition ${form.inStock ? 'bg-theme-bronze' : 'bg-theme-sand'}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${form.inStock ? 'left-7' : 'left-1'}`} /></button></div>
+            <div className="flex items-center justify-between rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/45 px-5 py-4 dark:bg-white/4"><span className="text-sm font-semibold text-theme-ink dark:text-theme-ivory">Available for Purchase</span><button type="button" onClick={() => setForm((current) => ({ ...current, inStock: !current.inStock }))} className={`relative h-8 w-14 rounded-full transition ${form.inStock ? 'bg-theme-bronze' : 'bg-theme-sand'}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${form.inStock ? 'left-7' : 'left-1'}`} /></button></div>
             <div className="flex items-center justify-between rounded-[1.4rem] border border-theme-line/50 bg-theme-ivory/45 px-5 py-4 dark:bg-white/4"><span className="text-sm font-semibold text-theme-ink dark:text-theme-ivory">Active</span><button type="button" onClick={() => setForm((current) => ({ ...current, active: !current.active }))} className={`relative h-8 w-14 rounded-full transition ${form.active ? 'bg-theme-bronze' : 'bg-theme-sand'}`}><span className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${form.active ? 'left-7' : 'left-1'}`} /></button></div>
           </div>
 
@@ -565,8 +565,8 @@ export default function ProductStudio({
               <div className="grid gap-2 sm:grid-cols-4">
                 <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{formatCurrency(product.finalPrice ?? product.price)}</div>
                 <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">Stock {product.stockQuantity ?? product.stock ?? 0}</div>
+                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{product.inStock ?? (product.stockQuantity ?? product.stock ?? 0) > 0 ? 'In Stock' : 'Out of Stock'}</div>
                 <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{product.active ?? true ? 'Active' : 'Hidden'}</div>
-                <div className="rounded-full border border-theme-line/50 bg-theme-ivory/62 px-4 py-2 text-center text-xs font-semibold uppercase tracking-[0.18em]">{product.colors.length} colors</div>
               </div>
               <div className="flex items-center gap-2">
                 <button onClick={() => openEdit(product)} className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"><Pencil className="h-3.5 w-3.5" />Edit</button>

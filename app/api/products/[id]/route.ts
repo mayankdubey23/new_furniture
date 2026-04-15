@@ -37,7 +37,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const data = await request.json();
     const payload = prepareProductMutationInput(data);
     const product = await Product.findByIdAndUpdate(id, payload, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     })
       .populate('mainCategory')

@@ -7,9 +7,11 @@ const FOOTER_BURST_PLAYBACK_RATE = 1;
 export default function FooterBurstOverlay({
   videoSrc = DEFAULT_SITE_CONTENT.footer.burstVideo.src,
   videoType = DEFAULT_SITE_CONTENT.footer.burstVideo.type,
+  videoPreload = DEFAULT_SITE_CONTENT.footer.burstVideo.preload,
 }: {
   videoSrc?: string;
   videoType?: string;
+  videoPreload?: 'auto' | 'metadata' | 'none';
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -96,17 +98,17 @@ export default function FooterBurstOverlay({
           ref={videoRef}
           aria-hidden="true"
           disablePictureInPicture
-          className="absolute left-1/2 top-[56%] block h-[148%] w-[182%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover object-center opacity-[0.18] saturate-[0.72] contrast-[1.04] blur-[0.5px] sm:h-[140%] sm:w-[158%] md:h-[126%] md:w-[132%] lg:h-[118%] lg:w-[118%] md:opacity-[0.22]"
+          className="absolute left-1/2 top-[56%] block h-[148%] w-[182%] max-w-none -translate-x-1/2 -translate-y-1/2 object-cover object-center opacity-[0.56] saturate-[0.76] contrast-[1.02] blur-[0.5px] sm:h-[140%] sm:w-[158%] md:h-[126%] md:w-[132%] lg:h-[118%] lg:w-[118%] md:opacity-[0.9] dark:opacity-[0.18] dark:saturate-[0.72] dark:contrast-[1.04] md:dark:opacity-[0.22]"
           autoPlay={false}
           loop
           muted
           playsInline
-          preload={DEFAULT_SITE_CONTENT.footer.burstVideo.preload}
+          preload={videoPreload}
         >
           <source src={videoSrc} type={videoType} />
         </video>
 
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_78%,rgba(199,140,92,0.16),transparent_26%),linear-gradient(180deg,rgba(13,10,9,0.18)_0%,rgba(13,10,9,0.02)_32%,rgba(13,10,9,0.24)_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_78%,rgba(165,106,63,0.1),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.16)_0%,rgba(255,255,255,0.02)_32%,rgba(79,53,40,0.08)_100%)] dark:bg-[radial-gradient(circle_at_50%_78%,rgba(199,140,92,0.16),transparent_26%),linear-gradient(180deg,rgba(13,10,9,0.18)_0%,rgba(13,10,9,0.02)_32%,rgba(13,10,9,0.24)_100%)]" />
       </div>
     </div>
   );

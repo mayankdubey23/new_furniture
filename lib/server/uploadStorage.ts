@@ -4,6 +4,7 @@ import { slugify } from '@/lib/productCatalog';
 
 export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
 export const MODEL_EXTENSIONS = new Set(['.glb', '.gltf']);
+export const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.ogg']);
 
 export const PRODUCT_UPLOAD_ROOT =
   process.env.PRODUCT_UPLOAD_ROOT ||
@@ -18,6 +19,13 @@ export const CATALOG_UPLOAD_ROOT =
 
 export const CATALOG_UPLOAD_PUBLIC_BASE =
   process.env.CATALOG_UPLOAD_PUBLIC_BASE || '/uploads';
+
+export const SITE_UPLOAD_ROOT =
+  process.env.SITE_UPLOAD_ROOT ||
+  path.join('public', 'uploads', 'site');
+
+export const SITE_UPLOAD_PUBLIC_BASE =
+  process.env.SITE_UPLOAD_PUBLIC_BASE || '/uploads/site';
 
 export type CatalogUploadCollection = 'maincategory' | 'subcategory' | 'brand';
 
@@ -44,6 +52,10 @@ export function getUploadExtension(file: File) {
 
 export function getAllowedExtensions(kind: 'image' | 'model') {
   return kind === 'model' ? MODEL_EXTENSIONS : IMAGE_EXTENSIONS;
+}
+
+export function getAllowedSiteExtensions(kind: 'image' | 'video') {
+  return kind === 'video' ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
 }
 
 export function buildProductUploadTarget({
@@ -90,6 +102,32 @@ export function buildCatalogUploadTarget({
   const filename = `${Date.now()}${safeEntityName}${extension}`;
   const absolutePath = path.join(directory, filename);
   const publicPath = `${CATALOG_UPLOAD_PUBLIC_BASE}/${safeCollection}/${filename}`;
+
+  return {
+    directory,
+    absolutePath,
+    publicPath,
+  };
+}
+
+export function buildSiteUploadTarget({
+  section,
+  slot,
+  kind,
+  extension,
+}: {
+  section: string;
+  slot: string;
+  kind: 'image' | 'video';
+  extension: string;
+}) {
+  const safeSection = sanitizeUploadSegment(section, 'site');
+  const safeSlot = sanitizeUploadSegment(slot, 'asset');
+  const folder = kind === 'video' ? 'videos' : 'images';
+  const directory = path.join(SITE_UPLOAD_ROOT, safeSection, folder);
+  const filename = `${safeSlot}-${Date.now()}${extension}`;
+  const absolutePath = path.join(directory, filename);
+  const publicPath = `${SITE_UPLOAD_PUBLIC_BASE}/${safeSection}/${folder}/${filename}`;
 
   return {
     directory,
@@ -172,6 +210,40 @@ export async function saveCatalogUpload({
   const target = buildCatalogUploadTarget({
     collection,
     entityName,
+    extension,
+  });
+
+  return persistUpload(target, file);
+}
+
+export async function saveSiteUpload({
+  file,
+  section,
+  slot,
+  kind,
+}: {
+  file: File;
+  section: string;
+  slot: string;
+  kind: 'image' | 'video';
+}) {
+  const extension = getUploadExtension(file);
+  const allowedExtensions = getAllowedSiteExtensions(kind);
+
+  if (!allowedExtensions.has(extension)) {
+    return {
+      ok: false as const,
+      error:
+        kind === 'video'
+          ? 'Only MP4, WEBM, and OGG videos are supported.'
+          : 'Only JPG, PNG, WEBP, and AVIF files are supported.',
+    };
+  }
+
+  const target = buildSiteUploadTarget({
+    section,
+    slot,
+    kind,
     extension,
   });
 

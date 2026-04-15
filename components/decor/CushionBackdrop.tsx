@@ -8,7 +8,7 @@ interface CushionLayer {
   className: string;
   imageClassName: string;
   glowClassName: string;
-  motionClassName: string;
+  motionClassName: string; 
   sizes: string;
   priority?: boolean;
 }

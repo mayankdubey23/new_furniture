@@ -21,28 +21,29 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
   return (
     <footer
       data-site-footer
-      className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]"
+      className="relative mt-20 min-h-[560px] w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(165,106,63,0.14),transparent_30%),linear-gradient(180deg,rgba(251,247,241,0.98)_0%,rgba(243,233,221,0.98)_58%,rgba(234,220,200,1)_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(199,140,92,0.16),transparent_28%),linear-gradient(180deg,#1a1613_0%,#120e0c_58%,#0d0a09_100%)]"
     >
       <FooterBurstOverlay
         videoSrc={content.burstVideo.src}
         videoType={content.burstVideo.type}
+        videoPreload={content.burstVideo.preload}
       />
 
-      <div className="absolute left-1/2 top-8 h-44 w-[38rem] max-w-[72vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(199,140,92,0.1),transparent_72%)] blur-3xl" />
+      <div className="absolute left-1/2 top-8 h-44 w-[38rem] max-w-[72vw] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(165,106,63,0.14),transparent_72%)] blur-3xl dark:bg-[radial-gradient(circle,rgba(199,140,92,0.1),transparent_72%)]" />
 
-      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />
+      <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.52),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(246,238,229,0.36)_52%,rgba(232,219,203,0.68)_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />
 
-      <div className="relative z-20 mx-auto flex h-full max-w-[96rem] flex-col justify-between px-6 pb-10 pt-24 text-white md:px-10 lg:px-16">
-        <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-white/10 bg-white/8 p-6 md:grid-cols-4 md:gap-12 md:p-8">
+      <div className="relative z-20 mx-auto flex h-full max-w-[96rem] flex-col justify-between px-6 pb-10 pt-24 text-theme-walnut md:px-10 lg:px-16 dark:text-white">
+        <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-theme-line/60 bg-white/62 p-6 shadow-[0_24px_70px_rgba(49,30,21,0.08)] backdrop-blur-xl md:grid-cols-4 md:gap-12 md:p-8 dark:border-white/10 dark:bg-white/8 dark:shadow-none">
           <div className="md:col-span-1">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{content.brandLabel}</p>
-            <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ivory">{content.brandName}</h2>
-            <p className="mb-6 text-sm leading-7 text-white/72">
+            <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ink dark:text-theme-ivory">{content.brandName}</h2>
+            <p className="mb-6 text-sm leading-7 text-theme-walnut/72 dark:text-white/72">
               {content.description}
             </p>
             <div className="flex flex-wrap gap-2">
               {content.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-white/78">
+                <span key={tag} className="rounded-full border border-theme-line/60 bg-white/72 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/72 dark:border-white/12 dark:bg-white/8 dark:text-white/78">
                   {tag}
                 </span>
               ))}
@@ -51,7 +52,7 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Collections</h3>
-            <ul className="space-y-3 text-sm text-white/68">
+            <ul className="space-y-3 text-sm text-theme-walnut/68 dark:text-white/68">
               {collections.length ? collections.map((collection) => (
                 <li key={collection.key}>
                   <Link href={collection.href} className="transition-colors hover:text-theme-bronze">
@@ -66,35 +67,34 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Experience</h3>
-            <ul className="space-y-3 text-sm text-white/68">
+            <ul className="space-y-3 text-sm text-theme-walnut/68 dark:text-white/68">
               <li><Link href="/customization" className="transition-colors hover:text-theme-bronze">Customization</Link></li>
               <li><Link href="/contact" className="transition-colors hover:text-theme-bronze">Contact</Link></li>
-              <li><Link href="/admin" className="transition-colors hover:text-theme-bronze">Admin</Link></li>
               <li><Link href="/#hero" className="transition-colors hover:text-theme-bronze">Back to top</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">{content.newsletterHeading}</h3>
-            <p className="mb-4 text-sm leading-7 text-white/68">{content.newsletterDescription}</p>
+            <p className="mb-4 text-sm leading-7 text-theme-walnut/68 dark:text-white/68">{content.newsletterDescription}</p>
             <div className="flex gap-2">
               <input
                 type="email"
                 placeholder="Email address"
-                className="w-full rounded-full border border-white/12 bg-white/8 px-4 py-3 text-sm text-white placeholder:text-white/35 focus:outline-none focus:ring-1 focus:ring-theme-bronze/60"
+                className="w-full rounded-full border border-theme-line/60 bg-white/78 px-4 py-3 text-sm text-theme-ink placeholder:text-theme-walnut/35 focus:outline-none focus:ring-1 focus:ring-theme-bronze/60 dark:border-white/12 dark:bg-white/8 dark:text-white dark:placeholder:text-white/35"
               />
-              <button className="rounded-full bg-theme-bronze px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-theme-ivory hover:text-theme-ink">
+              <button className="rounded-full bg-theme-bronze px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-theme-ink dark:hover:bg-theme-ivory dark:hover:text-theme-ink">
                 Subscribe
               </button>
             </div>
           </div>
         </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm text-white/44 md:flex-row">
+        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-theme-line/50 pt-6 text-sm text-theme-walnut/52 dark:border-white/10 dark:text-white/44 md:flex-row">
           <p>&copy; {new Date().getFullYear()} Luxe Furniture. All rights reserved.</p>
           <div className="flex gap-6">
-            <Link href="/privacy" className="transition-colors hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="transition-colors hover:text-white">Terms of Service</Link>
+            <Link href="/privacy" className="transition-colors hover:text-theme-ink dark:hover:text-white">Privacy Policy</Link>
+            <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms of Service</Link>
           </div>
         </div>
       </div>

@@ -126,7 +126,7 @@ export async function PATCH(request: NextRequest) {
     const customization = await Customization.findByIdAndUpdate(
       id,
       updateData,
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!customization) {

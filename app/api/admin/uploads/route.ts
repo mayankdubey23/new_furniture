@@ -3,6 +3,7 @@ import { adminMiddleware } from '@/lib/auth';
 import {
   saveCatalogUpload,
   saveProductUpload,
+  saveSiteUpload,
   type CatalogUploadCollection,
 } from '@/lib/server/uploadStorage';
 
@@ -16,7 +17,9 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file');
-    const scope = String(formData.get('scope') || 'product') === 'catalog' ? 'catalog' : 'product';
+    const rawScope = String(formData.get('scope') || 'product');
+    const scope =
+      rawScope === 'catalog' ? 'catalog' : rawScope === 'site' ? 'site' : 'product';
     const collection = String(formData.get('collection') || '');
 
     if (!(file instanceof File)) {
@@ -39,6 +42,13 @@ export async function POST(request: NextRequest) {
             collection: collection as CatalogUploadCollection,
             entityName: String(formData.get('entityName') || 'item'),
           })
+        : scope === 'site'
+          ? await saveSiteUpload({
+              file,
+              section: String(formData.get('section') || 'site'),
+              slot: String(formData.get('slot') || 'asset'),
+              kind: String(formData.get('kind') || 'image') === 'video' ? 'video' : 'image',
+            })
         : await saveProductUpload({
             file,
             category: String(formData.get('category') || 'general'),

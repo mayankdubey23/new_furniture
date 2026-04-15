@@ -1,4 +1,5 @@
 import { Schema, model, models } from 'mongoose';
+import { DEFAULT_SITE_CONTENT, type SiteContent } from '@/lib/content/siteContent';
 
 export interface IAdminSettings {
   key: string;
@@ -12,6 +13,7 @@ export interface IAdminSettings {
     displayName: string;
     email: string;
   };
+  siteContent: SiteContent;
 }
 
 const AdminSettingsSchema = new Schema<IAdminSettings>(
@@ -29,6 +31,10 @@ const AdminSettingsSchema = new Schema<IAdminSettings>(
     adminProfile: {
       displayName: { type: String, default: 'LUXE Administrator' },
       email: { type: String, default: 'admin@luxe.local' },
+    },
+    siteContent: {
+      type: Schema.Types.Mixed,
+      default: () => JSON.parse(JSON.stringify(DEFAULT_SITE_CONTENT)),
     },
   },
   { timestamps: true }

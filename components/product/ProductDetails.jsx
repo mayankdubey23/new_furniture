@@ -55,8 +55,13 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
 
   const displayImage = currentColor?.image || currentImage || data.imageUrl;
   const saved = isWishlisted(data.id);
+  const stockQuantity = Number(data.stockQuantity ?? data.stock ?? 0);
+  const isOutOfStock = data.inStock === false || stockQuantity <= 0;
+  const maxQuantity = stockQuantity > 0 ? stockQuantity : 1;
 
   const handleAddToCart = () => {
+    if (isOutOfStock) return;
+
     addToCart(
       {
         id: data.id,
@@ -97,6 +102,15 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-theme-walnut/50 dark:text-theme-ink/45">
               Free white-glove delivery
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className={`rounded-full border px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.24em] ${
+                isOutOfStock
+                  ? 'border-red-300/70 bg-red-50 text-red-600'
+                  : 'border-emerald-300/60 bg-emerald-50 text-emerald-700'
+              }`}>
+                {isOutOfStock ? 'Out of Stock' : `${stockQuantity} Ready to Order`}
+              </span>
+            </div>
           </div>
 
           <p className="text-sm leading-[1.85] text-theme-walnut/72 dark:text-theme-ink/68">
@@ -109,16 +123,18 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             </p>
             <div className="inline-flex items-center rounded-full border border-theme-line bg-theme-mist/60 dark:bg-theme-mist/25">
               <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze dark:text-theme-ink"
+                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                disabled={isOutOfStock || quantity <= 1}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
                 aria-label="Decrease quantity"
               >
                 -
               </button>
               <span className="w-10 text-center text-base font-bold text-theme-ink dark:text-theme-ivory">{quantity}</span>
               <button
-                onClick={() => setQuantity((q) => q + 1)}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze dark:text-theme-ink"
+                onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
+                disabled={isOutOfStock || quantity >= maxQuantity}
+                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
                 aria-label="Increase quantity"
               >
                 +
@@ -129,13 +145,18 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <button
               onClick={handleAddToCart}
+              disabled={isOutOfStock}
               className={`relative w-full overflow-hidden rounded-full py-4 text-sm font-semibold uppercase tracking-[0.28em] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze ${
-                added
-                  ? 'bg-theme-olive text-white shadow-lg'
-                  : 'bg-theme-bronze text-white shadow-lg hover:bg-theme-ink hover:shadow-xl active:scale-[0.98]'
+                isOutOfStock
+                  ? 'cursor-not-allowed bg-theme-line/80 text-theme-walnut/55 shadow-none dark:bg-white/10 dark:text-theme-ivory/45'
+                  : added
+                    ? 'bg-theme-olive text-white shadow-lg'
+                    : 'bg-theme-bronze text-white shadow-lg hover:bg-theme-ink hover:shadow-xl active:scale-[0.98]'
               }`}
             >
-              {added ? (
+              {isOutOfStock ? (
+                <span>Out of Stock</span>
+              ) : added ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
                     <path d="M4 10l5 5 7-7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -155,7 +176,7 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
               className={`relative flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-full border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze ${
                 saved || wishlistAdded
                   ? 'border-theme-bronze bg-theme-bronze text-white shadow-lg'
-              : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-theme-mist/15 dark:text-theme-ink'
+                  : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-theme-mist/15 dark:text-theme-ink'
               }`}
             >
               <HeartIcon filled={saved || wishlistAdded} className="h-5 w-5" />
@@ -163,7 +184,9 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
           </div>
 
           <p className="text-center text-xs leading-5 text-theme-walnut/40 dark:text-theme-ink/35">
-            5-year warranty · Easy returns · Nationwide delivery
+            {isOutOfStock
+              ? 'This piece is currently unavailable to order. Re-enable it from the admin panel when stock returns.'
+              : '5-year warranty · Easy returns · Nationwide delivery'}
           </p>
         </div>
 

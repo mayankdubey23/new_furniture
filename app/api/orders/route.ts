@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Order from '@/models/Order';
+import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
+import { normalizeProduct } from '@/lib/productCatalog';
 import { createRazorpayOrder, getRazorpayPublicConfig, isRazorpayConfigured } from '@/lib/server/razorpay';
 import {
   appendStatusTimelineEntry,
@@ -70,6 +72,57 @@ function normalizeCustomer(customer: IncomingCustomer = {}) {
   };
 }
 
+async function resolveOrderItems(items: ReturnType<typeof normalizeItems>) {
+  const resolvedItems: Array<{
+    productId: string;
+    name: string;
+    price: number;
+    image: string;
+    quantity: number;
+  }> = [];
+
+  for (const item of items) {
+    let productRecord: unknown = null;
+
+    try {
+      productRecord = await Product.findById(item.productId).lean();
+    } catch {
+      productRecord = null;
+    }
+
+    if (!productRecord) {
+      throw new Error(`${item.name || 'A product'} is no longer available.`);
+    }
+
+    const product = normalizeProduct(productRecord);
+    const availableQuantity = Number(product.stockQuantity ?? product.stock ?? 0);
+
+    if (product.active === false) {
+      throw new Error(`${product.name} is not available right now.`);
+    }
+
+    if (product.inStock === false || availableQuantity <= 0) {
+      throw new Error(`${product.name} is currently out of stock.`);
+    }
+
+    if (item.quantity > availableQuantity) {
+      throw new Error(
+        `Only ${availableQuantity} unit${availableQuantity === 1 ? '' : 's'} of ${product.name} ${availableQuantity === 1 ? 'is' : 'are'} available right now.`
+      );
+    }
+
+    resolvedItems.push({
+      productId: product.id,
+      name: product.name,
+      price: product.finalPrice ?? product.price,
+      image: product.imageUrl,
+      quantity: item.quantity,
+    });
+  }
+
+  return resolvedItems;
+}
+
 
 export async function GET(request: NextRequest) {
   const authError = await adminMiddleware(request);
@@ -102,6 +155,17 @@ export async function POST(request: NextRequest) {
 
     if (!items.length) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+    }
+
+    let resolvedItems: Awaited<ReturnType<typeof resolveOrderItems>>;
+
+    try {
+      resolvedItems = await resolveOrderItems(items);
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Unable to verify product availability.' },
+        { status: 409 }
+      );
     }
 
     if (
@@ -144,9 +208,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalItems = resolvedItems.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = Number(
-      items.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)
+      resolvedItems.reduce((sum, item) => sum + item.price * item.quantity, 0).toFixed(2)
     );
 
     if (paymentMethod === 'razorpay') {
@@ -158,7 +222,7 @@ export async function POST(request: NextRequest) {
       }
 
       const order = new Order({
-        items,
+        items: resolvedItems,
         totalItems,
         totalPrice,
         customer,
@@ -215,7 +279,7 @@ export async function POST(request: NextRequest) {
     }
 
     const order = new Order({
-      items,
+      items: resolvedItems,
       totalItems,
       totalPrice,
       customer,
