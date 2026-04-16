@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongoose';
 import { login } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    await dbConnect();
     const { username, password } = await request.json();
     const cookieStore = await cookies();
 
@@ -22,8 +20,12 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  } catch (error) {
+    console.error('Admin login failed:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Server error' },
+      { status: 500 }
+    );
   }
 }
 

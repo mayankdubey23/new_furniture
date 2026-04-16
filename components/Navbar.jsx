@@ -151,7 +151,7 @@ function Navbar({ collections = [] }) {
     const collectionLinks = collections.length
       ? collections.map((collection) => ({
           name: collection.name,
-          href: `/products/${encodeURIComponent(collection.productId)}`,
+          href: `/products/${encodeURIComponent(collection.productSlug || collection.productId)}`,
           isProductLink: true,
         }))
       : [{ name: "Collections", href: "/#collections", targetId: "collections" }];
@@ -182,6 +182,15 @@ function Navbar({ collections = [] }) {
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
   }, [lenis]);
+
+  const clearHeroHash = useCallback(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#hero') {
+      return;
+    }
+
+    const cleanUrl = `${window.location.pathname}${window.location.search}` || '/';
+    window.history.replaceState(null, '', cleanUrl);
+  }, []);
 
   useEffect(() => {
     if (!pendingProductScrollResetRef.current || !pathname.startsWith('/products/')) {
@@ -234,6 +243,16 @@ function Navbar({ collections = [] }) {
     setIsOpen(false);
   }, [isHomePage, pathname, resetPageScroll, scrollToSection]);
 
+  const handleBrandClick = useCallback((event) => {
+    if (isHomePage) {
+      event.preventDefault();
+      clearHeroHash();
+      resetPageScroll();
+    }
+
+    setIsOpen(false);
+  }, [clearHeroHash, isHomePage, resetPageScroll]);
+
   const handleClose = useCallback(() => setWishlistOpen(false), []);
   const handleCartClose = useCallback(() => setCartOpen(false), []);
   const handleLogout = useCallback(async () => {
@@ -253,7 +272,7 @@ function Navbar({ collections = [] }) {
           className={`site-shell site-shell-gutter mt-3 flex items-center justify-between gap-4 rounded-[2rem] border py-3 backdrop-blur-xl transition-all duration-300 md:mt-4 md:gap-5 ${navStyles.surfaceClass}`}
           style={{ color: navStyles.textColor }}
         >
-          <Link href="/#hero" scroll={true} className="shrink-0">
+          <Link href="/" scroll={true} onClick={handleBrandClick} className="shrink-0">
             <span className="whitespace-nowrap font-display text-[1.15rem] font-semibold tracking-[0.08em] md:text-[1.3rem] xl:text-[1.45rem]">
               {SITE_NAME}
             </span>

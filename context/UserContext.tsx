@@ -11,6 +11,7 @@ import {
 import { getApiUrl } from '@/lib/api/browser';
 
 export interface AuthUser {
+  id: string;
   name: string;
   email: string;
 }
@@ -25,9 +26,11 @@ interface UserContextValue {
 interface AuthMeResponse {
   authenticated?: boolean;
   user?: {
+    id?: string;
     name?: string;
     email?: string;
   } | null;
+  userId?: string | null;
   name?: string | null;
   email?: string | null;
 }
@@ -47,12 +50,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
         if (
           data.user &&
+          typeof data.user.id === 'string' &&
           typeof data.user.name === 'string' &&
           typeof data.user.email === 'string'
         ) {
-          nextUser = { name: data.user.name, email: data.user.email };
-        } else if (typeof data.name === 'string' && typeof data.email === 'string') {
-          nextUser = { name: data.name, email: data.email };
+          nextUser = { id: data.user.id, name: data.user.name, email: data.user.email };
+        } else if (
+          typeof data.userId === 'string' &&
+          typeof data.name === 'string' &&
+          typeof data.email === 'string'
+        ) {
+          nextUser = { id: data.userId, name: data.name, email: data.email };
         }
 
         setUser(nextUser);

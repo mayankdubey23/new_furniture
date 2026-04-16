@@ -127,6 +127,15 @@ export default function HomePageClient({
   collections: StorefrontCollectionLink[];
   siteContent: SiteContent;
 }) {
+  useEffect(() => {
+    if (window.location.hash !== '#hero') {
+      return;
+    }
+
+    const cleanUrl = `${window.location.pathname}${window.location.search}` || '/';
+    window.history.replaceState(null, '', cleanUrl);
+  }, []);
+
   return (
     <main className="page-strata relative isolate w-full overflow-clip bg-transparent">
       <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[100svh] -z-10">

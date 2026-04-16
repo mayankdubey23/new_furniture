@@ -1,8 +1,11 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import FooterBurstOverlay from '@/components/decor/FooterBurstOverlay';
 import { DEFAULT_SITE_CONTENT } from '@/lib/content/siteContent';
+import { getApiUrl } from '@/lib/api/browser';
 
 
 
@@ -18,6 +21,70 @@ import { DEFAULT_SITE_CONTENT } from '@/lib/content/siteContent';
  * }} props
  */
 export default function Footer({ collections = [], content = DEFAULT_SITE_CONTENT.footer }) {
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusTone, setStatusTone] = useState('success');
+  const pathname = usePathname();
+
+  const handleBackToTop = useCallback((event) => {
+    if (pathname !== '/') {
+      return;
+    }
+
+    event.preventDefault();
+
+    const cleanUrl = `${window.location.pathname}${window.location.search}` || '/';
+    if (window.location.hash === '#hero') {
+      window.history.replaceState(null, '', cleanUrl);
+    }
+
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+  }, [pathname]);
+
+  const handleNewsletterSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!email.trim()) {
+      setStatusTone('error');
+      setStatusMessage('Please enter your email address.');
+      return;
+    }
+
+    setSubmitting(true);
+    setStatusMessage('');
+
+    try {
+      const response = await fetch(getApiUrl('/api/newsletters'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          active: true,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Unable to subscribe right now.');
+      }
+
+      setEmail('');
+      setStatusTone('success');
+      setStatusMessage('You are subscribed. We will keep you posted.');
+    } catch (error) {
+      setStatusTone('error');
+      setStatusMessage(
+        error instanceof Error ? error.message : 'Unable to subscribe right now.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <footer
       data-site-footer
@@ -70,23 +137,42 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
             <ul className="space-y-3 text-sm text-theme-walnut/68 dark:text-white/68">
               <li><Link href="/customization" className="transition-colors hover:text-theme-bronze">Customization</Link></li>
               <li><Link href="/contact" className="transition-colors hover:text-theme-bronze">Contact</Link></li>
-              <li><Link href="/#hero" className="transition-colors hover:text-theme-bronze">Back to top</Link></li>
+              <li><Link href="/" onClick={handleBackToTop} className="transition-colors hover:text-theme-bronze">Back to top</Link></li>
             </ul>
           </div>
 
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">{content.newsletterHeading}</h3>
             <p className="mb-4 text-sm leading-7 text-theme-walnut/68 dark:text-white/68">{content.newsletterDescription}</p>
-            <div className="flex gap-2">
+            <form onSubmit={handleNewsletterSubmit}>
+              <div className="flex gap-2">
               <input
                 type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="Email address"
                 className="w-full rounded-full border border-theme-line/60 bg-white/78 px-4 py-3 text-sm text-theme-ink placeholder:text-theme-walnut/35 focus:outline-none focus:ring-1 focus:ring-theme-bronze/60 dark:border-white/12 dark:bg-white/8 dark:text-white dark:placeholder:text-white/35"
               />
-              <button className="rounded-full bg-theme-bronze px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-theme-ink dark:hover:bg-theme-ivory dark:hover:text-theme-ink">
-                Subscribe
+              <button
+                type="submit"
+                disabled={submitting}
+                className="rounded-full bg-theme-bronze px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-theme-ink disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-theme-ivory dark:hover:text-theme-ink"
+              >
+                {submitting ? 'Sending...' : 'Subscribe'}
               </button>
-            </div>
+              </div>
+              {statusMessage ? (
+                <p
+                  className={`mt-3 text-xs ${
+                    statusTone === 'success'
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-red-600 dark:text-red-300'
+                  }`}
+                >
+                  {statusMessage}
+                </p>
+              ) : null}
+            </form>
           </div>
         </div>
 

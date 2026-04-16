@@ -53,8 +53,8 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     video: {
       src: '/Furniture_Assembles.mp4',
       type: 'video/mp4',
-      poster: '/products/sofa/cover.png',
-      preload: 'none',
+      poster: '',
+      preload: 'auto',
     },
   },
   footer: {

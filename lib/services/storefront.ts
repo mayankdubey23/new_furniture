@@ -7,6 +7,7 @@ import {
   buildStorefrontCollectionLinks,
   DEFAULT_PRODUCTS,
   ensureFeaturedProducts,
+  matchesProductRouteSegment,
   normalizeProduct,
   type ProductRecord,
   type StorefrontCollectionLink,
@@ -138,9 +139,7 @@ export const getProductById = cache(async (id: string): Promise<ProductRecord | 
 
   return (
     products.find((product) => {
-      const productId = String(product.id || '').trim();
-      const objectId = String(product._id || '').trim();
-      return productId === normalizedId || objectId === normalizedId;
+      return matchesProductRouteSegment(product, normalizedId);
     }) || null
   );
 });

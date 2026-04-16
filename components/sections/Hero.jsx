@@ -26,9 +26,8 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
     () => window.matchMedia('(max-width: 767px)').matches,
     () => false
   );
-  const heroPoster = String(content.video.poster || '').trim();
   const videoPreload =
-    content.video.preload === 'none' ? 'metadata' : content.video.preload || 'metadata';
+    content.video.preload === 'none' ? 'auto' : content.video.preload || 'auto';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -102,15 +101,11 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
   );
 
   return (
-    <section ref={container} id="hero" className="relative h-[100svh] overflow-hidden bg-theme-ink">
-      {heroPoster ? (
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url("${heroPoster}")` }}
-        />
-      ) : null}
-
+    <section
+      ref={container}
+      data-hero-section="true"
+      className="relative h-[100svh] overflow-hidden bg-theme-ink"
+    >
       <video
         ref={videoRef}
         aria-hidden="true"
@@ -118,7 +113,6 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
         loop
         muted
         playsInline
-        poster={content.video.poster || undefined}
         preload={videoPreload}
         disablePictureInPicture
         className={`absolute inset-0 block h-full w-full min-h-full min-w-full object-cover object-center transition-opacity duration-500 ${

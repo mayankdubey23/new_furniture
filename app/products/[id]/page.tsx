@@ -1,6 +1,7 @@
 import ProductSection from '@/components/sections/ProductSection';
 import { getProductById } from '@/lib/productStore';
-import { notFound } from 'next/navigation';
+import { getProductSlug } from '@/lib/productCatalog';
+import { notFound, permanentRedirect } from 'next/navigation';
 
 interface Params {
   id: string;
@@ -15,6 +16,12 @@ export default async function ProductPage({ params }: { params: Promise<Params> 
 
   if (!product) {
     notFound();
+  }
+
+  const canonicalSlug = getProductSlug(product);
+
+  if (canonicalSlug && id !== canonicalSlug) {
+    permanentRedirect(`/products/${canonicalSlug}`);
   }
 
   return (

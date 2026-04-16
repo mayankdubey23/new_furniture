@@ -6,23 +6,32 @@ export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avi
 export const MODEL_EXTENSIONS = new Set(['.glb', '.gltf']);
 export const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.ogg']);
 
+function resolveUploadRoot(configuredRoot: string | undefined, segments: string[]) {
+  const normalizedRoot = configuredRoot?.trim();
+
+  if (normalizedRoot) {
+    return path.isAbsolute(normalizedRoot)
+      ? normalizedRoot
+      : path.join(/* turbopackIgnore: true */ process.cwd(), normalizedRoot);
+  }
+
+  return path.join(/* turbopackIgnore: true */ process.cwd(), ...segments);
+}
+
 export const PRODUCT_UPLOAD_ROOT =
-  process.env.PRODUCT_UPLOAD_ROOT ||
-  path.join('public', 'uploads', 'products');
+  resolveUploadRoot(process.env.PRODUCT_UPLOAD_ROOT, ['public', 'uploads', 'products']);
 
 export const PRODUCT_UPLOAD_PUBLIC_BASE =
   process.env.PRODUCT_UPLOAD_PUBLIC_BASE || '/uploads/products';
 
 export const CATALOG_UPLOAD_ROOT =
-  process.env.CATALOG_UPLOAD_ROOT ||
-  path.join('public', 'uploads');
+  resolveUploadRoot(process.env.CATALOG_UPLOAD_ROOT, ['public', 'uploads']);
 
 export const CATALOG_UPLOAD_PUBLIC_BASE =
   process.env.CATALOG_UPLOAD_PUBLIC_BASE || '/uploads';
 
 export const SITE_UPLOAD_ROOT =
-  process.env.SITE_UPLOAD_ROOT ||
-  path.join('public', 'uploads', 'site');
+  resolveUploadRoot(process.env.SITE_UPLOAD_ROOT, ['public', 'uploads', 'site']);
 
 export const SITE_UPLOAD_PUBLIC_BASE =
   process.env.SITE_UPLOAD_PUBLIC_BASE || '/uploads/site';
@@ -75,9 +84,14 @@ export function buildProductUploadTarget({
   const safeProductName = sanitizeUploadSegment(productName, 'draft-product');
   const safeSlot = sanitizeUploadSegment(slot, 'asset');
   const destinationFolder = kind === 'model' ? 'models' : 'images';
-  const directory = path.join(PRODUCT_UPLOAD_ROOT, safeCategory, safeProductName, destinationFolder);
+  const directory = path.join(
+    /* turbopackIgnore: true */ PRODUCT_UPLOAD_ROOT,
+    safeCategory,
+    safeProductName,
+    destinationFolder
+  );
   const filename = `${safeSlot}-${Date.now()}${extension}`;
-  const absolutePath = path.join(directory, filename);
+  const absolutePath = path.join(/* turbopackIgnore: true */ directory, filename);
   const publicPath = `${PRODUCT_UPLOAD_PUBLIC_BASE}/${safeCategory}/${safeProductName}/${destinationFolder}/${filename}`;
 
   return {
@@ -98,9 +112,9 @@ export function buildCatalogUploadTarget({
 }) {
   const safeCollection = sanitizeUploadSegment(collection, 'catalog');
   const safeEntityName = sanitizeUploadSegment(entityName, 'item');
-  const directory = path.join(CATALOG_UPLOAD_ROOT, safeCollection);
+  const directory = path.join(/* turbopackIgnore: true */ CATALOG_UPLOAD_ROOT, safeCollection);
   const filename = `${Date.now()}${safeEntityName}${extension}`;
-  const absolutePath = path.join(directory, filename);
+  const absolutePath = path.join(/* turbopackIgnore: true */ directory, filename);
   const publicPath = `${CATALOG_UPLOAD_PUBLIC_BASE}/${safeCollection}/${filename}`;
 
   return {
@@ -124,9 +138,9 @@ export function buildSiteUploadTarget({
   const safeSection = sanitizeUploadSegment(section, 'site');
   const safeSlot = sanitizeUploadSegment(slot, 'asset');
   const folder = kind === 'video' ? 'videos' : 'images';
-  const directory = path.join(SITE_UPLOAD_ROOT, safeSection, folder);
+  const directory = path.join(/* turbopackIgnore: true */ SITE_UPLOAD_ROOT, safeSection, folder);
   const filename = `${safeSlot}-${Date.now()}${extension}`;
-  const absolutePath = path.join(directory, filename);
+  const absolutePath = path.join(/* turbopackIgnore: true */ directory, filename);
   const publicPath = `${SITE_UPLOAD_PUBLIC_BASE}/${safeSection}/${folder}/${filename}`;
 
   return {

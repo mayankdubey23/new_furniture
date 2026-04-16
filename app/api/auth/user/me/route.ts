@@ -8,7 +8,7 @@ export async function GET() {
     user
       ? {
           authenticated: true,
-          user: { name: user.name, email: user.email },
+          user: { id: user.userId, name: user.name, email: user.email },
         }
       : {
           authenticated: false,

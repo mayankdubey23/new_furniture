@@ -229,7 +229,7 @@ export default function CushionCascade() {
         return;
       }
 
-      const hero = document.querySelector('#hero');
+      const hero = document.querySelector('[data-hero-section]');
       const footerTrigger = document.querySelector('#site-footer-trigger');
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;

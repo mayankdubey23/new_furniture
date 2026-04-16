@@ -12,8 +12,11 @@ import { createUserToken } from '@/lib/userAuth';
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    const { name, email, password, phone, otpCode } = await request.json();
+    const { name, email, password, phone, otpCode, userName, username } = await request.json();
     const phoneOtpEnabled = isPhoneOtpConfigured();
+    const normalizedUsername = String(username || userName || '')
+      .trim()
+      .toLowerCase();
 
     if (!name?.trim() || !email?.trim() || !password) {
       return NextResponse.json(
@@ -94,12 +97,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (normalizedUsername) {
+      const existingUsernameUser = await User.findOne({ username: normalizedUsername });
+      if (existingUsernameUser) {
+        return NextResponse.json(
+          { error: 'An account with this username already exists.' },
+          { status: 409 }
+        );
+      }
+    }
+
     if (phoneOtpEnabled && normalizedPhone) {
       await verifyPhoneOtp(normalizedPhone, normalizedOtpCode);
     }
 
     const user = await User.create({
       name: name.trim(),
+      username: normalizedUsername || undefined,
       email: email.trim().toLowerCase(),
       phone: normalizedPhone || undefined,
       phoneVerifiedAt: phoneOtpEnabled && normalizedPhone ? new Date() : null,

@@ -74,9 +74,11 @@ export async function POST(request: NextRequest) {
       .populate('brand')
       .lean();
 
-    revalidateCatalogRoutes(String(created._id));
+    const normalizedProduct = normalizeProduct(product ?? created.toObject());
 
-    return NextResponse.json(normalizeProduct(product ?? created.toObject()), {
+    revalidateCatalogRoutes(normalizedProduct);
+
+    return NextResponse.json(normalizedProduct, {
       status: 201,
       headers: {
         'Cache-Control': 'no-store',

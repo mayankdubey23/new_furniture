@@ -46,9 +46,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       .lean();
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    revalidateCatalogRoutes(id);
+    const normalizedProduct = normalizeProduct(product);
 
-    return NextResponse.json(normalizeProduct(product), {
+    revalidateCatalogRoutes(normalizedProduct);
+
+    return NextResponse.json(normalizedProduct, {
       headers: {
         'Cache-Control': 'no-store',
       },
@@ -71,7 +73,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     const deleted = await Product.findByIdAndDelete(id);
     if (!deleted) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    revalidateCatalogRoutes(id);
+    revalidateCatalogRoutes({
+      id,
+      _id: String(deleted._id),
+      category: String(deleted.category || ''),
+      name: String(deleted.name || ''),
+    });
 
     return NextResponse.json(
       { success: true },

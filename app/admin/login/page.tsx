@@ -25,17 +25,29 @@ export default function AdminLogin() {
     setLoading(true);
     setError('');
 
-    const res = await fetch(getApiUrl('/api/auth'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-      credentials: 'include',
-    });
+    try {
+      const res = await fetch(getApiUrl('/api/auth'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include',
+      });
 
-    if (res.ok) {
-      router.push('/admin');
-    } else {
-      setError('Invalid credentials. Please try again.');
+      let payload: { error?: string } = {};
+
+      try {
+        payload = (await res.json()) as { error?: string };
+      } catch {
+        payload = {};
+      }
+
+      if (res.ok) {
+        router.push('/admin');
+      } else {
+        setError(payload.error || 'Unable to sign in. Please try again.');
+      }
+    } catch {
+      setError('Unable to reach the server. Please try again.');
     }
     setLoading(false);
   };

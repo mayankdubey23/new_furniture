@@ -90,6 +90,7 @@ export interface StorefrontCollectionLink {
   targetId: string;
   category: string;
   productId: string;
+  productSlug: string;
 }
 
 export interface ProductInput {
@@ -254,6 +255,51 @@ export function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 80) || 'item';
+}
+
+export function getProductSlug(
+  product: Pick<ProductRecord, 'name'> | Pick<DefaultProduct, 'name'>
+) {
+  return slugify(cleanString(product.name));
+}
+
+export function getLegacyProductSlug(
+  product: Pick<ProductRecord, 'name' | 'category'> | Pick<DefaultProduct, 'name' | 'category'>
+) {
+  const categorySlug = slugify(cleanString(product.category));
+  const nameSlug = getProductSlug(product);
+
+  if (!categorySlug) {
+    return nameSlug;
+  }
+
+  return `${categorySlug}-${nameSlug}`;
+}
+
+export function getProductRouteSegments(
+  product: Pick<ProductRecord, 'id' | '_id' | 'name' | 'category'>
+) {
+  return dedupeStrings([
+    getProductSlug(product),
+    getLegacyProductSlug(product),
+    cleanString(product.id),
+    cleanString(product._id),
+  ]);
+}
+
+export function matchesProductRouteSegment(
+  product: Pick<ProductRecord, 'id' | '_id' | 'name' | 'category'>,
+  routeSegment: string
+) {
+  const normalizedRouteSegment = cleanString(routeSegment).toLowerCase();
+
+  if (!normalizedRouteSegment) {
+    return false;
+  }
+
+  return getProductRouteSegments(product).some(
+    (candidate) => candidate.toLowerCase() === normalizedRouteSegment
+  );
 }
 
 function titleCaseSlug(value: string) {
@@ -1053,7 +1099,7 @@ export function normalizeProduct(
   ]);
   const specs = normalizeSpecs(source.specs, fallback.specs || EMPTY_SPECS);
   const name = cleanString(value.name) || fallback.name;
-  const id = String(source._id ?? source.id ?? `${category}-${slugify(name)}`);
+  const id = String(source._id ?? source.id ?? getProductSlug({ name }));
 
   return {
     id,
@@ -1256,6 +1302,7 @@ export function buildStorefrontCollectionLinks(products: ProductRecord[]): Store
 
   return featuredProducts.map((product) => {
     const targetId = getProductCollectionTargetId(product);
+    const productSlug = getProductSlug(product);
 
     return {
       key: getProductCollectionKey(product),
@@ -1264,6 +1311,7 @@ export function buildStorefrontCollectionLinks(products: ProductRecord[]): Store
       targetId,
       category: product.category,
       productId: product.id,
+      productSlug,
     };
   });
 }
