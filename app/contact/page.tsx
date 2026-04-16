@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import AnimatedHeading from '@/components/AnimatedHeading';
+import { SITE_CONTACT_EMAIL, SITE_NAME } from '@/lib/brand';
 
 export const metadata = {
-  title: 'Contact | Luxe Decor',
-  description: 'Get in touch with Luxe Decor for bespoke furniture consultations, orders, and support.',
+  title: `Contact | ${SITE_NAME}`,
+  description: `Get in touch with ${SITE_NAME} for bespoke furniture consultations, orders, and support.`,
 };
 
 const contactDetails = [
-  { label: 'Studio Email', value: 'hello@luxedecor.com', href: 'mailto:hello@luxedecor.com' },
+  { label: 'Studio Email', value: SITE_CONTACT_EMAIL, href: `mailto:${SITE_CONTACT_EMAIL}` },
   { label: 'Phone', value: '+91 98765 43210', href: 'tel:+919876543210' },
   { label: 'Hours', value: 'Mon - Sat, 10:00 AM - 7:00 PM' },
   { label: 'Studio', value: '12 Gallery Lane, Indiranagar, Bengaluru' },
@@ -24,7 +25,7 @@ export default function ContactPage() {
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="section-shell rounded-[2rem] border border-white/10 bg-[rgba(18,14,11,0.34)] px-8 py-12 text-theme-ivory backdrop-blur-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">
-              Contact Luxe Decor
+              Contact {SITE_NAME}
             </p>
             <AnimatedHeading as="h1" className="mt-4 font-display text-5xl text-theme-ivory md:text-6xl">
               Let&apos;s shape your space.

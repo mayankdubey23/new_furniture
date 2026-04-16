@@ -36,6 +36,31 @@ EXTERNAL_API_BASE_URL=https://your-backend.example.com
 NEXT_PUBLIC_MOCK_API_BASE_URL=http://localhost:4000
 ```
 
+## Authentication Setup
+
+Customer login supports email/password, optional phone OTP, and Google OAuth.
+
+Required local env values:
+
+```bash
+MONGODB_URI=mongodb://127.0.0.1:27017/luxe-furniture
+JWT_SECRET=replace-with-a-long-random-secret
+APP_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
+```
+
+For Google OAuth, create a Google web application credential and add these entries in Google Cloud:
+
+- Authorized JavaScript origin: `http://localhost:3000`
+- Authorized redirect URI: `http://localhost:3000/api/auth/user/google/callback`
+
+For production, add the same two values with your real domain, for example:
+
+- Authorized JavaScript origin: `https://your-domain.com`
+- Authorized redirect URI: `https://your-domain.com/api/auth/user/google/callback`
+
 ## Structure
 
 - `app/`: App Router pages and route handlers

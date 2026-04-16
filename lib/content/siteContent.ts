@@ -1,3 +1,5 @@
+import { SITE_NAME } from '@/lib/brand';
+
 export interface SiteVideoAsset {
   src: string;
   type: string;
@@ -51,13 +53,13 @@ export const DEFAULT_SITE_CONTENT: SiteContent = {
     video: {
       src: '/Furniture_Assembles.mp4',
       type: 'video/mp4',
-      poster: '/hero-poster.jpg',
+      poster: '/products/sofa/cover.png',
       preload: 'none',
     },
   },
   footer: {
-    brandLabel: 'Luxe Atelier',
-    brandName: 'LUXE',
+    brandLabel: SITE_NAME,
+    brandName: SITE_NAME,
     description:
       'Curated seating, tactile materials, and atmospheric product storytelling for homes that want to feel composed and elevated.',
     tags: ['Furniture', 'SVG Gallery'],

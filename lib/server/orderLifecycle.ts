@@ -1,5 +1,6 @@
 import Notification from '@/models/Notification';
 import type { OrderStatus } from '@/models/Order';
+import { ORDER_TRACKING_PREFIX, SITE_NAME } from '@/lib/brand';
 
 export interface OrderTimelineEntry {
   status: OrderStatus;
@@ -47,7 +48,7 @@ function addDays(date: Date, days: number): Date {
 }
 
 export function buildTrackingNumber(orderId: string): string {
-  return `LUXE-${orderId.slice(-8).toUpperCase()}`;
+  return `${ORDER_TRACKING_PREFIX}-${orderId.slice(-8).toUpperCase()}`;
 }
 
 export function normalizeTrackingReference(reference: string): string {
@@ -209,11 +210,11 @@ export async function sendShipmentEmail(
       ? `Order total: Rs. ${order.totalPrice.toLocaleString('en-IN')}`
       : '';
 
-  const subject = `Your LUXE order ${trackingNumber} has shipped`;
+  const subject = `Your ${SITE_NAME} order ${trackingNumber} has shipped`;
   const text = [
     `Hi ${order.customer.name || 'there'},`,
     '',
-    'Your LUXE order has shipped.',
+    `Your ${SITE_NAME} order has shipped.`,
     `Tracking number: ${trackingNumber}`,
     `Estimated delivery: ${deliveryDate}`,
     priceLine,
@@ -226,7 +227,7 @@ export async function sendShipmentEmail(
     <div style="font-family: Georgia, 'Times New Roman', serif; background:#f7f1eb; padding:32px; color:#2a211c;">
       <div style="max-width:620px; margin:0 auto; background:#fffdf9; border:1px solid rgba(110,74,51,0.14); border-radius:24px; overflow:hidden;">
         <div style="padding:28px 32px; background:linear-gradient(135deg, rgba(110,74,51,0.98), rgba(42,33,28,1)); color:#f8f7f3;">
-          <div style="font-size:12px; letter-spacing:0.35em; text-transform:uppercase; opacity:0.76;">LUXE Order Update</div>
+          <div style="font-size:12px; letter-spacing:0.35em; text-transform:uppercase; opacity:0.76;">${escapeHtml(SITE_NAME)} Order Update</div>
           <h1 style="margin:14px 0 0; font-size:34px; font-weight:500;">Your order is on the way</h1>
         </div>
         <div style="padding:32px;">

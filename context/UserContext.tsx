@@ -22,6 +22,16 @@ interface UserContextValue {
   logout: () => Promise<void>;
 }
 
+interface AuthMeResponse {
+  authenticated?: boolean;
+  user?: {
+    name?: string;
+    email?: string;
+  } | null;
+  name?: string | null;
+  email?: string | null;
+}
+
 const UserContext = createContext<UserContextValue | null>(null);
 
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -32,8 +42,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(getApiUrl('/api/auth/user/me'), { credentials: 'include' });
       if (res.ok) {
-        const data = await res.json();
-        setUser({ name: data.name, email: data.email });
+        const data = (await res.json()) as AuthMeResponse;
+        let nextUser: AuthUser | null = null;
+
+        if (
+          data.user &&
+          typeof data.user.name === 'string' &&
+          typeof data.user.email === 'string'
+        ) {
+          nextUser = { name: data.user.name, email: data.user.email };
+        } else if (typeof data.name === 'string' && typeof data.email === 'string') {
+          nextUser = { name: data.name, email: data.email };
+        }
+
+        setUser(nextUser);
       } else {
         setUser(null);
       }

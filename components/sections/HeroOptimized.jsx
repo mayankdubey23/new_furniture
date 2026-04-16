@@ -85,15 +85,15 @@ export default function Hero() {
       <div className="absolute inset-0 w-full h-full">
         <video
           aria-hidden="true"
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="none"
-          poster="/hero-poster.jpg"
-          disablePictureInPicture
-          className="block h-full w-full min-h-full min-w-full object-cover object-center"
-        >
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="none"
+        poster="/products/sofa/cover.png"
+        disablePictureInPicture
+        className="block h-full w-full min-h-full min-w-full object-cover object-center"
+      >
           <source src="/Furniture_Assembles.mp4" type="video/mp4" />
         </video>
       </div>

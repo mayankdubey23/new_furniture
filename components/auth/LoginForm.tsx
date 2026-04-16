@@ -1,57 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Script from 'next/script';
 import { useUser } from '@/context/UserContext';
 import { getApiUrl } from '@/lib/api/browser';
+import { SITE_NAME } from '@/lib/brand';
 
 type Tab = 'login' | 'signup';
 type LoginMethod = 'password' | 'otp';
 
-interface GoogleCredentialResponse {
-  credential: string;
-}
-
-interface GoogleIdConfiguration {
-  client_id: string;
-  callback: (response: GoogleCredentialResponse) => void;
-  auto_select?: boolean;
-  cancel_on_tap_outside?: boolean;
-  context?: 'signin' | 'signup' | 'use';
-  ux_mode?: 'popup' | 'redirect';
-}
-
-interface GoogleButtonConfiguration {
-  theme?: 'outline' | 'filled_blue' | 'filled_black';
-  size?: 'large' | 'medium' | 'small';
-  shape?: 'pill' | 'rectangular' | 'circle' | 'square';
-  text?:
-    | 'signin_with'
-    | 'signup_with'
-    | 'continue_with'
-    | 'signin'
-    | 'signup';
-  width?: number;
-  logo_alignment?: 'left' | 'center';
-}
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: GoogleIdConfiguration) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: GoogleButtonConfiguration
-          ) => void;
-          cancel: () => void;
-        };
-      };
-    };
-  }
+interface LoginFormProps {
+  googleConfigured?: boolean;
 }
 
 const inputClass =
@@ -64,21 +24,52 @@ function sanitizeOtp(value: string) {
   return value.replace(/\D/g, '').slice(0, 6);
 }
 
-export default function LoginForm() {
+function getGoogleAuthErrorMessage(errorCode: string | null) {
+  switch (errorCode) {
+    case 'google_not_configured':
+      return 'Google sign-in is not configured yet.';
+    case 'google_cancelled':
+      return 'Google sign-in was cancelled before it could finish.';
+    case 'google_state_invalid':
+      return 'Your Google sign-in session expired. Please try again.';
+    case 'google_missing_code':
+      return 'Google did not return a sign-in code. Please try again.';
+    case 'google_link_existing_account':
+      return 'This email already has an account. Please sign in with your password first before using Google.';
+    case 'google_verification_failed':
+      return 'Google sign-in could not be verified.';
+    case 'google_failed':
+      return 'Google sign-in failed. Please try again.';
+    default:
+      return '';
+  }
+}
+
+function normalizeReturnTo(value: string | null) {
+  if (!value || !value.startsWith('/') || value.startsWith('//')) {
+    return null;
+  }
+
+  return value;
+}
+
+export default function LoginForm({ googleConfigured = false }: LoginFormProps) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
+  const authErrorCode = searchParams.get('authError');
   const [tab, setTab] = useState<Tab>(initialTab);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('password');
   const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
   const [error, setError] = useState('');
+  const [oauthError, setOauthError] = useState(() =>
+    getGoogleAuthErrorMessage(authErrorCode)
+  );
   const [info, setInfo] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleRedirecting, setGoogleRedirecting] = useState(false);
   const [otpSendingFor, setOtpSendingFor] = useState<'login' | 'signup' | null>(null);
-  const [googleReady, setGoogleReady] = useState(false);
   const router = useRouter();
   const { user, refreshUser } = useUser();
-  const googleButtonRef = useRef<HTMLDivElement>(null);
 
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -100,6 +91,14 @@ export default function LoginForm() {
       router.replace('/');
     }
   }, [user, router]);
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab]);
+
+  useEffect(() => {
+    setOauthError(getGoogleAuthErrorMessage(authErrorCode));
+  }, [authErrorCode]);
 
   useEffect(() => {
     let active = true;
@@ -132,6 +131,7 @@ export default function LoginForm() {
 
   const resetMessages = useCallback(() => {
     setError('');
+    setOauthError('');
     setInfo('');
   }, []);
 
@@ -150,41 +150,6 @@ export default function LoginForm() {
       setLoginMethod('password');
     }
   }, [loginMethod, phoneOtpEnabled]);
-
-  const handleGoogleSuccess = useCallback(
-    async (response: GoogleCredentialResponse) => {
-      if (!response.credential) {
-        setError('Google sign-in did not return a valid credential.');
-        return;
-      }
-
-      setLoading(true);
-      resetMessages();
-
-      try {
-        const res = await fetch(getApiUrl('/api/auth/user/google'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ credential: response.credential }),
-          credentials: 'include',
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          setError(data.error || 'Google sign-in failed. Please try again.');
-          return;
-        }
-
-        await refreshUser();
-        router.push('/');
-      } catch {
-        setError('Something went wrong. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [refreshUser, resetMessages, router]
-  );
 
   const sendOtp = useCallback(
     async (
@@ -342,53 +307,39 @@ export default function LoginForm() {
     });
   }, [sendOtp, signupForm.phone]);
 
-  useEffect(() => {
-    if (!googleClientId || !googleReady || !googleButtonRef.current || !window.google) {
+  const googleAuthParams = new URLSearchParams({ intent: tab });
+  const returnTo = normalizeReturnTo(
+    searchParams.get('returnTo') || searchParams.get('next')
+  );
+  if (returnTo) {
+    googleAuthParams.set('returnTo', returnTo);
+  }
+  const googleAuthHref = `/api/auth/user/google?${googleAuthParams.toString()}`;
+
+  const handleGoogleRedirect = useCallback(() => {
+    if (!googleConfigured) {
+      setError(
+        'Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to enable it.'
+      );
+      setOauthError('');
       return;
     }
 
-    const buttonRoot = googleButtonRef.current;
-    buttonRoot.innerHTML = '';
-    const buttonWidth = Math.max(240, Math.min(buttonRoot.clientWidth || 380, 380));
+    setGoogleRedirecting(true);
+    resetMessages();
+    window.location.assign(googleAuthHref);
+  }, [googleAuthHref, googleConfigured, resetMessages]);
 
-    window.google.accounts.id.initialize({
-      client_id: googleClientId,
-      callback: handleGoogleSuccess,
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      context: tab === 'signup' ? 'signup' : 'signin',
-      ux_mode: 'popup',
-    });
-
-    window.google.accounts.id.renderButton(buttonRoot, {
-      theme: 'outline',
-      size: 'large',
-      shape: 'pill',
-      text: tab === 'signup' ? 'signup_with' : 'signin_with',
-      width: buttonWidth,
-      logo_alignment: 'left',
-    });
-
-    return () => {
-      buttonRoot.innerHTML = '';
-      window.google?.accounts.id.cancel();
-    };
-  }, [googleClientId, googleReady, handleGoogleSuccess, tab]);
+  const displayError = error || oauthError;
 
   return (
     <div className="relative z-10 mx-auto max-w-md">
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onLoad={() => setGoogleReady(true)}
-      />
-
       <div className="mb-8 text-center">
         <Link
           href="/"
-          className="inline-block font-display text-[2.2rem] font-semibold tracking-[0.18em] text-theme-ink dark:text-theme-ivory"
+          className="inline-block font-display text-[1.55rem] font-semibold tracking-[0.08em] text-theme-ink dark:text-theme-ivory md:text-[1.75rem]"
         >
-          LUXE
+          {SITE_NAME}
         </Link>
         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.36em] text-theme-bronze">
           {tab === 'login' ? 'Welcome back' : 'Join the Collection'}
@@ -424,9 +375,9 @@ export default function LoginForm() {
           </button>
         </div>
 
-        {error ? (
+        {displayError ? (
           <div className="mb-5 rounded-xl border border-red-400/30 bg-red-50/80 px-4 py-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {error}
+            {displayError}
           </div>
         ) : null}
 
@@ -436,18 +387,57 @@ export default function LoginForm() {
           </div>
         ) : null}
 
-        {googleClientId ? (
-          <>
-            <div className="mb-5">
-              <div ref={googleButtonRef} className="flex min-h-[44px] justify-center" />
-            </div>
-            <div className="mb-6 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-theme-walnut/45 dark:text-theme-ivory/35">
-              <span className="h-px flex-1 bg-theme-line/60" />
-              Or continue below
-              <span className="h-px flex-1 bg-theme-line/60" />
-            </div>
-          </>
-        ) : null}
+        <>
+          <div className="mb-5">
+            <button
+              type="button"
+              onClick={handleGoogleRedirect}
+              disabled={loading || googleRedirecting}
+              className="flex w-full items-center justify-center gap-3 rounded-full border border-theme-line/60 bg-white/90 px-5 py-3 text-sm font-semibold text-theme-ink transition hover:border-theme-bronze hover:bg-white disabled:opacity-60 dark:border-white/15 dark:bg-white/10 dark:text-theme-ivory dark:hover:border-theme-bronze dark:hover:bg-white/12"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-5 w-5 shrink-0"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M12.24 10.285V14.4h5.879c-.258 1.322-1.551 3.878-5.879 3.878-3.538 0-6.42-2.929-6.42-6.538s2.882-6.538 6.42-6.538c2.014 0 3.364.858 4.136 1.601l2.821-2.727C17.405 2.406 15.091 1.4 12.24 1.4 6.98 1.4 2.72 5.66 2.72 10.9s4.26 9.5 9.52 9.5c5.495 0 9.141-3.861 9.141-9.305 0-.626-.069-1.101-.152-1.572z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M2.72 10.9c0 1.688.612 3.233 1.626 4.426l3.165-2.438c-.209-.626-.331-1.293-.331-1.988s.122-1.362.331-1.988L4.346 6.474C3.332 7.667 2.72 9.212 2.72 10.9z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M12.24 20.4c2.851 0 5.244-.938 6.992-2.555l-3.399-2.633c-.91.634-2.069 1.066-3.593 1.066-3.364 0-6.217-2.272-7.237-5.329l-3.165 2.438C3.542 17.513 7.546 20.4 12.24 20.4z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M19.232 17.845c1.971-1.815 3.149-4.486 3.149-7.75 0-.625-.069-1.101-.152-1.572H12.24V12.64h5.879c-.258 1.322-1.018 2.441-2.286 3.205z"
+                />
+              </svg>
+              <span>
+                {googleRedirecting
+                  ? 'Redirecting to Google...'
+                  : tab === 'signup'
+                    ? 'Create Account with Google'
+                    : 'Sign In with Google'}
+              </span>
+            </button>
+            {!googleConfigured ? (
+              <p className="mt-2 text-center text-xs text-theme-walnut/55 dark:text-theme-ivory/55">
+                Google sign-in is visible now, but it still needs `GOOGLE_CLIENT_ID` and
+                `GOOGLE_CLIENT_SECRET` in your environment to work.
+              </p>
+            ) : null}
+          </div>
+          <div className="mb-6 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-theme-walnut/45 dark:text-theme-ivory/35">
+            <span className="h-px flex-1 bg-theme-line/60" />
+            Or continue below
+            <span className="h-px flex-1 bg-theme-line/60" />
+          </div>
+        </>
 
         {tab === 'login' ? (
           <>
@@ -518,7 +508,7 @@ export default function LoginForm() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleRedirecting}
                   className="mt-2 w-full rounded-full bg-theme-ink py-3.5 text-sm font-bold uppercase tracking-[0.28em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)] dark:hover:bg-theme-bronze dark:hover:text-white"
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
@@ -570,7 +560,7 @@ export default function LoginForm() {
                   <button
                     type="button"
                     onClick={() => void handleSendLoginOtp()}
-                    disabled={loading || otpSendingFor === 'login'}
+                    disabled={loading || googleRedirecting || otpSendingFor === 'login'}
                     className="rounded-full border border-theme-line/60 px-5 py-3 text-xs font-bold uppercase tracking-[0.24em] text-theme-walnut transition hover:border-theme-bronze hover:text-theme-bronze disabled:opacity-60 dark:text-theme-ivory/70 dark:hover:text-theme-bronze"
                   >
                     {otpSendingFor === 'login' ? 'Sending...' : 'Send OTP'}
@@ -579,7 +569,7 @@ export default function LoginForm() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || googleRedirecting}
                   className="mt-2 w-full rounded-full bg-theme-ink py-3.5 text-sm font-bold uppercase tracking-[0.28em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)] dark:hover:bg-theme-bronze dark:hover:text-white"
                 >
                   {loading ? 'Verifying OTP...' : 'Sign In with OTP'}
@@ -682,7 +672,7 @@ export default function LoginForm() {
                   <button
                     type="button"
                     onClick={() => void handleSendSignupOtp()}
-                    disabled={loading || otpSendingFor === 'signup'}
+                    disabled={loading || googleRedirecting || otpSendingFor === 'signup'}
                     className="rounded-full border border-theme-line/60 px-5 py-3 text-xs font-bold uppercase tracking-[0.24em] text-theme-walnut transition hover:border-theme-bronze hover:text-theme-bronze disabled:opacity-60 dark:text-theme-ivory/70 dark:hover:text-theme-bronze"
                   >
                     {otpSendingFor === 'signup' ? 'Sending...' : 'Send OTP'}
@@ -729,7 +719,7 @@ export default function LoginForm() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || googleRedirecting}
               className="mt-2 w-full rounded-full bg-theme-ink py-3.5 text-sm font-bold uppercase tracking-[0.28em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)] dark:hover:bg-theme-bronze dark:hover:text-white"
             >
               {loading ? 'Creating Account...' : 'Create Account'}

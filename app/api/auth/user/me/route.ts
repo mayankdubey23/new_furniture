@@ -3,8 +3,21 @@ import { getUserFromCookie } from '@/lib/userAuth';
 
 export async function GET() {
   const user = await getUserFromCookie();
-  if (!user) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-  return NextResponse.json({ name: user.name, email: user.email });
+
+  return NextResponse.json(
+    user
+      ? {
+          authenticated: true,
+          user: { name: user.name, email: user.email },
+        }
+      : {
+          authenticated: false,
+          user: null,
+        },
+    {
+      headers: {
+        'Cache-Control': 'no-store',
+      },
+    }
+  );
 }

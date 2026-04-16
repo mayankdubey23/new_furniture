@@ -3,6 +3,7 @@ import {
   normalizeSiteContent,
   type SiteContent,
 } from '@/lib/content/siteContent';
+import { ADMIN_CONTACT_EMAIL, DEFAULT_ADMIN_DISPLAY_NAME } from '@/lib/brand';
 
 export interface AdminSettingsState {
   maintenanceMode: boolean;
@@ -26,8 +27,8 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
     lowStockAlerts: true,
   },
   adminProfile: {
-    displayName: 'LUXE Administrator',
-    email: 'admin@luxe.local',
+    displayName: DEFAULT_ADMIN_DISPLAY_NAME,
+    email: ADMIN_CONTACT_EMAIL,
   },
   siteContent: DEFAULT_SITE_CONTENT,
 };

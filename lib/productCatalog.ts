@@ -2,6 +2,7 @@ import {
   normalizeCatalogEntity,
   type CatalogEntityRecord,
 } from '@/lib/catalogEntities';
+import { PRODUCT_BRAND_NAME } from '@/lib/brand';
 
 export const PRODUCT_CATEGORIES = ['sofa', 'chair', 'recliner', 'pouffe'] as const;
 export type ProductCategory = string;
@@ -615,7 +616,7 @@ export const DEFAULT_PRODUCTS: DefaultProduct[] = [
     },
     mainCategoryName: 'Sofa',
     subCategoryName: 'Signature Collection',
-    brandName: 'LUXE Studio',
+    brandName: PRODUCT_BRAND_NAME,
     basePrice: 45000,
     discount: 0,
     finalPrice: 45000,
@@ -707,7 +708,7 @@ export const DEFAULT_PRODUCTS: DefaultProduct[] = [
     },
     mainCategoryName: 'Chair',
     subCategoryName: 'Accent Collection',
-    brandName: 'LUXE Studio',
+    brandName: PRODUCT_BRAND_NAME,
     basePrice: 18500,
     discount: 0,
     finalPrice: 18500,
@@ -805,7 +806,7 @@ export const DEFAULT_PRODUCTS: DefaultProduct[] = [
     },
     mainCategoryName: 'Recliner',
     subCategoryName: 'Lounge Collection',
-    brandName: 'LUXE Studio',
+    brandName: PRODUCT_BRAND_NAME,
     basePrice: 32000,
     discount: 0,
     finalPrice: 32000,
@@ -894,7 +895,7 @@ export const DEFAULT_PRODUCTS: DefaultProduct[] = [
     },
     mainCategoryName: 'Pouffe',
     subCategoryName: 'Accent Collection',
-    brandName: 'LUXE Studio',
+    brandName: PRODUCT_BRAND_NAME,
     basePrice: 4500,
     discount: 0,
     finalPrice: 4500,

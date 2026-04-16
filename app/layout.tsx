@@ -11,11 +11,11 @@ import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { UserProvider } from '@/context/UserContext';
 import { getStorefrontCollectionLinks } from '@/lib/productStore';
+import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from '@/lib/brand';
 
 export const metadata = {
-  title: 'Luxe Decor | Sculpted Furniture for Refined Interiors',
-  description:
-    'Premium furniture collections designed with warm materials, gallery-level styling, and modern comfort.',
+  title: `${SITE_NAME} | ${SITE_TAGLINE}`,
+  description: SITE_DESCRIPTION,
 };
 
 export default async function RootLayout({

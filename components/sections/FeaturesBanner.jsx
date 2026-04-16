@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import ParallaxLayer from '@/components/ParallaxLayer';
+import { SITE_NAME } from '@/lib/brand';
 
 const features = [
   {
@@ -49,7 +50,7 @@ export default function FeaturesBanner({ collectionNames = [] }) {
             </ParallaxLayer>
 
             <div className="relative z-10">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.42em] text-theme-sand/80">Luxe System</p>
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-theme-sand/80">{SITE_NAME}</p>
               <h2 className="mt-4 max-w-md font-display text-[2.3rem] leading-[0.95] text-theme-ivory md:text-[3.3rem]">
                 One furniture studio for every room.
               </h2>

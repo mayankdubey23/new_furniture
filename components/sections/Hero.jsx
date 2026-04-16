@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useSyncExternalStore } from 'react';
+import { useRef, useEffect, useState, useSyncExternalStore } from 'react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion } from 'framer-motion';
@@ -12,6 +12,7 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
   const orbOneRef = useRef();
   const orbTwoRef = useRef();
   const videoRef = useRef();
+  const [videoReady, setVideoReady] = useState(false);
 
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
@@ -25,6 +26,9 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
     () => window.matchMedia('(max-width: 767px)').matches,
     () => false
   );
+  const heroPoster = String(content.video.poster || '').trim();
+  const videoPreload =
+    content.video.preload === 'none' ? 'metadata' : content.video.preload || 'metadata';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -99,6 +103,13 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
 
   return (
     <section ref={container} id="hero" className="relative h-[100svh] overflow-hidden bg-theme-ink">
+      {heroPoster ? (
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${heroPoster}")` }}
+        />
+      ) : null}
 
       <video
         ref={videoRef}
@@ -108,11 +119,15 @@ export default function Hero({ content = DEFAULT_SITE_CONTENT.hero }) {
         muted
         playsInline
         poster={content.video.poster || undefined}
-        preload={content.video.preload || 'none'}
+        preload={videoPreload}
         disablePictureInPicture
-        className="absolute inset-0 block h-full w-full min-h-full min-w-full object-cover object-center"
+        className={`absolute inset-0 block h-full w-full min-h-full min-w-full object-cover object-center transition-opacity duration-500 ${
+          videoReady ? 'opacity-100' : 'opacity-0'
+        }`}
         style={{ transform: 'translateZ(0)', backfaceVisibility: 'hidden' }}
         onLoadedMetadata={(e) => { e.currentTarget.currentTime = 0; }}
+        onLoadedData={() => setVideoReady(true)}
+        onCanPlay={() => setVideoReady(true)}
       >
         <source src={`${content.video.src}#t=0`} type={content.video.type || 'video/mp4'} />
       </video>

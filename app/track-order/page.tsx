@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import { useUser } from '@/context/UserContext';
 import { getApiUrl } from '@/lib/api/browser';
+import { ORDER_TRACKING_PREFIX, SITE_NAME } from '@/lib/brand';
 
 type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
 
@@ -84,7 +85,7 @@ function TrackOrderPageFallback() {
         <div className="mb-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">Order Tracking</p>
           <AnimatedHeading as="h1" className="mt-3 font-display text-5xl text-theme-ink dark:text-theme-ivory md:text-6xl">
-            Track Your LUXE Order
+            Track Your {SITE_NAME} Order
           </AnimatedHeading>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/64">
             Loading your tracking panel...
@@ -196,7 +197,7 @@ function TrackOrderPageContent() {
         <div className="mb-10">
           <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">Order Tracking</p>
           <AnimatedHeading as="h1" className="mt-3 font-display text-5xl text-theme-ink dark:text-theme-ivory md:text-6xl">
-            Track Your LUXE Order
+            Track Your {SITE_NAME} Order
           </AnimatedHeading>
           <p className="mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/64">
             Enter your order ID or tracking number to see the latest shipment progress, delivery estimate, and status timeline.
@@ -214,7 +215,7 @@ function TrackOrderPageContent() {
                 <input
                   value={reference}
                   onChange={(event) => setReference(event.target.value)}
-                  placeholder="e.g. 67f5... or LUXE-AB12CD34"
+                  placeholder={`e.g. 67f5... or ${ORDER_TRACKING_PREFIX}-AB12CD34`}
                   className="w-full rounded-xl border border-theme-line/60 bg-white/60 px-4 py-3 text-sm text-theme-ink outline-none transition focus:border-theme-bronze focus:ring-1 focus:ring-theme-bronze/30 dark:bg-white/5 dark:text-theme-ivory"
                 />
               </div>

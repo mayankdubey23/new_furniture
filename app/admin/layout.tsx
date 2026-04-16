@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getApiUrl } from '@/lib/api/browser';
+import { SITE_NAME } from '@/lib/brand';
 
 const navItems = [
   { href: '/admin', label: 'Overview', icon: BarChart3 },
@@ -94,7 +95,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <aside className={`fixed inset-y-0 left-0 z-50 w-[88vw] max-w-[320px] border-r border-theme-line/60 bg-[rgba(251,247,241,0.92)] p-6 shadow-[0_30px_80px_rgba(49,30,21,0.16)] backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-[rgba(18,14,11,0.92)] lg:static lg:w-auto lg:max-w-none lg:translate-x-0 lg:shadow-none ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between">
             <Link href="/admin" className="font-display text-[2rem] tracking-[0.18em] text-theme-ink dark:text-theme-ivory">
-              LUXE
+              <span className="text-[1.45rem] tracking-[0.08em] md:text-[1.55rem]">{SITE_NAME}</span>
             </Link>
             <button
               type="button"
@@ -210,7 +211,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {currentSection}
                   </p>
                   <h1 className="font-display text-2xl text-theme-ink dark:text-theme-ivory">
-                    LUXE Admin Panel
+                    {SITE_NAME} Admin Panel
                   </h1>
                 </div>
               </div>

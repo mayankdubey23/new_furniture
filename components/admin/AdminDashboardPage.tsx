@@ -36,6 +36,7 @@ import {
   downloadCsv,
   formatCurrency,
 } from '@/lib/adminDashboard';
+import { PAYMENT_RECEIPT_PREFIX } from '@/lib/brand';
 
 const defaultCatalogOptions: CatalogOptionsResponse = {
   mainCategories: [],
@@ -182,10 +183,10 @@ export default function AdminDashboardPage() {
             <div className="rounded-[1.8rem] border border-theme-line/60 bg-white/76 p-5 dark:bg-white/5">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze">Quick Exports</p>
               <div className="mt-4 grid gap-3">
-                <button onClick={() => downloadCsv('luxe-orders.csv', orders.map((order) => ({ customer: order.customer.name, total: order.totalPrice, status: order.status, createdAt: order.createdAt })))} className="inline-flex items-center justify-between rounded-full border border-theme-line/60 bg-theme-ivory/70 px-4 py-3 text-sm font-semibold dark:bg-white/6">
+                <button onClick={() => downloadCsv(`${PAYMENT_RECEIPT_PREFIX}-orders.csv`, orders.map((order) => ({ customer: order.customer.name, total: order.totalPrice, status: order.status, createdAt: order.createdAt })))} className="inline-flex items-center justify-between rounded-full border border-theme-line/60 bg-theme-ivory/70 px-4 py-3 text-sm font-semibold dark:bg-white/6">
                   Orders <Download className="h-4 w-4" />
                 </button>
-                <button onClick={() => downloadCsv('luxe-customers.csv', customers.map((customer) => ({ name: customer.name, email: customer.email, city: customer.city, orders: customer.orders, spent: customer.spent, favoriteProduct: customer.favoriteProduct })))} className="inline-flex items-center justify-between rounded-full border border-theme-line/60 bg-theme-ivory/70 px-4 py-3 text-sm font-semibold dark:bg-white/6">
+                <button onClick={() => downloadCsv(`${PAYMENT_RECEIPT_PREFIX}-customers.csv`, customers.map((customer) => ({ name: customer.name, email: customer.email, city: customer.city, orders: customer.orders, spent: customer.spent, favoriteProduct: customer.favoriteProduct })))} className="inline-flex items-center justify-between rounded-full border border-theme-line/60 bg-theme-ivory/70 px-4 py-3 text-sm font-semibold dark:bg-white/6">
                   Customers <Download className="h-4 w-4" />
                 </button>
               </div>

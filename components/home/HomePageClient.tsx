@@ -129,7 +129,11 @@ export default function HomePageClient({
 }) {
   return (
     <main className="page-strata relative isolate w-full overflow-clip bg-transparent">
-      <CushionBackdrop variant="home" className="-z-10" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 top-[100svh] -z-10">
+        <div className="relative h-full w-full">
+          <CushionBackdrop variant="home" />
+        </div>
+      </div>
 
       <section className="w-full">
         <Hero content={siteContent.hero} />

@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import ParallaxLayer from '@/components/ParallaxLayer';
+import { SITE_NAME } from '@/lib/brand';
 
 const EthosScene = dynamic(() => import('@/components/canvas/EthosScene'), { ssr: false });
 
@@ -163,7 +164,7 @@ export default function About() {
             <TiltCard className="rounded-[1.75rem]" delay={0.18}>
               <div className="premium-surface rounded-[1.75rem] p-6 md:p-7">
                 <p className="text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/78 md:text-lg">
-                  Luxe Decor is designed like an interior studio rather than a catalog. Every piece is chosen to balance tactile softness,
+                  {SITE_NAME} is designed like an interior studio rather than a catalog. Every piece is chosen to balance tactile softness,
                   clean architecture, and a collected residential mood.
                 </p>
                 <p className="mt-6 text-base leading-8 text-theme-walnut/76 dark:text-theme-ink/74 md:text-lg">

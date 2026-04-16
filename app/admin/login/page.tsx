@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getApiUrl } from '@/lib/api/browser';
+import { SITE_NAME } from '@/lib/brand';
 
 export default function AdminLogin() {
   const [username, setUsername] = useState('');
@@ -55,9 +56,9 @@ export default function AdminLogin() {
         <div className="mb-10 text-center">
           <Link
             href="/"
-            className="inline-block font-display text-[2.1rem] font-semibold tracking-[0.18em] text-theme-ink dark:text-theme-ivory"
+            className="inline-block font-display text-[1.5rem] font-semibold tracking-[0.08em] text-theme-ink dark:text-theme-ivory md:text-[1.65rem]"
           >
-            LUXE
+            {SITE_NAME}
           </Link>
           <p className="mt-2 text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">
             Admin Portal

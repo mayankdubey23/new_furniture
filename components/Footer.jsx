@@ -91,7 +91,7 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
         </div>
 
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-theme-line/50 pt-6 text-sm text-theme-walnut/52 dark:border-white/10 dark:text-white/44 md:flex-row">
-          <p>&copy; {new Date().getFullYear()} Luxe Furniture. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {content.brandName}. All rights reserved.</p>
           <div className="flex gap-6">
             <Link href="/privacy" className="transition-colors hover:text-theme-ink dark:hover:text-white">Privacy Policy</Link>
             <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms of Service</Link>

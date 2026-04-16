@@ -1,18 +1,20 @@
 ﻿import { Suspense } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
 import CushionBackdrop from '@/components/decor/CushionBackdrop';
+import { isGoogleOAuthConfigured } from '@/lib/googleAuth';
+import { SITE_NAME } from '@/lib/brand';
 
 export const metadata = {
-  title: 'Login | Luxe Decor',
-  description: 'Sign in to your Luxe Decor account or create a new one.',
+  title: `Login | ${SITE_NAME}`,
+  description: `Sign in to your ${SITE_NAME} account or create a new one.`,
 };
 
 function LoginSkeleton() {
   return (
     <div className="relative z-10 mx-auto max-w-md">
       <div className="mb-8 text-center">
-        <div className="inline-block font-display text-[2.2rem] font-semibold tracking-[0.18em] text-theme-ink dark:text-theme-ivory">
-          LUXE
+        <div className="inline-block font-display text-[1.6rem] font-semibold tracking-[0.08em] text-theme-ink dark:text-theme-ivory md:text-[1.8rem]">
+          {SITE_NAME}
         </div>
         <div className="mt-4 h-10 w-48 mx-auto rounded bg-theme-ivory/20 animate-pulse" />
       </div>
@@ -35,7 +37,7 @@ export default function LoginPage() {
       <div className="pointer-events-none absolute bottom-0 left-1/2 h-[16rem] w-[32rem] -translate-x-1/2 rounded-full bg-theme-sand/30 blur-[100px]" />
 
       <Suspense fallback={<LoginSkeleton />}>
-        <LoginForm />
+        <LoginForm googleConfigured={isGoogleOAuthConfigured()} />
       </Suspense>
     </main>
   );

@@ -11,6 +11,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import AnimatedHeading from "./AnimatedHeading";
 import { useTheme } from "./ThemeProvider";
 import { useUser } from "@/context/UserContext";
+import { SITE_NAME } from "@/lib/brand";
 
 
 
@@ -235,6 +236,11 @@ function Navbar({ collections = [] }) {
 
   const handleClose = useCallback(() => setWishlistOpen(false), []);
   const handleCartClose = useCallback(() => setCartOpen(false), []);
+  const handleLogout = useCallback(async () => {
+    setAccountOpen(false);
+    setIsOpen(false);
+    await logout();
+  }, [logout]);
 
   if (isAdminRoute) {
     return null;
@@ -248,8 +254,8 @@ function Navbar({ collections = [] }) {
           style={{ color: navStyles.textColor }}
         >
           <Link href="/#hero" scroll={true} className="shrink-0">
-            <span className="font-display text-[1.9rem] font-semibold tracking-[0.18em] md:text-[2.15rem]">
-              LUXE
+            <span className="whitespace-nowrap font-display text-[1.15rem] font-semibold tracking-[0.08em] md:text-[1.3rem] xl:text-[1.45rem]">
+              {SITE_NAME}
             </span>
           </Link>
 
@@ -316,7 +322,7 @@ function Navbar({ collections = [] }) {
                           Track Order
                         </Link>
                         <button
-                          onClick={() => { setAccountOpen(false); logout(); }}
+                          onClick={() => { void handleLogout(); }}
                           className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 hover:bg-red-50/60 transition-colors dark:hover:bg-red-900/20"
                         >
                           Sign Out
@@ -396,6 +402,53 @@ function Navbar({ collections = [] }) {
             >
               Track Order
             </Link>
+          </div>
+          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+            {user ? (
+              <>
+                <p className="text-sm font-semibold text-white">{user.name}</p>
+                <p className="mt-1 text-xs text-theme-ivory/60">{user.email}</p>
+                <div className="mt-4 flex flex-col gap-2">
+                  <Link
+                    href="/track-order"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 transition-colors hover:border-theme-bronze hover:text-white"
+                  >
+                    Your Orders
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => { void handleLogout(); }}
+                    className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-left text-sm font-medium text-red-200 transition-colors hover:bg-red-500/20"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-semibold text-white">Account</p>
+                <p className="mt-1 text-xs text-theme-ivory/60">
+                  Sign in to save your details and track orders.
+                </p>
+                <div className="mt-4 grid gap-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 transition-colors hover:border-theme-bronze hover:text-white"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/login?tab=signup"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl bg-theme-bronze px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-theme-ink"
+                  >
+                    Create Account
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
           <div className="mt-6 flex gap-4 pt-4 border-t border-white/10 items-center justify-between">
             <div className="flex gap-3">

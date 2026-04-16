@@ -16,6 +16,7 @@ import {
   getCountryOption,
   getIndianCityDirectory,
 } from '@/lib/addressDirectory';
+import { PAYMENT_RECEIPT_PREFIX, SITE_NAME } from '@/lib/brand';
 
 interface IncomingOrderItem {
   productId?: string;
@@ -237,7 +238,7 @@ export async function POST(request: NextRequest) {
 
       const gatewayOrder = await createRazorpayOrder({
         amount: totalPrice,
-        receipt: `luxe_${String(order._id).slice(-14)}`,
+        receipt: `${PAYMENT_RECEIPT_PREFIX}_${String(order._id).slice(-14)}`,
         notes: {
           localOrderId: String(order._id),
           customerName: customer.name,
@@ -265,7 +266,7 @@ export async function POST(request: NextRequest) {
             orderId: gatewayOrder.id,
             amount: gatewayOrder.amount,
             currency: gatewayOrder.currency,
-            name: 'LUXE',
+            name: SITE_NAME,
             description: `Order #${String(order._id).slice(-8).toUpperCase()}`,
             prefill: {
               name: customer.name,

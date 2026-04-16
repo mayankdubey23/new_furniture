@@ -1,5 +1,6 @@
 import { Schema, model, models } from 'mongoose';
 import { DEFAULT_SITE_CONTENT, type SiteContent } from '@/lib/content/siteContent';
+import { ADMIN_CONTACT_EMAIL, DEFAULT_ADMIN_DISPLAY_NAME } from '@/lib/brand';
 
 export interface IAdminSettings {
   key: string;
@@ -29,8 +30,8 @@ const AdminSettingsSchema = new Schema<IAdminSettings>(
       lowStockAlerts: { type: Boolean, default: true },
     },
     adminProfile: {
-      displayName: { type: String, default: 'LUXE Administrator' },
-      email: { type: String, default: 'admin@luxe.local' },
+      displayName: { type: String, default: DEFAULT_ADMIN_DISPLAY_NAME },
+      email: { type: String, default: ADMIN_CONTACT_EMAIL },
     },
     siteContent: {
       type: Schema.Types.Mixed,
