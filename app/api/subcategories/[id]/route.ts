@@ -5,8 +5,10 @@ import SubCategory from '@/models/SubCategory';
 import Product from '@/models/Product';
 import {
   normalizeCatalogEntity,
-  prepareCatalogEntityMutationInput,
 } from '@/lib/catalogEntities';
+import { buildLegacyCatalogPayload } from '@/lib/server/legacyCatalog';
+import { readRequestData } from '@/lib/server/legacyApi';
+import { revalidateCatalogEntityRoutes } from '@/lib/server/catalogEntityRevalidation';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,8 +45,11 @@ export async function PUT(
   try {
     await dbConnect();
     const { id } = await params;
-    const data = await request.json();
-    const payload = prepareCatalogEntityMutationInput(data, 'Subcategory');
+    const payload = await buildLegacyCatalogPayload(
+      await readRequestData(request),
+      'subcategory',
+      'Subcategory'
+    );
     const entity = await SubCategory.findByIdAndUpdate(id, payload, {
       returnDocument: 'after',
       runValidators: true,
@@ -53,6 +58,8 @@ export async function PUT(
     if (!entity) {
       return NextResponse.json({ error: 'Subcategory not found.' }, { status: 404 });
     }
+
+    revalidateCatalogEntityRoutes();
 
     return NextResponse.json(normalizeCatalogEntity(entity), {
       headers: {
@@ -91,6 +98,8 @@ export async function DELETE(
     if (!deleted) {
       return NextResponse.json({ error: 'Subcategory not found.' }, { status: 404 });
     }
+
+    revalidateCatalogEntityRoutes();
 
     return NextResponse.json(
       { success: true },

@@ -105,16 +105,9 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
           <div className="md:col-span-1">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{content.brandLabel}</p>
             <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ink dark:text-theme-ivory">{content.brandName}</h2>
-            <p className="mb-6 text-sm leading-7 text-theme-walnut/72 dark:text-white/72">
+            <p className="text-sm leading-7 text-theme-walnut/72 dark:text-white/72">
               {content.description}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {content.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-theme-line/60 bg-white/72 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/72 dark:border-white/12 dark:bg-white/8 dark:text-white/78">
-                  {tag}
-                </span>
-              ))}
-            </div>
           </div>
 
           <div>
@@ -136,6 +129,7 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.32em] text-theme-bronze">Experience</h3>
             <ul className="space-y-3 text-sm text-theme-walnut/68 dark:text-white/68">
               <li><Link href="/customization" className="transition-colors hover:text-theme-bronze">Customization</Link></li>
+              <li><Link href="/faq" className="transition-colors hover:text-theme-bronze">FAQ</Link></li>
               <li><Link href="/contact" className="transition-colors hover:text-theme-bronze">Contact</Link></li>
               <li><Link href="/" onClick={handleBackToTop} className="transition-colors hover:text-theme-bronze">Back to top</Link></li>
             </ul>
@@ -179,8 +173,9 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-theme-line/50 pt-6 text-sm text-theme-walnut/52 dark:border-white/10 dark:text-white/44 md:flex-row">
           <p>&copy; {new Date().getFullYear()} {content.brandName}. All rights reserved.</p>
           <div className="flex gap-6">
+            <Link href="/faq" className="transition-colors hover:text-theme-ink dark:hover:text-white">FAQ</Link>
             <Link href="/privacy" className="transition-colors hover:text-theme-ink dark:hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms of Service</Link>
+            <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms & Conditions</Link>
           </div>
         </div>
       </div>

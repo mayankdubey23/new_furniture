@@ -89,6 +89,7 @@ export interface AdminSettingsState {
   adminProfile: {
     displayName: string;
     email: string;
+    phone: string;
   };
 }
 
@@ -209,6 +210,107 @@ export function downloadCsv(filename: string, rows: Array<Record<string, string 
   ].join('\n');
 
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function escapePdfText(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
+function buildPdfDocument(linesByPage: string[][]) {
+  const encoder = new TextEncoder();
+  const objects: string[] = [];
+  const pageIds: number[] = [];
+  const contentIds: number[] = [];
+
+  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
+
+  linesByPage.forEach((lines, pageIndex) => {
+    const pageId = 4 + pageIndex * 2;
+    const contentId = pageId + 1;
+    const stream = [
+      'BT',
+      '/F1 10 Tf',
+      '14 TL',
+      '50 780 Td',
+      ...lines.map((line) => `(${escapePdfText(line)}) Tj T*`),
+      'ET',
+    ].join('\n');
+    const streamLength = encoder.encode(stream).length;
+
+    pageIds.push(pageId);
+    contentIds.push(contentId);
+    objects[pageId] =
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`;
+    objects[contentId] = `<< /Length ${streamLength} >>\nstream\n${stream}\nendstream`;
+  });
+
+  objects[2] = `<< /Type /Pages /Kids [${pageIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pageIds.length} >>`;
+
+  let pdf = '%PDF-1.4\n';
+  const offsets: number[] = [0];
+
+  for (let index = 1; index < objects.length; index += 1) {
+    const objectBody = objects[index];
+    if (!objectBody) {
+      continue;
+    }
+
+    offsets[index] = encoder.encode(pdf).length;
+    pdf += `${index} 0 obj\n${objectBody}\nendobj\n`;
+  }
+
+  const xrefOffset = encoder.encode(pdf).length;
+  const xrefSize = objects.length;
+
+  pdf += `xref\n0 ${xrefSize}\n`;
+  pdf += '0000000000 65535 f \n';
+
+  for (let index = 1; index < xrefSize; index += 1) {
+    const offset = offsets[index] || 0;
+    pdf += `${offset.toString().padStart(10, '0')} 00000 n \n`;
+  }
+
+  pdf += `trailer\n<< /Size ${xrefSize} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return new Blob([encoder.encode(pdf)], { type: 'application/pdf' });
+}
+
+export function downloadPdf(
+  filename: string,
+  title: string,
+  rows: Array<Record<string, string | number>>
+) {
+  if (!rows.length || typeof window === 'undefined') return;
+
+  const headers = Object.keys(rows[0]);
+  const generatedAt = new Date().toLocaleString('en-IN');
+  const lines = [
+    title,
+    `Generated: ${generatedAt}`,
+    '',
+    ...rows.flatMap((row, index) => [
+      `${index + 1}.`,
+      ...headers.map((header) => `${header}: ${String(row[header] ?? '')}`),
+      '',
+    ]),
+  ];
+  const linesPerPage = 45;
+  const pages: string[][] = [];
+
+  for (let index = 0; index < lines.length; index += linesPerPage) {
+    pages.push(lines.slice(index, index + linesPerPage));
+  }
+
+  const blob = buildPdfDocument(pages.length ? pages : [['No records found.']]);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

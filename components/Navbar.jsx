@@ -11,6 +11,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import AnimatedHeading from "./AnimatedHeading";
 import { useTheme } from "./ThemeProvider";
 import { useUser } from "@/context/UserContext";
+import { isAdminPortalPath } from "@/lib/adminPortal";
 import { SITE_NAME } from "@/lib/brand";
 
 
@@ -123,7 +124,7 @@ function Navbar({ collections = [] }) {
   const isHomePage = hasHydrated ? pathname === "/" : true;
   const isSolidNav = hasHydrated ? (!isHomePage || scrolled) : false;
   const isDarkTheme = resolvedTheme === 'dark';
-  const isAdminRoute = pathname?.startsWith('/admin');
+  const isAdminRoute = isAdminPortalPath(pathname);
 
 
   const navStyles = useMemo(() => ({
@@ -175,6 +176,18 @@ function Navbar({ collections = [] }) {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   const resetPageScroll = useCallback(() => {
     lenis?.scrollTo(0, { immediate: true });
@@ -269,11 +282,11 @@ function Navbar({ collections = [] }) {
     <>
       <nav className="fixed inset-x-0 top-0 z-50">
         <div
-          className={`site-shell site-shell-gutter mt-3 flex items-center justify-between gap-4 rounded-[2rem] border py-3 backdrop-blur-xl transition-all duration-300 md:mt-4 md:gap-5 ${navStyles.surfaceClass}`}
+          className={`site-shell site-shell-gutter relative mt-3 flex items-center justify-between gap-3 rounded-[1.75rem] border py-3 backdrop-blur-xl transition-all duration-300 sm:gap-4 md:mt-4 md:gap-5 md:rounded-[2rem] ${navStyles.surfaceClass}`}
           style={{ color: navStyles.textColor }}
         >
           <Link href="/" scroll={true} onClick={handleBrandClick} className="shrink-0">
-            <span className="whitespace-nowrap font-display text-[1.15rem] font-semibold tracking-[0.08em] md:text-[1.3rem] xl:text-[1.45rem]">
+            <span className="whitespace-nowrap font-display text-[0.98rem] font-semibold tracking-[0.06em] sm:text-[1.15rem] sm:tracking-[0.08em] md:text-[1.3rem] xl:text-[1.45rem]">
               {SITE_NAME}
             </span>
           </Link>
@@ -295,7 +308,7 @@ function Navbar({ collections = [] }) {
           </ul>
 
 
-          <div className="flex shrink-0 items-center gap-2.5 md:gap-3">
+          <div className="hidden shrink-0 items-center gap-2 sm:flex md:gap-3">
             <ThemeToggle scrolled={hasHydrated && scrolled} />
             <NotificationBell iconColor={navStyles.iconColor} iconClass={navStyles.iconClass} />
 
@@ -325,7 +338,7 @@ function Navbar({ collections = [] }) {
                 <UserIcon className={`h-5 w-5 ${navStyles.iconClass}`} />
               </button>
               {accountOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl bg-white/95 p-2 shadow-2xl dark:bg-[rgba(34,27,23,0.95)]">
+                <div className="absolute right-0 top-full mt-2 w-[min(14rem,calc(100vw-2rem))] rounded-2xl bg-white/95 p-2 shadow-2xl dark:bg-[rgba(34,27,23,0.95)]">
                   {user ? (
                     <>
                       <div className="p-3 text-sm">
@@ -385,16 +398,26 @@ function Navbar({ collections = [] }) {
           </div>
 
 
-          <div className="flex items-center gap-3 lg:hidden">
+          <div className="flex shrink-0 items-center gap-3 lg:hidden">
             <button onClick={() => setIsOpen(true)} className={`rounded-full border p-2 ${isSolidNav ? (isDarkTheme ? "border-white/20 bg-white/6 text-theme-ivory" : "border-theme-walnut/30 bg-theme-walnut/8 text-theme-walnut") : "border-white/20 bg-white/6 text-theme-ivory"}`} style={{ color: navStyles.iconColor }}>
               <MenuIcon className={`h-6 w-6 ${navStyles.iconClass}`} />
             </button>
           </div>
         </div>
 
+        {isOpen ? (
+          <button
+            type="button"
+            aria-label="Close mobile navigation"
+            className="fixed inset-0 z-40 bg-[rgba(18,14,11,0.42)] lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+        ) : null}
 
-        <div className={`site-shell mt-3 overflow-hidden rounded-[1.75rem] border shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-500 lg:hidden ${
-          isOpen ? "border-white/18 bg-[rgba(18,14,11,0.38)] max-h-96 p-5 text-theme-ivory" : "max-h-0 p-0"
+        <div className={`fixed left-1/2 top-[5.45rem] z-[55] w-[min(calc(100%-1rem),28rem)] -translate-x-1/2 overflow-y-auto rounded-[1.75rem] border shadow-[0_16px_60px_rgba(18,14,11,0.16)] backdrop-blur-md transition-all duration-300 lg:hidden ${
+          isOpen
+            ? "pointer-events-auto border-white/18 bg-[rgba(18,14,11,0.78)] max-h-[calc(100vh-6.25rem)] p-5 text-theme-ivory opacity-100"
+            : "pointer-events-none max-h-0 border-transparent p-0 text-theme-ivory opacity-0"
         }`}>
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-ivory/75">Navigation</div>
@@ -469,18 +492,18 @@ function Navbar({ collections = [] }) {
               </>
             )}
           </div>
-          <div className="mt-6 flex gap-4 pt-4 border-t border-white/10 items-center justify-between">
-            <div className="flex gap-3">
-              <button onClick={() => { setWishlistOpen(true); setIsOpen(false); }} className="flex items-center gap-2 p-3 text-sm text-theme-ivory/90 hover:text-white">
+          <div className="mt-6 flex flex-col gap-3 border-t border-white/10 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <button onClick={() => { setWishlistOpen(true); setIsOpen(false); }} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 hover:text-white">
                 <HeartIcon className="h-4 w-4" filled={false} />
                 <span>Wishlist ({totalWishlistItems})</span>
               </button>
-              <button onClick={() => { setCartOpen(true); setIsOpen(false); }} className="flex items-center gap-2 p-3 text-sm text-theme-ivory/90 hover:text-white">
+              <button onClick={() => { setCartOpen(true); setIsOpen(false); }} className="flex items-center justify-between gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 hover:text-white">
                 <ShoppingBagIcon className="h-4 w-4" />
                 <span>Cart ({totalItems})</span>
               </button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2">
               <ThemeToggle scrolled={hasHydrated && scrolled} />
             </div>
           </div>

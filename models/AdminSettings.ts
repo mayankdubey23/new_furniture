@@ -13,6 +13,7 @@ export interface IAdminSettings {
   adminProfile: {
     displayName: string;
     email: string;
+    phone: string;
   };
   siteContent: SiteContent;
 }
@@ -32,6 +33,7 @@ const AdminSettingsSchema = new Schema<IAdminSettings>(
     adminProfile: {
       displayName: { type: String, default: DEFAULT_ADMIN_DISPLAY_NAME },
       email: { type: String, default: ADMIN_CONTACT_EMAIL },
+      phone: { type: String, default: '', trim: true },
     },
     siteContent: {
       type: Schema.Types.Mixed,

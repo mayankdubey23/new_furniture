@@ -4,9 +4,11 @@ import { adminMiddleware } from '@/lib/auth';
 import Brand from '@/models/Brand';
 import {
   normalizeCatalogEntity,
-  prepareCatalogEntityMutationInput,
   sortCatalogEntities,
 } from '@/lib/catalogEntities';
+import { buildLegacyCatalogPayload } from '@/lib/server/legacyCatalog';
+import { readRequestData } from '@/lib/server/legacyApi';
+import { revalidateCatalogEntityRoutes } from '@/lib/server/catalogEntityRevalidation';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,9 +45,13 @@ export async function POST(request: NextRequest) {
 
   try {
     await dbConnect();
-    const data = await request.json();
-    const payload = prepareCatalogEntityMutationInput(data, 'Brand');
+    const payload = await buildLegacyCatalogPayload(
+      await readRequestData(request),
+      'brand',
+      'Brand'
+    );
     const entity = await Brand.create(payload);
+    revalidateCatalogEntityRoutes();
 
     return NextResponse.json(normalizeCatalogEntity(entity.toObject()), {
       status: 201,

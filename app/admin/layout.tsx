@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   BarChart3,
   Box,
+  FileText,
   LogOut,
   Menu,
   Sparkles,
@@ -16,25 +17,63 @@ import {
 } from 'lucide-react';
 import ThemeToggle from '@/components/ThemeToggle';
 import { getApiUrl } from '@/lib/api/browser';
+import {
+  getAdminPortalPath,
+  getAdminRouteSuffix,
+  isAdminLoginPath,
+} from '@/lib/adminPortal';
 import { SITE_NAME } from '@/lib/brand';
 
+const adminHomeHref = getAdminPortalPath();
+const adminLoginHref = getAdminPortalPath('/login');
+const adminProductsHref = getAdminPortalPath('/products');
+
 const navItems = [
-  { href: '/admin', label: 'Overview', icon: BarChart3 },
-  { href: '/admin#products', label: 'Products', icon: Box },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { href: '/admin#customers', label: 'Customers', icon: Users },
-  { href: '/admin/customizations', label: 'Customizations', icon: Sparkles },
+  { href: adminHomeHref, label: 'Overview', icon: BarChart3 },
+  { href: adminProductsHref, label: 'Products', icon: Box },
+  { href: getAdminPortalPath('/customers'), label: 'Customers', icon: Users },
+  { href: getAdminPortalPath('/content'), label: 'Content', icon: FileText },
+  { href: getAdminPortalPath('/orders'), label: 'Orders', icon: ShoppingBag },
+  { href: getAdminPortalPath('/customizations'), label: 'Customizations', icon: Sparkles },
 ];
+
+function isNavItemActive(label: string, routeSuffix: string | null) {
+  if (label === 'Overview') {
+    return routeSuffix === '';
+  }
+
+  if (label === 'Products') {
+    return routeSuffix?.startsWith('/products') || false;
+  }
+
+  if (label === 'Customers') {
+    return routeSuffix?.startsWith('/customers') || false;
+  }
+
+  if (label === 'Content') {
+    return routeSuffix?.startsWith('/content') || false;
+  }
+
+  if (label === 'Orders') {
+    return routeSuffix?.startsWith('/orders') || false;
+  }
+
+  if (label === 'Customizations') {
+    return routeSuffix?.startsWith('/customizations') || false;
+  }
+
+  return false;
+}
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hash, setHash] = useState('');
   const router = useRouter();
   const pathname = usePathname();
+  const routeSuffix = getAdminRouteSuffix(pathname);
 
-  const isLoginPage = pathname === '/admin/login';
+  const isLoginPage = isAdminLoginPath(pathname);
 
   useEffect(() => {
     if (isLoginPage) return;
@@ -43,29 +82,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (res.ok) {
         setIsAuthenticated(true);
       } else {
-        router.push('/admin/login');
+        router.push(adminLoginHref);
       }
       setLoading(false);
     });
   }, [router, isLoginPage]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const syncHash = () => setHash(window.location.hash);
-    syncHash();
-
-    window.addEventListener('hashchange', syncHash);
-    return () => window.removeEventListener('hashchange', syncHash);
+    setMenuOpen(false);
   }, [pathname]);
 
-  const currentSection = useMemo(() => {
-    if (pathname === '/admin/orders') return 'Orders';
-    if (pathname === '/admin/customizations') return 'Customizations';
-    if (pathname === '/admin' && hash === '#products') return 'Products';
-    if (pathname === '/admin' && hash === '#customers') return 'Customers';
-    return 'Dashboard';
-  }, [hash, pathname]);
+  let currentSection = 'Overview';
+  if (routeSuffix?.startsWith('/products')) currentSection = 'Products';
+  if (routeSuffix?.startsWith('/orders')) currentSection = 'Orders';
+  if (routeSuffix?.startsWith('/customizations')) currentSection = 'Customizations';
+  if (routeSuffix?.startsWith('/customers')) currentSection = 'Customers';
+  if (routeSuffix?.startsWith('/content')) currentSection = 'Content';
 
   if (isLoginPage) return <>{children}</>;
 
@@ -83,7 +115,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const handleLogout = async () => {
     await fetch(getApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
-    router.push('/admin/login');
+    router.push(adminLoginHref);
     router.refresh();
   };
 
@@ -91,10 +123,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.12),transparent_24%),linear-gradient(180deg,#fbf7f1_0%,#f2e7d7_100%)] text-theme-walnut dark:bg-[radial-gradient(circle_at_top_left,rgba(199,140,92,0.14),transparent_20%),linear-gradient(180deg,#181310_0%,#0f0b09_100%)] dark:text-theme-ivory">
       <div className="pointer-events-none fixed inset-0 bg-[linear-gradient(90deg,rgba(79,53,40,0.03)_1px,transparent_1px),linear-gradient(rgba(79,53,40,0.03)_1px,transparent_1px)] bg-[size:80px_80px] opacity-40" />
 
-      <div className="relative mx-auto grid min-h-screen max-w-[1600px] lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className={`fixed inset-y-0 left-0 z-50 w-[88vw] max-w-[320px] border-r border-theme-line/60 bg-[rgba(251,247,241,0.92)] p-6 shadow-[0_30px_80px_rgba(49,30,21,0.16)] backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-[rgba(18,14,11,0.92)] lg:static lg:w-auto lg:max-w-none lg:translate-x-0 lg:shadow-none ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="relative mx-auto grid min-h-screen max-w-[1600px] items-start lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className={`fixed inset-y-0 left-0 z-50 flex w-[min(calc(100vw-1rem),320px)] flex-col overflow-y-auto border-r border-theme-line/60 bg-[rgba(251,247,241,0.92)] p-5 shadow-[0_30px_80px_rgba(49,30,21,0.16)] backdrop-blur-xl transition-transform duration-300 dark:border-white/10 dark:bg-[rgba(18,14,11,0.92)] sm:p-6 lg:sticky lg:top-0 lg:h-screen lg:w-auto lg:max-w-none lg:translate-x-0 lg:self-start lg:shadow-none ${menuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex items-center justify-between">
-            <Link href="/admin" className="font-display text-[2rem] tracking-[0.18em] text-theme-ink dark:text-theme-ivory">
+            <Link href={adminHomeHref} className="font-display text-[2rem] tracking-[0.18em] text-theme-ink dark:text-theme-ivory">
               <span className="text-[1.45rem] tracking-[0.08em] md:text-[1.55rem]">{SITE_NAME}</span>
             </Link>
             <button
@@ -122,24 +154,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <nav className="mt-8 space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const active =
-                item.label === 'Overview'
-                  ? pathname === '/admin'
-                  : item.label === 'Products'
-                    ? pathname === '/admin' && hash === '#products'
-                    : item.label === 'Customers'
-                      ? pathname === '/admin' && hash === '#customers'
-                      : item.href === '/admin/orders'
-                        ? pathname.startsWith('/admin/orders')
-                        : item.href === '/admin/customizations'
-                          ? pathname.startsWith('/admin/customizations')
-                          : false;
+              const active = isNavItemActive(item.label, routeSuffix);
 
               return (
                 <Link
                   key={`${item.label}-${item.href}`}
                   href={item.href}
                   onClick={() => setMenuOpen(false)}
+                  aria-current={active ? 'page' : undefined}
                   className={`flex items-center gap-3 rounded-[1.25rem] px-4 py-3 text-sm font-semibold transition ${
                     active
                       ? 'bg-theme-ink text-white shadow-[0_14px_34px_rgba(26,22,19,0.18)] dark:bg-white dark:text-[var(--theme-contrast-ink)]'
@@ -156,7 +178,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="mt-8 rounded-[1.8rem] border border-theme-line/50 bg-[linear-gradient(145deg,rgba(255,255,255,0.8),rgba(247,239,228,0.78))] p-5 dark:bg-[linear-gradient(145deg,rgba(47,36,30,0.46),rgba(24,18,15,0.72))]">
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">Permissions</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              {['Products', 'Orders', 'Customers', 'Customizations', 'Settings'].map((item) => (
+              {['Products', 'Orders', 'Customers', 'Content', 'Customizations', 'Settings'].map((item) => (
                 <span
                   key={item}
                   className="rounded-full border border-theme-line/60 bg-white/72 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/70"
@@ -196,8 +218,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <div className="relative min-w-0">
           <header className="sticky top-0 z-30 border-b border-theme-line/60 bg-[rgba(251,247,241,0.72)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(18,14,11,0.72)]">
-            <div className="flex items-center justify-between gap-4 px-5 py-4 md:px-8">
-              <div className="flex items-center gap-3">
+            <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 md:px-8">
+              <div className="flex items-start gap-3 sm:items-center">
                 <button
                   type="button"
                   onClick={() => setMenuOpen(true)}
@@ -210,22 +232,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">
                     {currentSection}
                   </p>
-                  <h1 className="font-display text-2xl text-theme-ink dark:text-theme-ivory">
+                  <h1 className="font-display text-xl text-theme-ink dark:text-theme-ivory sm:text-2xl">
                     {SITE_NAME} Admin Panel
                   </h1>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="hidden rounded-full border border-theme-line/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/70 md:block">
+              <div className="flex w-full items-center justify-between gap-3 sm:w-auto sm:justify-end">
+                <div className="rounded-full border border-theme-line/60 bg-white/70 px-4 py-2 text-center text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/70 sm:text-xs sm:tracking-[0.24em]">
                   Secure Session Active
                 </div>
                 <ThemeToggle scrolled />
               </div>
             </div>
+
+            <div className="border-t border-theme-line/40 px-4 py-3 sm:px-5 md:px-8 lg:hidden">
+              <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+                {navItems.map((item) => {
+                  const active = isNavItemActive(item.label, routeSuffix);
+
+                  return (
+                    <Link
+                      key={`mobile-${item.label}`}
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={`shrink-0 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] transition ${
+                        active
+                          ? 'border-theme-bronze bg-theme-bronze text-white'
+                          : 'border-theme-line/60 bg-white/72 text-theme-walnut/72 dark:bg-white/6 dark:text-theme-ivory/68'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </header>
 
-          <main className="px-4 py-6 md:px-8 md:py-8">{children}</main>
+          <main className="px-3 py-5 sm:px-4 md:px-8 md:py-8">{children}</main>
         </div>
       </div>
     </div>

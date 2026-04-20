@@ -15,6 +15,7 @@ export interface AdminSettingsState {
   adminProfile: {
     displayName: string;
     email: string;
+    phone: string;
   };
   siteContent: SiteContent;
 }
@@ -29,6 +30,7 @@ export const DEFAULT_ADMIN_SETTINGS: AdminSettingsState = {
   adminProfile: {
     displayName: DEFAULT_ADMIN_DISPLAY_NAME,
     email: ADMIN_CONTACT_EMAIL,
+    phone: '',
   },
   siteContent: DEFAULT_SITE_CONTENT,
 };
@@ -81,6 +83,7 @@ export function normalizeAdminSettings(value: unknown): AdminSettingsState {
         DEFAULT_ADMIN_SETTINGS.adminProfile.displayName
       ),
       email: readString(adminProfile.email, DEFAULT_ADMIN_SETTINGS.adminProfile.email),
+      phone: readString(adminProfile.phone, DEFAULT_ADMIN_SETTINGS.adminProfile.phone),
     },
     siteContent: normalizeSiteContent(siteContentSource),
   };

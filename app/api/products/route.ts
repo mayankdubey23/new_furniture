@@ -4,6 +4,7 @@ import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
 import { revalidateCatalogRoutes } from '@/lib/server/catalogRevalidation';
 import {
+  DEFAULT_PRODUCTS,
   normalizeProduct,
   prepareProductMutationInput,
 } from '@/lib/productCatalog';
@@ -48,6 +49,17 @@ export async function GET(request: NextRequest) {
       .populate('brand')
       .sort({ category: 1, name: 1 })
       .lean();
+
+    if (!products.length) {
+      return NextResponse.json(
+        DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category)),
+        {
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        }
+      );
+    }
 
     return NextResponse.json(products.map((product) => normalizeProduct(product)), {
       headers: {

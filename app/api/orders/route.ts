@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Order from '@/models/Order';
-import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
-import { normalizeProduct } from '@/lib/productCatalog';
+import {
+  matchesProductRouteSegment,
+  slugify,
+  type ProductRecord,
+} from '@/lib/productCatalog';
 import { createRazorpayOrder, getRazorpayPublicConfig, isRazorpayConfigured } from '@/lib/server/razorpay';
 import {
   appendStatusTimelineEntry,
+  createOrderStatusNotification,
   ensureTrackingMetadata,
+  sendAdminNewOrderAlertEmail,
+  sendOrderStatusEmail,
   type MutableOrderRecord,
 } from '@/lib/server/orderLifecycle';
+import { ensureCheckoutUserSession } from '@/lib/server/checkoutUser';
+import { getAllProducts } from '@/lib/services/storefront';
 import {
   DEFAULT_COUNTRY_CODE,
   buildCustomerAddress,
@@ -17,6 +25,7 @@ import {
   getIndianCityDirectory,
 } from '@/lib/addressDirectory';
 import { PAYMENT_RECEIPT_PREFIX, SITE_NAME } from '@/lib/brand';
+import { getUserFromCookie } from '@/lib/userAuth';
 
 interface IncomingOrderItem {
   productId?: string;
@@ -74,6 +83,7 @@ function normalizeCustomer(customer: IncomingCustomer = {}) {
 }
 
 async function resolveOrderItems(items: ReturnType<typeof normalizeItems>) {
+  const products = await getAllProducts();
   const resolvedItems: Array<{
     productId: string;
     name: string;
@@ -83,19 +93,17 @@ async function resolveOrderItems(items: ReturnType<typeof normalizeItems>) {
   }> = [];
 
   for (const item of items) {
-    let productRecord: unknown = null;
+    const normalizedItemId = item.productId.trim();
+    const normalizedItemName = slugify(item.name);
+    const product = products.find(
+      (candidate: ProductRecord) =>
+        matchesProductRouteSegment(candidate, normalizedItemId) ||
+        (normalizedItemName && slugify(candidate.name) === normalizedItemName)
+    );
 
-    try {
-      productRecord = await Product.findById(item.productId).lean();
-    } catch {
-      productRecord = null;
-    }
-
-    if (!productRecord) {
+    if (!product) {
       throw new Error(`${item.name || 'A product'} is no longer available.`);
     }
-
-    const product = normalizeProduct(productRecord);
     const availableQuantity = Number(product.stockQuantity ?? product.stock ?? 0);
 
     if (product.active === false) {
@@ -148,9 +156,13 @@ export async function POST(request: NextRequest) {
       notes?: string;
       paymentMethod?: 'cod' | 'razorpay';
     };
+    const signedInUser = await getUserFromCookie();
 
     const items = normalizeItems(data.items);
-    const customer = normalizeCustomer(data.customer);
+    const customer = normalizeCustomer({
+      ...data.customer,
+      email: signedInUser?.email || data.customer?.email,
+    });
     const paymentMethod = data.paymentMethod === 'razorpay' ? 'razorpay' : 'cod';
     const notes = String(data.notes || '').trim();
 
@@ -249,6 +261,25 @@ export async function POST(request: NextRequest) {
       order.gatewayOrderId = gatewayOrder.id;
       await order.save();
 
+      let account = null;
+
+      try {
+        account = await ensureCheckoutUserSession({
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+        });
+      } catch (authError) {
+        console.error('Checkout account sync failed:', authError);
+      }
+
+      try {
+        await createOrderStatusNotification(order as unknown as MutableOrderRecord, 'pending');
+        await sendOrderStatusEmail(order as unknown as MutableOrderRecord, 'pending');
+      } catch (notificationError) {
+        console.error('Pending payment notification failed:', notificationError);
+      }
+
       const gatewayConfig = getRazorpayPublicConfig();
 
       return NextResponse.json(
@@ -259,6 +290,7 @@ export async function POST(request: NextRequest) {
           totalPrice,
           paymentMethod: 'razorpay',
           paymentStatus: order.paymentStatus,
+          account,
           requiresPayment: true,
           gateway: {
             provider: 'razorpay',
@@ -293,6 +325,31 @@ export async function POST(request: NextRequest) {
     appendStatusTimelineEntry(order as unknown as MutableOrderRecord, 'pending');
     await order.save();
 
+    let account = null;
+
+    try {
+      account = await ensureCheckoutUserSession({
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      });
+    } catch (authError) {
+      console.error('Checkout account sync failed:', authError);
+    }
+
+    try {
+      await createOrderStatusNotification(order as unknown as MutableOrderRecord, 'pending');
+      await sendOrderStatusEmail(order as unknown as MutableOrderRecord, 'pending');
+    } catch (notificationError) {
+      console.error('Order confirmation notification failed:', notificationError);
+    }
+
+    try {
+      await sendAdminNewOrderAlertEmail(order as unknown as MutableOrderRecord);
+    } catch (alertError) {
+      console.error('New order alert email failed:', alertError);
+    }
+
     return NextResponse.json(
       {
         success: true,
@@ -301,6 +358,7 @@ export async function POST(request: NextRequest) {
         totalPrice,
         paymentMethod: 'cod',
         paymentStatus: order.paymentStatus,
+        account,
       },
       { status: 201 }
     );

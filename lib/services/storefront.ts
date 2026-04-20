@@ -1,6 +1,5 @@
 import 'server-only';
 
-import { cache } from 'react';
 import dbConnect from '@/lib/mongoose';
 import Product from '@/models/Product';
 import {
@@ -74,7 +73,7 @@ async function getExternalProducts() {
   }
 }
 
-export const getAllProducts = cache(async (): Promise<ProductRecord[]> => {
+export async function getAllProducts(): Promise<ProductRecord[]> {
   const source = getServerDataSource();
 
   if (source === 'mock') {
@@ -86,19 +85,19 @@ export const getAllProducts = cache(async (): Promise<ProductRecord[]> => {
   }
 
   return getInternalProducts();
-});
+}
 
-export const getFeaturedProducts = cache(async (): Promise<ProductRecord[]> => {
+export async function getFeaturedProducts(): Promise<ProductRecord[]> {
   const products = await getAllProducts();
   return ensureFeaturedProducts(products);
-});
+}
 
-export const getStorefrontCollectionLinks = cache(async (): Promise<StorefrontCollectionLink[]> => {
+export async function getStorefrontCollectionLinks(): Promise<StorefrontCollectionLink[]> {
   const products = await getFeaturedProducts();
   return buildStorefrontCollectionLinks(products);
-});
+}
 
-export const getProductById = cache(async (id: string): Promise<ProductRecord | null> => {
+export async function getProductById(id: string): Promise<ProductRecord | null> {
   const normalizedId = String(id || '').trim();
 
   if (!normalizedId) {
@@ -142,4 +141,4 @@ export const getProductById = cache(async (id: string): Promise<ProductRecord | 
       return matchesProductRouteSegment(product, normalizedId);
     }) || null
   );
-});
+}

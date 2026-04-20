@@ -4,6 +4,11 @@ import { useState } from 'react';
 import NextImage from 'next/image';
 import { useCart } from '@/context/CartContext';
 import { useWishlist } from '@/context/WishlistContext';
+import {
+  buildCommerceItemId,
+  getDefaultMaterialForProduct,
+  getDefaultSizeForProduct,
+} from '@/lib/commerce';
 import AnimatedHeading from '../AnimatedHeading';
 import ZoomLensImage from './ZoomLensImage';
 
@@ -46,15 +51,45 @@ function HeartIcon({ filled = false, className = '' }) {
   );
 }
 
+function OptionPill({ active, children, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+        active
+          ? 'border-theme-bronze bg-theme-bronze text-white'
+          : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:text-theme-bronze dark:bg-white/5 dark:text-theme-ivory/75'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function ProductDetails({ data, currentColor, currentImage, onColorChange }) {
   const { addToCart } = useCart();
   const { addToWishlist, isWishlisted } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
   const [wishlistAdded, setWishlistAdded] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(getDefaultSizeForProduct(data));
+  const selectedMaterial = getDefaultMaterialForProduct(data);
+  const selectedFinish = '';
+  const selectedAddons = [];
+  const configurationNotes = '';
 
   const displayImage = currentColor?.image || currentImage || data.imageUrl;
-  const saved = isWishlisted(data.id);
+  const selectedItemId = buildCommerceItemId(String(data.id), {
+    selectedColor: currentColor?.name || '',
+    selectedColorImage: displayImage || '',
+    selectedSize,
+    selectedMaterial,
+    selectedFinish,
+    selectedAddons,
+    configurationNotes,
+  });
+  const saved = isWishlisted(selectedItemId);
   const stockQuantity = Number(data.stockQuantity ?? data.stock ?? 0);
   const isOutOfStock = data.inStock === false || stockQuantity <= 0;
   const maxQuantity = stockQuantity > 0 ? stockQuantity : 1;
@@ -64,10 +99,18 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
 
     addToCart(
       {
-        id: data.id,
+        id: selectedItemId,
+        productId: String(data.id),
         name: data.name,
         price: data.price,
         image: displayImage || '',
+        selectedColor: currentColor?.name || '',
+        selectedColorImage: displayImage || '',
+        selectedSize,
+        selectedMaterial,
+        selectedFinish,
+        selectedAddons,
+        configurationNotes: configurationNotes.trim(),
       },
       quantity
     );
@@ -79,10 +122,18 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
     if (saved) return;
 
     const wasAdded = addToWishlist({
-      id: data.id,
-      name: currentColor?.name ? `${data.name} - ${currentColor.name}` : data.name,
+      id: selectedItemId,
+      productId: String(data.id),
+      name: data.name,
       price: data.price,
       image: displayImage || '',
+      selectedColor: currentColor?.name || '',
+      selectedColorImage: displayImage || '',
+      selectedSize,
+      selectedMaterial,
+      selectedFinish,
+      selectedAddons,
+      configurationNotes: configurationNotes.trim(),
     });
 
     if (!wasAdded) return;
@@ -94,16 +145,16 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
   return (
     <div className="premium-surface overflow-hidden rounded-2xl">
       <div className="grid gap-0 md:grid-cols-2">
-        <div className="flex flex-col gap-6 p-7 md:p-9">
+        <div className="flex flex-col gap-8 p-8 sm:gap-6 sm:p-7 md:p-9">
           <div>
-            <AnimatedHeading as="h3" className="font-display text-5xl font-semibold text-theme-bronze">
+            <AnimatedHeading as="h3" className="font-display text-4xl font-semibold text-theme-bronze sm:text-5xl">
               {`Rs. ${data.price.toLocaleString('en-IN')}`}
             </AnimatedHeading>
-            <p className="mt-1.5 text-xs font-semibold uppercase tracking-[0.28em] text-theme-walnut/50 dark:text-theme-ink/45">
+            <p className="mt-2 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/50 dark:text-theme-ink/45 sm:text-xs sm:tracking-[0.28em]">
               Free white-glove delivery
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className={`rounded-full border px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.24em] ${
+            <div className="mt-4 flex flex-wrap gap-3 sm:gap-2">
+              <span className={`rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.24em] sm:px-3 sm:text-[0.62rem] ${
                 isOutOfStock
                   ? 'border-red-300/70 bg-red-50 text-red-600'
                   : 'border-emerald-300/60 bg-emerald-50 text-emerald-700'
@@ -113,40 +164,28 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             </div>
           </div>
 
-          <p className="text-sm leading-[1.85] text-theme-walnut/72 dark:text-theme-ink/68">
+          <p className="text-base leading-7 text-theme-walnut/72 dark:text-theme-ink/68 sm:text-sm sm:leading-[1.85]">
             {data.description}
           </p>
 
-          <div>
-            <p className="mb-3 text-xs font-semibold uppercase tracking-[0.28em] text-theme-walnut/65 dark:text-theme-ink/55">
-              Quantity
+          <div className="rounded-[1.6rem] border border-theme-line/60 bg-white/60 px-4 py-4 dark:bg-white/5">
+            <p className="text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ink/55 sm:text-xs sm:tracking-[0.28em]">
+              View More Specs
             </p>
-            <div className="inline-flex items-center rounded-full border border-theme-line bg-theme-mist/60 dark:bg-theme-mist/25">
-              <button
-                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-                disabled={isOutOfStock || quantity <= 1}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
-                aria-label="Decrease quantity"
-              >
-                -
-              </button>
-              <span className="w-10 text-center text-base font-bold text-theme-ink dark:text-theme-ivory">{quantity}</span>
-              <button
-                onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
-                disabled={isOutOfStock || quantity >= maxQuantity}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
+            <p className="mt-2 text-sm leading-7 text-theme-walnut/68 dark:text-theme-ink/62">
+              Material options, base finishes, add-ons, and configuration guidance now live in the
+              {' '}
+              <span className="font-semibold text-theme-bronze">View More Specs</span>
+              {' '}
+              panel for this product.
+            </p>
           </div>
 
           <div className="grid grid-cols-[1fr_auto] gap-3">
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`relative w-full overflow-hidden rounded-full py-4 text-sm font-semibold uppercase tracking-[0.28em] transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze ${
+              className={`relative w-full overflow-hidden rounded-full py-5 text-xs font-semibold uppercase tracking-wider transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze sm:py-4 sm:text-sm sm:tracking-[0.28em] ${
                 isOutOfStock
                   ? 'cursor-not-allowed bg-theme-line/80 text-theme-walnut/55 shadow-none dark:bg-white/10 dark:text-theme-ivory/45'
                   : added
@@ -190,9 +229,9 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
           </p>
         </div>
 
-        <div className="flex flex-col gap-6 border-t border-theme-line bg-theme-sand/10 p-7 dark:bg-theme-mist/10 md:border-l md:border-t-0 md:p-9">
+        <div className="flex flex-col gap-8 border-t border-theme-line bg-theme-sand/10 p-8 sm:gap-6 sm:p-7 dark:bg-theme-mist/10 md:border-l md:border-t-0 md:p-9">
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.28em] text-theme-walnut/65 dark:text-theme-ink/55">
+            <p className="mb-1 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ink/55 sm:text-xs sm:tracking-[0.28em]">
               Finish
             </p>
             <AnimatedHeading as="h3" className="font-display text-xl text-theme-ink">
@@ -211,12 +250,58 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             ))}
           </div>
 
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className={data.size?.length ? "rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5" : "rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5 sm:col-span-2"}>
+              <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ink/58">
+                Quantity
+              </p>
+              <div className="inline-flex items-center rounded-full border border-theme-line bg-theme-mist/60 dark:bg-theme-mist/25">
+                <button
+                  onClick={() => setQuantity((current) => Math.max(1, current - 1))}
+                  disabled={isOutOfStock || quantity <= 1}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
+                  aria-label="Decrease quantity"
+                >
+                  -
+                </button>
+                <span className="w-10 text-center text-base font-bold text-theme-ink dark:text-theme-ivory">{quantity}</span>
+                <button
+                  onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
+                  disabled={isOutOfStock || quantity >= maxQuantity}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
+                  aria-label="Increase quantity"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            {data.size?.length ? (
+              <div className="rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5">
+                <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ink/58">
+                  Size / Configuration
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {data.size.map((size) => (
+                    <OptionPill
+                      key={size}
+                      active={selectedSize === size}
+                      onClick={() => setSelectedSize(size)}
+                    >
+                      {size}
+                    </OptionPill>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+
           <ZoomLensImage
             key={displayImage || data.imageUrl}
             src={displayImage || data.imageUrl}
             alt={currentColor?.name || data.name}
             label={currentColor?.name || data.colors?.[0]?.name || data.name}
-            containerClassName="mt-auto aspect-[16/9] rounded-xl border border-theme-line bg-theme-sand/20"
+            containerClassName="min-h-[18rem] flex-1 rounded-2xl border border-theme-line bg-theme-sand/20"
             imageClassName="h-full w-full object-contain transition-all duration-500"
             sizes="(max-width: 768px) 100vw, 40vw"
           />

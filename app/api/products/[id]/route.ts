@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isValidObjectId } from 'mongoose';
 import dbConnect from '@/lib/mongoose';
 import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
@@ -36,15 +37,42 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const { id } = await params;
     const data = await request.json();
     const payload = prepareProductMutationInput(data);
-    const product = await Product.findByIdAndUpdate(id, payload, {
-      returnDocument: 'after',
-      runValidators: true,
-    })
-      .populate('mainCategory')
-      .populate('subCategory')
-      .populate('brand')
-      .lean();
-    if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    let product = null;
+
+    if (isValidObjectId(id)) {
+      product = await Product.findByIdAndUpdate(id, payload, {
+        returnDocument: 'after',
+        runValidators: true,
+      })
+        .populate('mainCategory')
+        .populate('subCategory')
+        .populate('brand')
+        .lean();
+    }
+
+    if (!product) {
+      product = await Product.findOneAndUpdate(
+        { name: payload.name },
+        payload,
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        }
+      )
+        .populate('mainCategory')
+        .populate('subCategory')
+        .populate('brand')
+        .lean();
+    }
+
+    if (!product) {
+      const created = await Product.create(payload);
+      product = await Product.findById(created._id)
+        .populate('mainCategory')
+        .populate('subCategory')
+        .populate('brand')
+        .lean();
+    }
 
     const normalizedProduct = normalizeProduct(product);
 

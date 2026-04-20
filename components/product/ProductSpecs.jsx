@@ -39,6 +39,16 @@ const SECTION_ICONS = {
       <path d="M12 12v3" strokeLinecap="round" />
     </svg>
   ),
+  'customization options': (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
+      <path d="M6 7h12" strokeLinecap="round" />
+      <path d="M6 12h12" strokeLinecap="round" />
+      <path d="M6 17h12" strokeLinecap="round" />
+      <circle cx="9" cy="7" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="11" cy="17" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  ),
   'warranty & care': (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5">
       <path d="M12 3l7 3v6c0 5-3 7.5-7 9-4-1.5-7-4-7-9V6l7-3z" />
@@ -214,7 +224,7 @@ export default function ProductSpecs({
               arranged clearly.
             </AnimatedHeading>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ivory/65 md:text-base">
-              Structured product information for dimensions, material, care, origin, and day-to-day use.
+              Structured product information for dimensions, materials, customization options, care, origin, and day-to-day use.
             </p>
           </div>
 

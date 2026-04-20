@@ -3,6 +3,7 @@ import LoginForm from '@/components/auth/LoginForm';
 import CushionBackdrop from '@/components/decor/CushionBackdrop';
 import { isGoogleOAuthConfigured } from '@/lib/googleAuth';
 import { SITE_NAME } from '@/lib/brand';
+import { ensureStorefrontAvailable } from '@/lib/services/storefrontAvailability';
 
 export const metadata = {
   title: `Login | ${SITE_NAME}`,
@@ -26,7 +27,9 @@ function LoginSkeleton() {
   );
 }
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  await ensureStorefrontAvailable();
+
   return (
     <main className="relative isolate min-h-screen overflow-hidden bg-transparent px-4 pb-24 pt-28 sm:px-6 lg:px-8">
       <CushionBackdrop variant="auth" className="-z-10" />

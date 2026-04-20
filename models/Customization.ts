@@ -7,7 +7,7 @@ export interface ICustomization extends Document {
   customerPhone: string;
 
 
-  productId: mongoose.Types.ObjectId;
+  productId: string;
   productName: string;
   quantity: number;
 
@@ -57,7 +57,7 @@ const CustomizationSchema = new Schema<ICustomization>(
     customerPhone: { type: String, required: true },
 
 
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    productId: { type: String, required: true, trim: true },
     productName: { type: String, required: true },
     quantity: { type: Number, required: true, min: 1, default: 1 },
 

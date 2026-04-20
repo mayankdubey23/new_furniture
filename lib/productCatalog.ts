@@ -232,6 +232,10 @@ function cleanStringArray(value: unknown) {
   return value.map((entry) => cleanString(entry)).filter(Boolean);
 }
 
+function isGlbModelPath(value: unknown) {
+  return /\.glb(?:[?#].*)?$/i.test(cleanString(value));
+}
+
 function dedupeStrings(values: Array<string | undefined | null>) {
   const seen = new Set<string>();
   const unique: string[] = [];
@@ -579,6 +583,135 @@ function createSpecSection(
         value: cleanString(item.value),
       }))
       .filter((item) => item.label && item.value),
+  };
+}
+
+type ProductCustomizationProfile = {
+  materials: string[];
+  finishes: string[];
+  addons: string[];
+  notes: string;
+};
+
+const PRODUCT_CUSTOMIZATION_PROFILES: Record<string, ProductCustomizationProfile> = {
+  sofa: {
+    materials: ['Leather', 'Velvet', 'Boucle', 'Linen', 'Premium Fabric'],
+    finishes: ['Dark Walnut', 'Matte Black', 'Brushed Brass'],
+    addons: ['Premium Cushion Fill', 'Accent Stitching', 'Extended Depth'],
+    notes:
+      'Use the customization studio for one-seater, two-seater, 3+2+1, or L-shaped planning based on your room layout.',
+  },
+  chair: {
+    materials: ['Leather', 'Velvet', 'Boucle', 'Linen'],
+    finishes: ['Dark Walnut', 'Natural Oak', 'Brushed Brass'],
+    addons: ['Premium Cushion Fill', 'Accent Stitching', 'Swivel Base'],
+    notes:
+      'Share seat pitch, swivel preference, or paired-chair styling requests before production.',
+  },
+  recliner: {
+    materials: ['Leather', 'Premium Fabric', 'Velvet'],
+    finishes: ['Dark Walnut', 'Matte Black', 'Polished Nickel'],
+    addons: ['Premium Cushion Fill', 'Accent Stitching', 'Extended Depth'],
+    notes:
+      'Note recline feel, wall clearance, and armrest preference for the final lounge setup.',
+  },
+  pouffe: {
+    materials: ['Velvet', 'Boucle', 'Linen', 'Premium Fabric'],
+    finishes: ['Natural Oak', 'Matte Black', 'Brushed Brass'],
+    addons: ['Premium Cushion Fill', 'Accent Stitching'],
+    notes:
+      'Use configuration notes for firmness, lid behavior, or piping detail.',
+  },
+};
+
+function normalizeSpecLookupKey(value: string) {
+  return cleanString(value).toLowerCase();
+}
+
+function formatReadableList(values: string[]) {
+  return dedupeStrings(values).join(', ');
+}
+
+function buildCustomizationSpecSection({
+  category,
+  specs,
+  sizeOptions,
+}: {
+  category: string;
+  specs: ProductSpecs;
+  sizeOptions: string[];
+}) {
+  const profile = PRODUCT_CUSTOMIZATION_PROFILES[category];
+
+  if (!profile) {
+    return null;
+  }
+
+  const primaryMaterial = cleanString(specs.material);
+  const referenceSize = formatReadableList(sizeOptions);
+
+  return createSpecSection('Customization Options', [
+    {
+      label: 'Material',
+      value: [
+        primaryMaterial ? `Primary build: ${primaryMaterial}.` : '',
+        `Available studio materials: ${formatReadableList(profile.materials)}.`,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
+    {
+      label: 'Base Finish',
+      value: `Available base finishes: ${formatReadableList(profile.finishes)}.`,
+    },
+    {
+      label: 'Add-ons',
+      value: `Available add-ons: ${formatReadableList(profile.addons)}.`,
+    },
+    {
+      label: 'Configuration Notes',
+      value: [
+        referenceSize ? `Reference size: ${referenceSize}.` : '',
+        profile.notes,
+      ]
+        .filter(Boolean)
+        .join(' '),
+    },
+  ]);
+}
+
+function ensureCustomizationSpecSection(
+  specs: ProductSpecs,
+  context: {
+    category: string;
+    sizeOptions: string[];
+  }
+) {
+  const generatedSection = buildCustomizationSpecSection({
+    category: context.category,
+    specs,
+    sizeOptions: context.sizeOptions,
+  });
+
+  if (!generatedSection) {
+    return specs;
+  }
+
+  const sections = Array.isArray(specs.sections) ? specs.sections : [];
+  const hasCustomizationSection = sections.some(
+    (section) => normalizeSpecLookupKey(section.title) === 'customization options'
+  );
+
+  if (hasCustomizationSection) {
+    return {
+      ...specs,
+      sections,
+    };
+  }
+
+  return {
+    ...specs,
+    sections: [...sections, generatedSection],
   };
 }
 
@@ -1060,18 +1193,18 @@ export function normalizeProduct(
   const subCategoryEntity = normalizeEntityReference(source.subCategory);
   const brandEntity = normalizeEntityReference(source.brand);
   const mainCategoryName =
-    cleanString(source.mainCategoryName) ||
     mainCategoryEntity?.name ||
+    cleanString(source.mainCategoryName) ||
     fallback.mainCategoryName ||
     titleCaseSlug(category);
   const subCategoryName =
-    cleanString(source.subCategoryName) ||
     subCategoryEntity?.name ||
+    cleanString(source.subCategoryName) ||
     fallback.subCategoryName ||
     '';
   const brandName =
-    cleanString(source.brandName) ||
     brandEntity?.name ||
+    cleanString(source.brandName) ||
     fallback.brandName ||
     '';
   const basePrice = Math.max(0, cleanNumber(source.basePrice, cleanNumber(source.price, fallback.basePrice)));
@@ -1097,8 +1230,15 @@ export function normalizeProduct(
     ...normalizeColorNames(source, fallback.color),
     ...colors.map((entry) => entry.name),
   ]);
-  const specs = normalizeSpecs(source.specs, fallback.specs || EMPTY_SPECS);
   const name = cleanString(value.name) || fallback.name;
+  const size = dedupeStrings([...cleanStringArray(source.size), ...fallback.size]);
+  const specs = ensureCustomizationSpecSection(
+    normalizeSpecs(source.specs, fallback.specs || EMPTY_SPECS),
+    {
+      category,
+      sizeOptions: size,
+    }
+  );
   const id = String(source._id ?? source.id ?? getProductSlug({ name }));
 
   return {
@@ -1133,7 +1273,7 @@ export function normalizeProduct(
     finalPrice,
     inStock,
     stockQuantity,
-    size: dedupeStrings([...cleanStringArray(source.size), ...fallback.size]),
+    size,
     pic: pic.length ? pic : fallback.pic,
     color,
     active,
@@ -1163,6 +1303,12 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
     throw new Error('Product name is required.');
   }
 
+  const description = cleanString(source.description);
+
+  if (!description) {
+    throw new Error('Product description is required.');
+  }
+
   const basePrice = Math.max(0, cleanNumber(source.basePrice, cleanNumber(source.price, Number.NaN)));
   const finalPrice = Math.max(0, cleanNumber(source.finalPrice, cleanNumber(source.price, basePrice)));
   const discount = Math.max(0, cleanNumber(source.discount, 0));
@@ -1187,6 +1333,20 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
   }
 
   const specs = normalizeSpecs(source.specs);
+  const modelPath = cleanOptionalString(source.modelPath);
+
+  if (!modelPath) {
+    throw new Error('A .glb 3D model is required.');
+  }
+
+  if (!isGlbModelPath(modelPath)) {
+    throw new Error('The 3D model must be a .glb file.');
+  }
+
+  if (!Array.isArray(specs.sections) || !specs.sections.length) {
+    throw new Error('Add at least one View More Specs section.');
+  }
+
   const views = extractProductViews(source);
   const gallery = dedupeStrings([
     ...extractAdditionalGalleryImages(source),
@@ -1194,6 +1354,11 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
     ...cleanStringArray(source.pic),
     ...(isRecord(source.media) ? cleanStringArray(source.media.gallery) : []),
   ]);
+
+  if (!gallery.length) {
+    throw new Error('At least one gallery image is required.');
+  }
+
   const imageUrl = views.main || cleanString(source.imageUrl) || gallery[0] || '';
 
   if (!imageUrl) {
@@ -1216,10 +1381,14 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
     ...colors.map((entry) => entry.name),
   ]);
 
+  if (!colors.length) {
+    throw new Error('Add at least one color variant with a name and image.');
+  }
+
   return {
     category,
     name,
-    description: cleanString(source.description),
+    description,
     price: finalPrice,
     stock: stockQuantity,
     imageUrl,
@@ -1229,7 +1398,7 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
       subCategoryName ||
       mainCategoryName ||
       titleCaseSlug(category),
-    modelPath: cleanOptionalString(source.modelPath),
+    modelPath,
     images: pic,
     colors,
     specs,

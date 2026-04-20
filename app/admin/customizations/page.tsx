@@ -1,7 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import {
+  AlertCircle,
+  Clock3,
+  Loader2,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Search,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import { getApiUrl } from '@/lib/api/browser';
 
 interface CustomizationRequest {
@@ -15,6 +26,7 @@ interface CustomizationRequest {
   selectedFeaturedColor?: { name: string; hex: string };
   customColorName?: string;
   customColorCode?: string;
+  sizeOrConfiguration?: string;
   selectedMaterial?: string;
   selectedFinish?: string;
   selectedAddons: string[];
@@ -23,9 +35,83 @@ interface CustomizationRequest {
   preferredCallTime?: string;
   deliveryCity?: string;
   expectedTimeline?: string;
+  adminNotes?: string;
   status: 'pending' | 'in-review' | 'approved' | 'contacted' | 'completed' | 'rejected';
   createdAt: string;
   contactedAt?: string;
+}
+
+const STATUSES = [
+  'pending',
+  'in-review',
+  'approved',
+  'contacted',
+  'completed',
+  'rejected',
+] as const;
+
+function statusClass(status: string) {
+  switch (status) {
+    case 'pending':
+      return 'border-amber-300/70 bg-amber-50 text-amber-700';
+    case 'in-review':
+      return 'border-blue-300/70 bg-blue-50 text-blue-700';
+    case 'approved':
+      return 'border-emerald-300/70 bg-emerald-50 text-emerald-700';
+    case 'contacted':
+      return 'border-purple-300/70 bg-purple-50 text-purple-700';
+    case 'completed':
+      return 'border-teal-300/70 bg-teal-50 text-teal-700';
+    case 'rejected':
+      return 'border-red-300/70 bg-red-50 text-red-700';
+    default:
+      return 'border-theme-line/60 bg-theme-ivory/70 text-theme-walnut/66';
+  }
+}
+
+function formatDate(value?: string, withTime = false) {
+  if (!value) {
+    return 'Not available';
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.valueOf())) {
+    return 'Not available';
+  }
+
+  return withTime
+    ? parsed.toLocaleString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      })
+    : parsed.toLocaleDateString('en-IN', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+}
+
+function StatCard({
+  label,
+  value,
+  note,
+}: {
+  label: string;
+  value: string;
+  note: string;
+}) {
+  return (
+    <div className="rounded-[1.7rem] border border-theme-line/60 bg-white/76 p-5 shadow-[0_18px_40px_rgba(49,30,21,0.06)] dark:bg-white/5">
+      <p className="text-[0.68rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze">
+        {label}
+      </p>
+      <p className="mt-6 font-display text-3xl text-theme-ink dark:text-theme-ivory sm:text-4xl">{value}</p>
+      <p className="mt-2 text-sm leading-7 text-theme-walnut/66 dark:text-theme-ivory/60">{note}</p>
+    </div>
+  );
 }
 
 export default function AdminCustomizationsPage() {
@@ -35,19 +121,36 @@ export default function AdminCustomizationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<CustomizationRequest | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchCustomizations = useCallback(async () => {
     try {
       setLoading(true);
+      setError('');
+
       const params = new URLSearchParams();
       if (statusFilter && statusFilter !== 'all') {
         params.append('status', statusFilter);
       }
-      const response = await fetch(getApiUrl(`/api/admin/customizations?${params}`));
-      const data = await response.json();
-      setCustomizations(data.customizations);
-    } catch (error) {
-      console.error('Error fetching customizations:', error);
+
+      const response = await fetch(getApiUrl(`/api/admin/customizations?${params}`), {
+        credentials: 'include',
+        cache: 'no-store',
+      });
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to fetch customization requests.');
+      }
+
+      setCustomizations(Array.isArray(data?.customizations) ? data.customizations : []);
+    } catch (loadError) {
+      setCustomizations([]);
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Failed to fetch customization requests.'
+      );
     } finally {
       setLoading(false);
     }
@@ -59,82 +162,147 @@ export default function AdminCustomizationsPage() {
 
   const filteredCustomizations = useMemo(
     () =>
-      customizations.filter((item: CustomizationRequest) =>
-        item.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.customerEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.productName.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
+      customizations.filter((item) => {
+        const query = searchTerm.trim().toLowerCase();
+
+        if (!query) {
+          return true;
+        }
+
+        return [
+          item.customerName,
+          item.customerEmail,
+          item.productName,
+          item.deliveryCity,
+          item.sizeOrConfiguration,
+        ]
+          .join(' ')
+          .toLowerCase()
+          .includes(query);
+      }),
     [customizations, searchTerm]
+  );
+
+  const statusCounts = useMemo(
+    () =>
+      STATUSES.reduce<Record<string, number>>((accumulator, status) => {
+        accumulator[status] = customizations.filter((item) => item.status === status).length;
+        return accumulator;
+      }, {}),
+    [customizations]
   );
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     setUpdatingStatus(true);
+    setError('');
+
     try {
       const response = await fetch(getApiUrl('/api/admin/customizations'), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, status: newStatus }),
+        credentials: 'include',
       });
-      if (response.ok) {
-        fetchCustomizations();
-        setSelectedItem(null);
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Failed to update customization request.');
       }
-    } catch (error) {
-      console.error('Error updating customization:', error);
+
+      await fetchCustomizations();
+      setSelectedItem(null);
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : 'Failed to update customization request.'
+      );
     } finally {
       setUpdatingStatus(false);
     }
   };
 
-  const statusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'in-review':
-        return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-      case 'approved':
-        return 'bg-green-500/20 text-green-400 border-green-500/30';
-      case 'contacted':
-        return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
-      case 'completed':
-        return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-      case 'rejected':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
-      default:
-        return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-theme-ink via-theme-ink/95 to-theme-ink/90 p-6 md:p-10">
-      <div className="mx-auto max-w-7xl">
+    <div className="space-y-8 pb-16">
+      <section className="overflow-hidden rounded-[2.4rem] border border-theme-line/60 bg-[linear-gradient(135deg,rgba(255,255,255,0.84),rgba(244,232,215,0.8))] p-6 shadow-[0_24px_80px_rgba(49,30,21,0.1)] dark:bg-[linear-gradient(135deg,rgba(54,40,33,0.52),rgba(24,18,15,0.8))] md:p-8">
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <div>
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">
+              Bespoke Requests
+            </p>
+            <h2 className="mt-3 max-w-2xl font-display text-3xl leading-tight text-theme-ink dark:text-theme-ivory sm:text-4xl md:text-6xl">
+              Follow every customization enquiry from first idea to final approval.
+            </h2>
+            <p className="mt-5 max-w-2xl text-sm leading-8 text-theme-walnut/72 dark:text-theme-ivory/66 md:text-base">
+              Keep the made-to-order queue visible, review materials and color requests faster,
+              and move each request cleanly through the design conversation.
+            </p>
+          </div>
 
-        <div className="mb-12">
-          <h1 className="font-display text-3xl md:text-4xl text-theme-ivory mb-2">
-            Customization Requests
-          </h1>
-          <p className="text-theme-ivory/60">
-            Manage all incoming customer customization requests
-          </p>
+          <div className="rounded-[1.8rem] border border-theme-line/60 bg-theme-ink p-5 text-theme-ivory shadow-[0_18px_48px_rgba(26,22,19,0.16)] dark:bg-white dark:text-[var(--theme-contrast-ink)]">
+            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze">
+              Response Desk
+            </p>
+            <div className="mt-4 space-y-3 text-sm leading-7">
+              <p>{statusCounts.pending || 0} new request(s) are waiting for the first review.</p>
+              <p>{statusCounts['in-review'] || 0} request(s) are actively being evaluated.</p>
+              <p>{statusCounts.contacted || 0} request(s) have already moved into direct follow-up.</p>
+            </div>
+          </div>
         </div>
+      </section>
 
+      {error ? (
+        <div className="flex items-center gap-3 rounded-[1.4rem] border border-red-400/30 bg-red-50/80 px-4 py-3 text-sm text-red-600">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      ) : null}
 
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
-          <input
-            type="text"
-            placeholder="Search by name, email, or product..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none md:col-span-2"
-          />
+      <div className="grid gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Total Requests"
+          value={String(customizations.length)}
+          note="All visible customization enquiries"
+        />
+        <StatCard
+          label="Pending"
+          value={String(statusCounts.pending || 0)}
+          note="Need first response from the admin team"
+        />
+        <StatCard
+          label="In Review"
+          value={String(statusCounts['in-review'] || 0)}
+          note="Currently being evaluated internally"
+        />
+        <StatCard
+          label="Completed"
+          value={String(statusCounts.completed || 0)}
+          note="Closed and delivered customization journeys"
+        />
+      </div>
+
+      <section className="rounded-[2rem] border border-theme-line/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.82),rgba(247,239,228,0.74))] p-6 shadow-[0_24px_70px_rgba(49,30,21,0.08)] dark:bg-[linear-gradient(145deg,rgba(47,36,30,0.46),rgba(24,18,15,0.76))] md:p-7">
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="flex min-w-0 w-full flex-1 items-center gap-3 rounded-full border border-theme-line/60 bg-white/70 px-4 py-3 dark:bg-white/5 sm:min-w-[260px]">
+            <Search className="h-4 w-4 text-theme-bronze" />
+            <input
+              type="text"
+              placeholder="Search by customer, email, product, or city"
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="w-full bg-transparent text-sm outline-none"
+            />
+          </div>
+
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+            onChange={(event) => setStatusFilter(event.target.value)}
+            className="w-full rounded-full border border-theme-line/60 bg-white/70 px-4 py-3 text-sm outline-none dark:bg-white/5 sm:w-auto"
           >
-            <option value="all">All Status</option>
+            <option value="all">All statuses</option>
             <option value="pending">Pending</option>
-            <option value="in-review">In Review</option>
+            <option value="in-review">In review</option>
             <option value="approved">Approved</option>
             <option value="contacted">Contacted</option>
             <option value="completed">Completed</option>
@@ -142,293 +310,267 @@ export default function AdminCustomizationsPage() {
           </select>
         </div>
 
-
         {loading ? (
-          <div className="text-center py-10">
-            <p className="text-theme-ivory/60">Loading customizations...</p>
+          <div className="flex min-h-[220px] items-center justify-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.32em] text-theme-walnut/56 dark:text-theme-ivory/56">
+              Loading Customizations
+            </p>
           </div>
         ) : filteredCustomizations.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-theme-ivory/60">No customizations found</p>
+          <div className="rounded-[1.4rem] border border-dashed border-theme-line/60 px-4 py-10 text-center text-sm text-theme-walnut/56 dark:text-theme-ivory/52">
+            No customization requests matched the current filters.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-theme-bronze/20">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-theme-bronze/20 bg-theme-bronze/5">
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Customer
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Product
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Color
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Material
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-widest text-theme-bronze">
-                    Action
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCustomizations.map((item: CustomizationRequest) => (
-                  <motion.tr
-                    key={item._id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="border-b border-theme-bronze/10 hover:bg-white/5 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-theme-ivory">{item.customerName}</p>
-                        <p className="text-xs text-theme-ivory/60">{item.customerEmail}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-theme-ivory">{item.productName}</p>
-                      <p className="text-xs text-theme-ivory/60">Qty: {item.quantity}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {item.selectedFeaturedColor && (
-                          <div
-                            className="h-4 w-4 rounded-full border border-theme-bronze/20"
-                            style={{ backgroundColor: item.selectedFeaturedColor.hex }}
-                          />
-                        )}
-                        <p className="text-sm text-theme-ivory">
-                          {item.selectedFeaturedColor?.name || item.customColorName || 'Custom'}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-theme-ivory">{item.selectedMaterial || '—'}</p>
-                    </td>
-                    <td className="px-6 py-4">
+          <div className="space-y-4">
+            {filteredCustomizations.map((item) => (
+              <div
+                key={item._id}
+                className="rounded-[1.7rem] border border-theme-line/50 bg-white/76 p-5 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5"
+              >
+                <div className="flex flex-wrap items-start gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-base font-semibold text-theme-ink dark:text-theme-ivory">
+                        {item.customerName}
+                      </p>
                       <span
-                        className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${statusBadgeColor(
+                        className={`rounded-full border px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] ${statusClass(
                           item.status
                         )}`}
                       >
-                        {item.status}
+                        {item.status.replace('-', ' ')}
                       </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => setSelectedItem(item)}
-                        className="text-xs font-semibold text-theme-bronze hover:text-theme-bronze/80 transition-colors"
-                      >
-                        View Details →
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+
+                    <p className="mt-2 text-sm text-theme-walnut/64 dark:text-theme-ivory/60">
+                      {item.productName} | Qty {item.quantity}
+                    </p>
+                    {item.sizeOrConfiguration ? (
+                      <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                        {item.sizeOrConfiguration}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-theme-walnut/56 dark:text-theme-ivory/52">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Mail className="h-3.5 w-3.5 text-theme-bronze" />
+                        {item.customerEmail}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 text-theme-bronze" />
+                        {item.customerPhone}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-theme-bronze" />
+                        {item.deliveryCity || 'City not shared'}
+                      </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Clock3 className="h-3.5 w-3.5 text-theme-bronze" />
+                        {formatDate(item.createdAt)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-3">
+                    <div className="rounded-[1.2rem] border border-theme-line/50 bg-theme-ivory/62 px-4 py-3 dark:bg-white/4">
+                      <p className="text-[0.62rem] uppercase tracking-[0.2em] text-theme-bronze">
+                        Color
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-theme-ink dark:text-theme-ivory">
+                        {item.selectedFeaturedColor?.name || item.customColorName || 'Custom'}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.2rem] border border-theme-line/50 bg-theme-ivory/62 px-4 py-3 dark:bg-white/4">
+                      <p className="text-[0.62rem] uppercase tracking-[0.2em] text-theme-bronze">
+                        Material
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-theme-ink dark:text-theme-ivory">
+                        {item.selectedMaterial || 'Not specified'}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.2rem] border border-theme-line/50 bg-theme-ivory/62 px-4 py-3 dark:bg-white/4">
+                      <p className="text-[0.62rem] uppercase tracking-[0.2em] text-theme-bronze">
+                        Contact
+                      </p>
+                      <p className="mt-2 text-sm font-semibold capitalize text-theme-ink dark:text-theme-ivory">
+                        {item.preferredContactMethod || 'Not specified'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedItem(item)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition hover:border-theme-bronze hover:text-theme-bronze sm:w-auto"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Review
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
-      </div>
+      </section>
 
-
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-theme-bronze/20 bg-theme-ink p-8 backdrop-blur-md"
-          >
-
-            <div className="mb-6 flex items-start justify-between">
+      {selectedItem ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-[rgba(26,22,19,0.52)] p-4 backdrop-blur-sm sm:items-center">
+          <div className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-[2rem] border border-theme-line/60 bg-[linear-gradient(145deg,rgba(255,255,255,0.97),rgba(247,239,228,0.94))] shadow-[0_32px_90px_rgba(26,22,19,0.24)] dark:bg-[linear-gradient(145deg,rgba(43,33,27,0.95),rgba(20,15,12,0.96))]">
+            <div className="flex flex-col items-start gap-4 border-b border-theme-line/50 px-5 py-5 sm:flex-row sm:items-start sm:justify-between sm:px-6">
               <div>
-                <h2 className="font-display text-2xl text-theme-ivory">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
+                  Customization Review
+                </p>
+                <h2 className="mt-2 font-display text-3xl text-theme-ink dark:text-theme-ivory">
                   {selectedItem.customerName}
                 </h2>
-                <p className="text-sm text-theme-ivory/60">{selectedItem.customerEmail}</p>
+                <p className="mt-2 text-sm text-theme-walnut/64 dark:text-theme-ivory/60">
+                  {selectedItem.productName} | Submitted {formatDate(selectedItem.createdAt, true)}
+                </p>
               </div>
+
               <button
+                type="button"
                 onClick={() => setSelectedItem(null)}
-                className="text-theme-ivory/60 hover:text-theme-ivory transition-colors"
+                className="rounded-full border border-theme-line/60 p-2 text-theme-walnut/64 transition hover:border-theme-bronze hover:text-theme-bronze dark:text-theme-ivory/60"
               >
-                ✕
+                <X className="h-4 w-4" />
               </button>
             </div>
 
-
-            <div className="mb-6 border-t border-theme-bronze/20" />
-
-
-            <div className="space-y-6">
-
-              <div>
-                <h3 className="mb-3 font-semibold text-theme-ivory">Customer Information</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-theme-ivory/60">Email</p>
-                    <p className="text-theme-ivory">{selectedItem.customerEmail}</p>
+            <div className="grid gap-6 px-6 py-6 lg:grid-cols-[1fr_1fr]">
+              <div className="space-y-5">
+                <div className="rounded-[1.4rem] border border-theme-line/50 bg-white/70 p-4 dark:bg-white/5">
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                    Customer
+                  </p>
+                  <div className="mt-4 grid gap-3 text-sm">
+                    <p><span className="font-semibold">Email:</span> {selectedItem.customerEmail}</p>
+                    <p><span className="font-semibold">Phone:</span> {selectedItem.customerPhone}</p>
+                    <p><span className="font-semibold">City:</span> {selectedItem.deliveryCity || 'Not shared'}</p>
+                    <p><span className="font-semibold">Preferred contact:</span> {selectedItem.preferredContactMethod || 'Not shared'}</p>
+                    <p><span className="font-semibold">Preferred time:</span> {selectedItem.preferredCallTime || 'Not shared'}</p>
                   </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Phone</p>
-                    <p className="text-theme-ivory">{selectedItem.customerPhone}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">City</p>
-                    <p className="text-theme-ivory">{selectedItem.deliveryCity || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Contact Method</p>
-                    <p className="text-theme-ivory capitalize">
-                      {selectedItem.preferredContactMethod || '—'}
-                    </p>
+                </div>
+
+                <div className="rounded-[1.4rem] border border-theme-line/50 bg-white/70 p-4 dark:bg-white/5">
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                    Product Request
+                  </p>
+                  <div className="mt-4 grid gap-3 text-sm">
+                    <p><span className="font-semibold">Product:</span> {selectedItem.productName}</p>
+                    <p><span className="font-semibold">Quantity:</span> {selectedItem.quantity}</p>
+                    <p><span className="font-semibold">Sofa type:</span> {selectedItem.sizeOrConfiguration || 'Not specified'}</p>
+                    <p><span className="font-semibold">Material:</span> {selectedItem.selectedMaterial || 'Not specified'}</p>
+                    <p><span className="font-semibold">Finish:</span> {selectedItem.selectedFinish || 'Not specified'}</p>
+                    <p><span className="font-semibold">Expected timeline:</span> {selectedItem.expectedTimeline || 'Not specified'}</p>
                   </div>
                 </div>
               </div>
 
+              <div className="space-y-5">
+                <div className="rounded-[1.4rem] border border-theme-line/50 bg-white/70 p-4 dark:bg-white/5">
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                    Color & Extras
+                  </p>
+                  <div className="mt-4 space-y-3 text-sm">
+                    <div className="flex items-center gap-3">
+                      {selectedItem.selectedFeaturedColor ? (
+                        <span
+                          className="h-8 w-8 rounded-full border border-theme-line/60"
+                          style={{ backgroundColor: selectedItem.selectedFeaturedColor.hex }}
+                        />
+                      ) : null}
+                      <div>
+                        <p className="font-semibold text-theme-ink dark:text-theme-ivory">
+                          {selectedItem.selectedFeaturedColor?.name || selectedItem.customColorName || 'Custom tone'}
+                        </p>
+                        {selectedItem.customColorCode ? (
+                          <p className="text-xs text-theme-walnut/58 dark:text-theme-ivory/54">
+                            {selectedItem.customColorCode}
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
 
-              <div>
-                <h3 className="mb-3 font-semibold text-theme-ivory">Product Details</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-theme-ivory/60">Product</p>
-                    <p className="text-theme-ivory">{selectedItem.productName}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Quantity</p>
-                    <p className="text-theme-ivory">{selectedItem.quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Material</p>
-                    <p className="text-theme-ivory">{selectedItem.selectedMaterial || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Finish</p>
-                    <p className="text-theme-ivory">{selectedItem.selectedFinish || '—'}</p>
-                  </div>
-                </div>
-              </div>
-
-
-              <div>
-                <h3 className="mb-3 font-semibold text-theme-ivory">Color Selection</h3>
-                {selectedItem.selectedFeaturedColor && (
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="h-12 w-12 rounded-lg border border-theme-bronze/20 shadow-lg"
-                      style={{
-                        backgroundColor: selectedItem.selectedFeaturedColor.hex,
-                      }}
-                    />
-                    <div className="text-sm">
-                      <p className="text-theme-ivory/60">Featured Color</p>
-                      <p className="text-theme-ivory font-semibold">
-                        {selectedItem.selectedFeaturedColor.name}
-                      </p>
-                      <p className="text-xs text-theme-bronze">{selectedItem.selectedFeaturedColor.hex}</p>
+                    <div>
+                      <p className="font-semibold text-theme-ink dark:text-theme-ivory">Selected add-ons</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedItem.selectedAddons?.length ? (
+                          selectedItem.selectedAddons.map((addon) => (
+                            <span
+                              key={addon}
+                              className="rounded-full border border-theme-line/60 bg-theme-ivory/70 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-theme-bronze dark:bg-white/6"
+                            >
+                              {addon}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-sm text-theme-walnut/60 dark:text-theme-ivory/56">
+                            No add-ons selected
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                )}
-                {selectedItem.customColorName && (
-                  <div className="mt-4 text-sm">
-                    <p className="text-theme-ivory/60">Custom Color Request</p>
-                    <p className="text-theme-ivory font-semibold">{selectedItem.customColorName}</p>
-                    <p className="text-xs text-theme-bronze">{selectedItem.customColorCode}</p>
-                  </div>
-                )}
-              </div>
-
-
-              {selectedItem.selectedAddons?.length > 0 && (
-                <div>
-                  <h3 className="mb-3 font-semibold text-theme-ivory">Add-ons</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedItem.selectedAddons.map((addon: string, idx: number) => (
-                      <span
-                        key={idx}
-                        className="rounded-full bg-theme-bronze/20 px-3 py-1 text-xs text-theme-bronze"
-                      >
-                        {addon}
-                      </span>
-                    ))}
-                  </div>
                 </div>
-              )}
 
-
-              {selectedItem.customDescription && (
-                <div>
-                  <h3 className="mb-3 font-semibold text-theme-ivory">Custom Notes</h3>
-                  <p className="rounded-lg border border-theme-bronze/20 bg-white/5 p-4 text-sm text-theme-ivory">
-                    {selectedItem.customDescription}
+                <div className="rounded-[1.4rem] border border-theme-line/50 bg-white/70 p-4 dark:bg-white/5">
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                    Notes
                   </p>
-                </div>
-              )}
-
-
-              <div>
-                <h3 className="mb-3 font-semibold text-theme-ivory">Delivery Preferences</h3>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-theme-ivory/60">Preferred Time</p>
-                    <p className="text-theme-ivory">{selectedItem.preferredCallTime || '—'}</p>
-                  </div>
-                  <div>
-                    <p className="text-theme-ivory/60">Expected Timeline</p>
-                    <p className="text-theme-ivory">{selectedItem.expectedTimeline || '—'}</p>
-                  </div>
+                  <p className="mt-4 text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/62">
+                    {selectedItem.customDescription || 'No extra description provided.'}
+                  </p>
+                  {selectedItem.adminNotes ? (
+                    <p className="mt-4 rounded-[1rem] border border-theme-line/50 bg-theme-ivory/62 px-3 py-3 text-sm text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/62">
+                      Admin notes: {selectedItem.adminNotes}
+                    </p>
+                  ) : null}
+                  {selectedItem.contactedAt ? (
+                    <p className="mt-4 text-xs text-theme-walnut/56 dark:text-theme-ivory/52">
+                      Contacted on {formatDate(selectedItem.contactedAt, true)}
+                    </p>
+                  ) : null}
                 </div>
               </div>
+            </div>
 
-
-              <div className="rounded-lg border border-theme-bronze/20 bg-theme-bronze/5 p-4 text-xs">
-                <p className="text-theme-ivory/60">
-                  Submitted: {new Date(selectedItem.createdAt).toLocaleDateString()}
+            <div className="border-t border-theme-line/50 px-6 py-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-theme-bronze" />
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                  Update Status
                 </p>
-                {selectedItem.contactedAt && (
-                  <p className="text-theme-ivory/60">
-                    Contacted: {new Date(selectedItem.contactedAt).toLocaleDateString()}
-                  </p>
-                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                {STATUSES.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => void handleStatusUpdate(selectedItem._id, status)}
+                    disabled={updatingStatus || selectedItem.status === status}
+                    className={`rounded-[1rem] border px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+                      selectedItem.status === status
+                        ? `${statusClass(status)} cursor-default`
+                        : 'border-theme-line/60 bg-white/70 text-theme-walnut/68 hover:border-theme-bronze hover:text-theme-bronze disabled:opacity-50 dark:bg-white/5 dark:text-theme-ivory/62'
+                    }`}
+                  >
+                    {updatingStatus && selectedItem.status !== status ? (
+                      <span className="inline-flex items-center gap-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {status.replace('-', ' ')}
+                      </span>
+                    ) : (
+                      status.replace('-', ' ')
+                    )}
+                  </button>
+                ))}
               </div>
             </div>
-
-
-            <div className="mt-8 border-t border-theme-bronze/20 pt-6">
-              <h3 className="mb-4 font-semibold text-theme-ivory">Update Status</h3>
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {['pending', 'in-review', 'approved', 'contacted', 'completed', 'rejected'].map(
-                  (status) => (
-                    <button
-                      key={status}
-                      onClick={() => handleStatusUpdate(selectedItem._id, status)}
-                      disabled={updatingStatus || selectedItem.status === status}
-                      className={`rounded-lg border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all ${
-                        selectedItem.status === status
-                          ? 'border-theme-bronze bg-theme-bronze/20 text-theme-bronze cursor-default'
-                          : 'border-theme-bronze/20 bg-white/5 text-theme-ivory hover:border-theme-bronze/60 disabled:opacity-50'
-                      }`}
-                    >
-                      {status.replace('-', ' ')}
-                    </button>
-                  )
-                )}
-              </div>
-            </div>
-
-
-            <button
-              onClick={() => setSelectedItem(null)}
-              className="mt-6 w-full rounded-lg bg-theme-bronze px-4 py-3 font-semibold text-white hover:bg-theme-bronze/90 transition-colors"
-            >
-              Close
-            </button>
-          </motion.div>
+          </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -108,8 +108,8 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="p-3 sm:p-4 md:p-6">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between md:mb-8">
         <h1 className="text-2xl font-bold text-theme-ink dark:text-theme-ivory">Orders</h1>
         <span className="rounded-full bg-theme-bronze/10 px-4 py-1 text-xs font-bold uppercase tracking-widest text-theme-bronze">
           {orders.length} total
@@ -124,7 +124,7 @@ export default function AdminOrders() {
         <div className="space-y-4">
           {orders.map((order) => (
             <div key={order._id} className="overflow-hidden rounded-2xl border border-theme-line/40 bg-white/70 shadow-sm dark:bg-white/5">
-              <div className="flex flex-wrap items-center gap-4 p-5">
+              <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:flex-wrap lg:items-center">
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs text-theme-walnut/50 dark:text-theme-ivory/40">
                     #{order._id.slice(-10).toUpperCase()}
@@ -137,7 +137,7 @@ export default function AdminOrders() {
                   </p>
                 </div>
 
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="font-bold text-theme-bronze">Rs. {order.totalPrice.toLocaleString('en-IN')}</p>
                   <p className="text-xs text-theme-walnut/60 dark:text-theme-ivory/50">{order.totalItems} items</p>
                 </div>
@@ -151,7 +151,7 @@ export default function AdminOrders() {
                   </span>
                 </div>
 
-                <div className="min-w-[11rem]">
+                <div className="w-full sm:w-auto sm:min-w-[11rem]">
                   <select
                     value={order.status}
                     onChange={(event) => void updateStatus(order._id, event.target.value as Order['status'])}
@@ -174,14 +174,14 @@ export default function AdminOrders() {
 
                 <button
                   onClick={() => setExpandedId(expandedId === order._id ? null : order._id)}
-                  className="text-xs font-semibold uppercase tracking-widest text-theme-bronze hover:underline"
+                  className="self-start text-xs font-semibold uppercase tracking-widest text-theme-bronze hover:underline sm:self-auto"
                 >
                   {expandedId === order._id ? 'Hide' : 'Details'}
                 </button>
               </div>
 
               {expandedId === order._id ? (
-                <div className="border-t border-theme-line/40 bg-theme-ivory/50 px-5 py-4 dark:bg-white/5">
+                <div className="border-t border-theme-line/40 bg-theme-ivory/50 px-4 py-4 dark:bg-white/5 sm:px-5">
                   <div className="grid gap-6 md:grid-cols-2">
                     <div className="space-y-4">
                       <div>
@@ -242,7 +242,7 @@ export default function AdminOrders() {
                       <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">Items</p>
                       <div className="space-y-1">
                         {order.items.map((item, index) => (
-                          <div key={index} className="flex justify-between text-sm">
+                          <div key={index} className="flex flex-wrap items-start justify-between gap-2 text-sm">
                             <span className="text-theme-ink dark:text-theme-ivory">
                               {item.name} x {item.quantity}
                             </span>

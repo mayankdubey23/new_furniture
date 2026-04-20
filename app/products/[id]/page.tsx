@@ -1,6 +1,7 @@
 import ProductSection from '@/components/sections/ProductSection';
 import { getProductById } from '@/lib/productStore';
 import { getProductSlug } from '@/lib/productCatalog';
+import { ensureStorefrontAvailable } from '@/lib/services/storefrontAvailability';
 import { notFound, permanentRedirect } from 'next/navigation';
 
 interface Params {
@@ -10,6 +11,8 @@ interface Params {
 export const dynamic = 'force-dynamic';
 
 export default async function ProductPage({ params }: { params: Promise<Params> }) {
+  await ensureStorefrontAvailable();
+
   const { id } = await params;
 
   const product = await getProductById(id);

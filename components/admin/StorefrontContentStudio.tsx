@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -66,16 +66,21 @@ export default function StorefrontContentStudio({
 }: {
   settings: AdminSettingsState;
   setSettings: Dispatch<SetStateAction<AdminSettingsState>>;
-  onSave: () => Promise<void>;
+  onSave: (nextSettings?: AdminSettingsState) => Promise<unknown>;
   saving: boolean;
 }) {
   const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [apiError, setApiError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const latestSettingsRef = useRef(settings);
   const titleRows =
     settings.siteContent.hero.titleRows.length
       ? settings.siteContent.hero.titleRows
       : DEFAULT_SITE_CONTENT.hero.titleRows;
+
+  useEffect(() => {
+    latestSettingsRef.current = settings;
+  }, [settings]);
 
   const uploadAsset = async (
     file: File,
@@ -110,7 +115,7 @@ export default function StorefrontContentStudio({
     slot: string,
     kind: 'image' | 'video',
     file: File,
-    applyPath: (path: string) => void
+    applyPath: (current: AdminSettingsState, path: string) => AdminSettingsState
   ) => {
     setUploadingKey(key);
     setApiError('');
@@ -118,8 +123,11 @@ export default function StorefrontContentStudio({
 
     try {
       const path = await uploadAsset(file, section, slot, kind);
-      applyPath(path);
-      setSuccessMessage('Asset uploaded. Save storefront content to publish it live.');
+      const nextSettings = applyPath(latestSettingsRef.current, path);
+      latestSettingsRef.current = nextSettings;
+      setSettings(nextSettings);
+      await onSave(nextSettings);
+      setSuccessMessage('Asset uploaded and published live.');
     } catch (error) {
       setApiError(error instanceof Error ? error.message : 'Upload failed');
     } finally {
@@ -132,7 +140,7 @@ export default function StorefrontContentStudio({
     setSuccessMessage('');
 
     try {
-      await onSave();
+      await onSave(settings);
       setSuccessMessage('Storefront content saved.');
     } catch (error) {
       setApiError(error instanceof Error ? error.message : 'Unable to save storefront content.');
@@ -155,7 +163,7 @@ export default function StorefrontContentStudio({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-theme-ink px-5 py-2.5 text-xs font-semibold uppercase tracking-[0.24em] text-white transition hover:bg-theme-bronze disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)] sm:w-auto"
         >
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
           {saving ? 'Saving' : 'Save Content'}
@@ -177,7 +185,7 @@ export default function StorefrontContentStudio({
 
       <div className="grid gap-5 xl:grid-cols-2">
         <div className={cardClass()}>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Hero Section</p>
               <p className="mt-2 text-sm leading-7 text-theme-walnut/64 dark:text-theme-ivory/58">
@@ -189,21 +197,19 @@ export default function StorefrontContentStudio({
               accept="video/mp4,video/webm,video/ogg"
               label="Upload Video"
               onSelect={(file) =>
-                handleUpload('hero-video', 'hero', 'hero-video', 'video', file, (path) =>
-                  setSettings((current) => ({
-                    ...current,
-                    siteContent: {
-                      ...current.siteContent,
-                      hero: {
-                        ...current.siteContent.hero,
-                        video: {
-                          ...current.siteContent.hero.video,
-                          src: path,
-                        },
+                handleUpload('hero-video', 'hero', 'hero-video', 'video', file, (current, path) => ({
+                  ...current,
+                  siteContent: {
+                    ...current.siteContent,
+                    hero: {
+                      ...current.siteContent.hero,
+                      video: {
+                        ...current.siteContent.hero.video,
+                        src: path,
                       },
                     },
-                  }))
-                )
+                  },
+                }))
               }
             />
           </div>
@@ -379,21 +385,19 @@ export default function StorefrontContentStudio({
                   accept="image/png,image/jpeg,image/webp,image/avif"
                   label="Upload Poster"
                   onSelect={(file) =>
-                    handleUpload('hero-poster', 'hero', 'hero-poster', 'image', file, (path) =>
-                      setSettings((current) => ({
-                        ...current,
-                        siteContent: {
-                          ...current.siteContent,
-                          hero: {
-                            ...current.siteContent.hero,
-                            video: {
-                              ...current.siteContent.hero.video,
-                              poster: path,
-                            },
+                    handleUpload('hero-poster', 'hero', 'hero-poster', 'image', file, (current, path) => ({
+                      ...current,
+                      siteContent: {
+                        ...current.siteContent,
+                        hero: {
+                          ...current.siteContent.hero,
+                          video: {
+                            ...current.siteContent.hero.video,
+                            poster: path,
                           },
                         },
-                      }))
-                    )
+                      },
+                    }))
                   }
                 />
               </div>
@@ -419,7 +423,7 @@ export default function StorefrontContentStudio({
         </div>
 
         <div className={cardClass()}>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col items-start gap-4 sm:flex-row sm:justify-between">
             <div>
               <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">Footer Experience</p>
               <p className="mt-2 text-sm leading-7 text-theme-walnut/64 dark:text-theme-ivory/58">
@@ -431,21 +435,19 @@ export default function StorefrontContentStudio({
               accept="video/mp4,video/webm,video/ogg"
               label="Upload Burst"
               onSelect={(file) =>
-                handleUpload('footer-video', 'footer', 'footer-burst', 'video', file, (path) =>
-                  setSettings((current) => ({
-                    ...current,
-                    siteContent: {
-                      ...current.siteContent,
-                      footer: {
-                        ...current.siteContent.footer,
-                        burstVideo: {
-                          ...current.siteContent.footer.burstVideo,
-                          src: path,
-                        },
+                handleUpload('footer-video', 'footer', 'footer-burst', 'video', file, (current, path) => ({
+                  ...current,
+                  siteContent: {
+                    ...current.siteContent,
+                    footer: {
+                      ...current.siteContent.footer,
+                      burstVideo: {
+                        ...current.siteContent.footer.burstVideo,
+                        src: path,
                       },
                     },
-                  }))
-                )
+                  },
+                }))
               }
             />
           </div>

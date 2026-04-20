@@ -1,4 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import {
+  getAdminInternalPath,
+  getAdminPortalBasePath,
+} from '@/lib/adminPortal';
 
 async function readMaintenanceMode(request: NextRequest) {
   try {
@@ -22,8 +26,30 @@ async function readMaintenanceMode(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const portalBasePath = getAdminPortalBasePath();
 
-  if (pathname.startsWith('/admin') || pathname.startsWith('/api')) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return new NextResponse('Not Found', {
+      status: 404,
+      headers: {
+        'X-Robots-Tag': 'noindex, nofollow, noarchive',
+        'Cache-Control': 'no-store',
+      },
+    });
+  }
+
+  if (pathname === portalBasePath || pathname.startsWith(`${portalBasePath}/`)) {
+    const rewriteUrl = request.nextUrl.clone();
+    const suffix = pathname.slice(portalBasePath.length);
+    rewriteUrl.pathname = getAdminInternalPath(suffix);
+
+    const response = NextResponse.rewrite(rewriteUrl);
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
+  }
+
+  if (pathname.startsWith('/api')) {
     return NextResponse.next();
   }
 

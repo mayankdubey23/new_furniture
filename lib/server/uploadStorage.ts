@@ -3,7 +3,7 @@ import path from 'path';
 import { slugify } from '@/lib/productCatalog';
 
 export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
-export const MODEL_EXTENSIONS = new Set(['.glb', '.gltf']);
+export const MODEL_EXTENSIONS = new Set(['.glb']);
 export const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.ogg']);
 
 function resolveUploadRoot(configuredRoot: string | undefined, segments: string[]) {
@@ -54,7 +54,6 @@ export function getUploadExtension(file: File) {
   if (file.type === 'image/webp') return '.webp';
   if (file.type === 'image/avif') return '.avif';
   if (file.type === 'model/gltf-binary') return '.glb';
-  if (file.type === 'model/gltf+json') return '.gltf';
 
   return '';
 }
@@ -187,7 +186,7 @@ export async function saveProductUpload({
       ok: false as const,
       error:
         kind === 'model'
-          ? 'Only .glb and .gltf files are supported for 3D uploads.'
+          ? 'Only .glb files are supported for 3D uploads.'
           : 'Only JPG, PNG, WEBP, and AVIF files are supported.',
     };
   }

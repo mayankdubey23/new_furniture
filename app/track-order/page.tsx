@@ -256,7 +256,7 @@ function TrackOrderPageContent() {
               </button>
 
               <div className="rounded-[1.4rem] border border-theme-line/50 bg-white/50 px-4 py-4 text-sm leading-7 text-theme-walnut/64 dark:bg-white/5 dark:text-theme-ivory/60">
-                Shipment emails are sent to the address used at checkout once the admin marks your order as shipped.
+                Order confirmation emails are sent after checkout, and shipment emails follow as soon as the order is dispatched.
               </div>
             </div>
           </section>

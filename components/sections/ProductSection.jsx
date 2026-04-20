@@ -35,20 +35,20 @@ function SectionFrame({
   return (
     <div
       id={blockId}
-      className="ps-block relative overflow-hidden rounded-[2rem] border border-theme-line/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(248,241,232,0.3))] p-4 shadow-[0_20px_55px_rgba(49,30,21,0.05)] dark:bg-[linear-gradient(180deg,rgba(49,38,32,0.48),rgba(27,20,17,0.36))] sm:p-5 md:rounded-[2.25rem] md:p-6"
+      className="ps-block relative overflow-hidden rounded-[2rem] border border-theme-line/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),rgba(248,241,232,0.3))] p-6 sm:p-5 md:rounded-[2.25rem] md:p-6 shadow-[0_20px_55px_rgba(49,30,21,0.05)] dark:bg-[linear-gradient(180deg,rgba(49,38,32,0.48),rgba(27,20,17,0.36)])"
     >
       <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-theme-bronze/10 blur-3xl" />
 
-      <div className="relative mb-5 grid gap-5 border-b border-theme-line/45 pb-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] lg:items-end lg:gap-8">
-        <div className="flex items-start gap-3 sm:gap-4">
+      <div className="relative mb-6 grid gap-6 border-b border-theme-line/45 pb-6 sm:gap-5 sm:pb-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)] lg:items-end lg:gap-8">
+        <div className="flex flex-wrap items-start gap-4 sm:gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1.2rem] bg-theme-walnut text-sm font-semibold tracking-[0.18em] text-theme-ivory sm:h-12 sm:w-12 sm:rounded-2xl">
             {step}
           </div>
           <div>
-            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">
+            <p className="text-xs sm:text-[0.64rem] font-semibold uppercase tracking-widest sm:tracking-[0.34em] text-theme-bronze">
               {accent}
             </p>
-            <AnimatedHeading as="h3" className="mt-2 font-display text-[1.7rem] leading-none text-theme-ink sm:text-[2rem] md:text-[2.3rem]">
+            <AnimatedHeading as="h3" className="mt-2 font-display text-lg leading-snug sm:text-[2rem] md:text-[2.3rem] text-theme-ink">
               {title}
             </AnimatedHeading>
           </div>
@@ -91,9 +91,10 @@ export default function ProductSection({
           step="01"
           title="Details & Purchase"
           accent="Ordering Studio"
-          summary="Price, finish selection, quantity, and purchase actions stay together here so the buying flow feels quicker and more intentional."
+          summary="Price, quantity, and purchase actions stay together here while the deeper build guidance now lives inside View More Specs."
         >
           <ProductDetails
+            key={String(data.id || data._id || data.name)}
             data={data}
             currentColor={currentColor}
             currentImage={currentImage}
@@ -147,7 +148,7 @@ export default function ProductSection({
           step="04"
           title="Specifications"
           accent="Specification Studio"
-          summary="A dedicated technical view with the full material, size, and construction breakdown for customers who want the deeper product readout."
+          summary="A dedicated technical view with the full material, customization, size, and construction breakdown for customers who want the deeper product readout."
         >
           <ProductSpecs
             specs={data.specs}
@@ -166,13 +167,13 @@ export default function ProductSection({
       id={id}
       className={`scroll-mt-36 py-8 md:scroll-mt-40 md:py-12 lg:py-16 ${surfaceClassName}`}
     >
-      <div className="mx-auto w-full max-w-[112rem] space-y-5 px-4 sm:px-6 md:space-y-6 md:px-8 lg:px-12">
+      <div className="mx-auto w-full max-w-[112rem] space-y-6 px-6 sm:px-6 md:space-y-6 md:px-8 lg:px-12">
         {showIntroCard ? (
-          <div id={`${id}-start`} className="ps-block scroll-mt-36 rounded-[1.9rem] border border-theme-line/70 bg-white/40 px-5 py-7 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-theme-mist/15 sm:px-7 md:rounded-[2.2rem] md:px-10 md:py-10">
-            <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-5 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-theme-bronze">
+          <div id={`${id}-start`} className="ps-block scroll-mt-36 rounded-[1.9rem] border border-theme-line/70 bg-white/40 px-6 py-8 text-center shadow-[0_18px_48px_rgba(49,30,21,0.05)] dark:bg-theme-mist/15 sm:px-7 md:rounded-[2.2rem] md:px-10 md:py-10">
+            <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-4 py-1.5 text-xs sm:text-[0.68rem] font-semibold uppercase tracking-widest sm:tracking-[0.36em] text-theme-bronze">
               {data.eyebrow}
             </span>
-            <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
+            <AnimatedHeading as="h2" className="mt-4 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-theme-ink">
               {data.name}
             </AnimatedHeading>
             <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
@@ -182,7 +183,7 @@ export default function ProductSection({
         ) : null}
 
         <div className="rounded-[1.8rem] border border-theme-line/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.62),rgba(244,236,226,0.38))] p-3 shadow-[0_18px_44px_rgba(49,30,21,0.04)] dark:bg-[linear-gradient(180deg,rgba(44,34,29,0.42),rgba(25,19,16,0.34))] sm:p-4 md:rounded-[2.15rem]">
-          <div className="flex gap-3 overflow-x-auto pb-1 sm:flex-wrap sm:overflow-visible">
+          <div className="flex flex-wrap gap-4 sm:gap-3 overflow-x-auto pb-3 sm:flex-wrap sm:overflow-visible">
             <FlowPill
               onClick={() => setActiveSection('details')}
               isActive={activeSection === 'details'}

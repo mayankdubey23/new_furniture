@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
+import { adminMiddleware } from '@/lib/auth';
 import MainCategory from '@/models/MainCategory';
 import SubCategory from '@/models/SubCategory';
 import Brand from '@/models/Brand';
@@ -14,6 +15,9 @@ function getActiveQuery(value: string | null) {
 }
 
 export async function GET(request: NextRequest) {
+  const authError = await adminMiddleware(request);
+  if (authError) return authError;
+
   try {
     await dbConnect();
     const active = request.nextUrl.searchParams.get('active');

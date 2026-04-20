@@ -7,7 +7,7 @@ import {
   normalizePhoneNumber,
   verifyPhoneOtp,
 } from '@/lib/phoneOtp';
-import { createUserToken } from '@/lib/userAuth';
+import { createUserToken, setUserSession } from '@/lib/userAuth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,12 +123,7 @@ export async function POST(request: NextRequest) {
     const token = createUserToken(user._id.toString(), user.name, user.email);
 
     const cookieStore = await cookies();
-    cookieStore.set('user-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    });
+    setUserSession(cookieStore, token);
 
     return NextResponse.json(
       { success: true, name: user.name, email: user.email },

@@ -4,9 +4,11 @@ import { adminMiddleware } from '@/lib/auth';
 import SubCategory from '@/models/SubCategory';
 import {
   normalizeCatalogEntity,
-  prepareCatalogEntityMutationInput,
   sortCatalogEntities,
 } from '@/lib/catalogEntities';
+import { buildLegacyCatalogPayload } from '@/lib/server/legacyCatalog';
+import { readRequestData } from '@/lib/server/legacyApi';
+import { revalidateCatalogEntityRoutes } from '@/lib/server/catalogEntityRevalidation';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,9 +45,13 @@ export async function POST(request: NextRequest) {
 
   try {
     await dbConnect();
-    const data = await request.json();
-    const payload = prepareCatalogEntityMutationInput(data, 'Subcategory');
+    const payload = await buildLegacyCatalogPayload(
+      await readRequestData(request),
+      'subcategory',
+      'Subcategory'
+    );
     const entity = await SubCategory.create(payload);
+    revalidateCatalogEntityRoutes();
 
     return NextResponse.json(normalizeCatalogEntity(entity.toObject()), {
       status: 201,

@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/mongoose';
 import type { GoogleUserProfile } from '@/lib/googleAuth';
-import { createUserToken } from '@/lib/userAuth';
+import { createUserToken, setUserSession } from '@/lib/userAuth';
 import User from '@/models/User';
 
 export async function signInWithGoogleProfile(googleProfile: GoogleUserProfile) {
@@ -44,13 +44,7 @@ export async function signInWithGoogleProfile(googleProfile: GoogleUserProfile) 
   const token = createUserToken(user._id.toString(), user.name, user.email);
 
   const cookieStore = await cookies();
-  cookieStore.set('user-token', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-  });
+  setUserSession(cookieStore, token);
 
   return {
     name: user.name,

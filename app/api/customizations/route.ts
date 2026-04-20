@@ -1,66 +1,110 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ObjectId } from 'mongodb';
 import dbConnect from '@/lib/mongoose';
 import Customization from '@/models/Customization';
+
+const VALID_CONTACT_METHODS = new Set(['email', 'phone', 'both']);
+
+function cleanString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
 
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
     const body = await request.json();
+    const customerName = cleanString(body.customerName);
+    const customerEmail = cleanString(body.customerEmail).toLowerCase();
+    const customerPhone = cleanString(body.customerPhone);
+    const productId = cleanString(body.productId);
+    const productName = cleanString(body.productName);
+    const selectedMaterial = cleanString(body.selectedMaterial);
+    const selectedFinish = cleanString(body.selectedFinish);
+    const deliveryCity = cleanString(body.deliveryCity);
+    const expectedTimeline = cleanString(body.expectedTimeline);
+    const customColorName = cleanString(body.customColorName);
+    const customColorCode = cleanString(body.customColorCode);
+    const customColorPickerValue = cleanString(body.customColorPickerValue);
+    const quantityInput = Number.parseInt(String(body.quantity ?? '1'), 10);
+    const quantity = Number.isFinite(quantityInput) && quantityInput > 0 ? quantityInput : 1;
+    const selectedAddons = Array.isArray(body.selectedAddons)
+      ? body.selectedAddons
+          .filter((value: unknown): value is string => typeof value === 'string')
+          .map((value: string) => value.trim())
+          .filter(Boolean)
+      : [];
+    const preferredContactMethod = VALID_CONTACT_METHODS.has(body.preferredContactMethod)
+      ? body.preferredContactMethod
+      : 'email';
+    const selectedFeaturedColor =
+      body.selectedFeaturedColor && typeof body.selectedFeaturedColor === 'object'
+        ? body.selectedFeaturedColor
+        : undefined;
+    const hasFeaturedColor =
+      Boolean(selectedFeaturedColor) &&
+      typeof selectedFeaturedColor.name === 'string' &&
+      cleanString(selectedFeaturedColor.name).length > 0;
+    const hasCustomColor = Boolean(
+      customColorName && (customColorCode || customColorPickerValue)
+    );
 
 
-    if (!body.customerName || !body.customerEmail || !body.customerPhone) {
+    if (!customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(
         { error: 'Customer name, email, and phone are required' },
         { status: 400 }
       );
     }
 
-    if (!body.productName) {
+    if (!productId || !productName) {
       return NextResponse.json(
-        { error: 'Product name is required' },
+        { error: 'Please choose the product you want to customize.' },
         { status: 400 }
       );
     }
 
-
-    let productId;
-    try {
-      if (body.productId) {
-        productId = new ObjectId(body.productId);
-      } else {
-
-        productId = new ObjectId();
-      }
-    } catch {
+    if (!hasFeaturedColor && !hasCustomColor) {
       return NextResponse.json(
-        { error: 'Invalid product ID format' },
+        { error: 'Please choose a featured color or provide a custom color.' },
+        { status: 400 }
+      );
+    }
+
+    if (!selectedMaterial || !selectedFinish) {
+      return NextResponse.json(
+        { error: 'Please choose both a material and a finish.' },
+        { status: 400 }
+      );
+    }
+
+    if (!deliveryCity || !expectedTimeline) {
+      return NextResponse.json(
+        { error: 'Delivery city and expected timeline are required.' },
         { status: 400 }
       );
     }
 
     const customization = new Customization({
-      customerName: body.customerName.trim(),
-      customerEmail: body.customerEmail.toLowerCase().trim(),
-      customerPhone: body.customerPhone.trim(),
-      productId: productId,
-      productName: body.productName.trim(),
-      quantity: body.quantity || 1,
-      selectedFeaturedColor: body.selectedFeaturedColor,
-      customColorName: body.customColorName,
-      customColorCode: body.customColorCode,
-      customColorPickerValue: body.customColorPickerValue,
-      selectedMaterial: body.selectedMaterial,
-      selectedFinish: body.selectedFinish,
-      selectedAddons: body.selectedAddons || [],
-      sizeOrConfiguration: body.sizeOrConfiguration,
-      customDescription: body.customDescription,
-      uploadedReference: body.uploadedReference,
-      preferredContactMethod: body.preferredContactMethod || 'email',
-      preferredCallTime: body.preferredCallTime,
-      deliveryCity: body.deliveryCity,
-      expectedTimeline: body.expectedTimeline,
+      customerName,
+      customerEmail,
+      customerPhone,
+      productId,
+      productName,
+      quantity,
+      selectedFeaturedColor,
+      customColorName,
+      customColorCode,
+      customColorPickerValue,
+      selectedMaterial,
+      selectedFinish,
+      selectedAddons,
+      sizeOrConfiguration: cleanString(body.sizeOrConfiguration),
+      customDescription: cleanString(body.customDescription).slice(0, 1000),
+      uploadedReference: cleanString(body.uploadedReference),
+      preferredContactMethod,
+      preferredCallTime: cleanString(body.preferredCallTime),
+      deliveryCity,
+      expectedTimeline,
       status: 'pending',
     });
 
@@ -76,9 +120,18 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Error submitting customization:', error);
+    const message =
+      error instanceof Error ? error.message : 'Failed to submit customization request';
+    const isDatabaseIssue = /MONGODB_URI|ECONNREFUSED|timed out|Topology/i.test(message);
+
     return NextResponse.json(
-      { error: 'Failed to submit customization request' },
-      { status: 500 }
+      {
+        error:
+          process.env.NODE_ENV === 'production'
+            ? 'Failed to submit customization request'
+            : message,
+      },
+      { status: isDatabaseIssue ? 503 : 500 }
     );
   }
 }

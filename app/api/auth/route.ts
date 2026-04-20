@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { login } from '@/lib/auth';
+import { login, setAdminSession } from '@/lib/auth';
 import { cookies } from 'next/headers';
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password } = await request.json();
+    const { identifier, username, password } = await request.json();
     const cookieStore = await cookies();
 
-    const token = await login(username, password);
+    const token = await login(identifier || username, password);
     if (!token) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
-    cookieStore.set('admin-token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/'
-    });
+    setAdminSession(cookieStore, token);
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -4,8 +4,12 @@ import Order from '@/models/Order';
 import {
   applyStatusTransition,
   createOrderStatusNotification,
+  ensureTrackingMetadata,
+  sendAdminNewOrderAlertEmail,
+  sendOrderStatusEmail,
   type MutableOrderRecord,
 } from '@/lib/server/orderLifecycle';
+import { ensureCheckoutUserSession } from '@/lib/server/checkoutUser';
 import { verifyRazorpaySignature } from '@/lib/server/razorpay';
 
 interface VerifyPaymentPayload {
@@ -35,6 +39,33 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    if (
+      order.paymentStatus === 'paid' &&
+      order.gatewayPaymentId === razorpayPaymentId &&
+      order.gatewayOrderId === razorpayOrderId
+    ) {
+      let account = null;
+
+      try {
+        account = await ensureCheckoutUserSession({
+          name: order.customer?.name,
+          email: order.customer?.email,
+          phone: order.customer?.phone,
+        });
+      } catch (authError) {
+        console.error('Checkout account sync failed:', authError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        orderId: String(order._id),
+        trackingNumber: ensureTrackingMetadata(order as unknown as MutableOrderRecord),
+        paymentStatus: order.paymentStatus,
+        status: order.status,
+        account,
+      });
     }
 
     if (order.gatewayOrderId !== razorpayOrderId) {
@@ -68,15 +99,41 @@ export async function POST(request: NextRequest) {
     );
 
     await order.save();
+
+    let account = null;
+
+    try {
+      account = await ensureCheckoutUserSession({
+        name: order.customer?.name,
+        email: order.customer?.email,
+        phone: order.customer?.phone,
+      });
+    } catch (authError) {
+      console.error('Checkout account sync failed:', authError);
+    }
+
     if (statusChanged) {
-      await createOrderStatusNotification(order as unknown as MutableOrderRecord, 'paid');
+      try {
+        await createOrderStatusNotification(order as unknown as MutableOrderRecord, 'paid');
+        await sendOrderStatusEmail(order as unknown as MutableOrderRecord, 'paid');
+      } catch (notificationError) {
+        console.error('Payment confirmation notification failed:', notificationError);
+      }
+
+      try {
+        await sendAdminNewOrderAlertEmail(order as unknown as MutableOrderRecord);
+      } catch (alertError) {
+        console.error('New order alert email failed:', alertError);
+      }
     }
 
     return NextResponse.json({
       success: true,
       orderId: String(order._id),
+      trackingNumber: ensureTrackingMetadata(order as unknown as MutableOrderRecord),
       paymentStatus: order.paymentStatus,
       status: order.status,
+      account,
     });
   } catch (error) {
     console.error('Razorpay verification error:', error);

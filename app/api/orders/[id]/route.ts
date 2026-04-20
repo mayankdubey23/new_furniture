@@ -8,6 +8,7 @@ import {
   createOrderStatusNotification,
   normalizeTrackingReference,
   sanitizeOrderForClient,
+  sendOrderStatusEmail,
   sendShipmentEmail,
   type MutableOrderRecord,
 } from '@/lib/server/orderLifecycle';
@@ -92,19 +93,29 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     await order.save();
 
-    let shipmentEmailSent = false;
+    let statusEmailSent = false;
     if (statusChanged && typeof data.status === 'string') {
-      await createOrderStatusNotification(order as unknown as MutableOrderRecord, data.status);
-      const emailResult = await sendShipmentEmail(
-        order as unknown as MutableOrderRecord,
-        data.status
-      );
-      shipmentEmailSent = emailResult.sent;
+      try {
+        await createOrderStatusNotification(order as unknown as MutableOrderRecord, data.status);
+        const emailResult =
+          data.status === 'shipped'
+            ? await sendShipmentEmail(
+                order as unknown as MutableOrderRecord,
+                data.status
+              )
+            : await sendOrderStatusEmail(
+                order as unknown as MutableOrderRecord,
+                data.status
+              );
+        statusEmailSent = emailResult.sent;
+      } catch (notificationError) {
+        console.error('Order status notification failed:', notificationError);
+      }
     }
 
     return NextResponse.json({
       ...sanitizeOrderForClient(order.toObject() as Record<string, unknown>),
-      shipmentEmailSent,
+      statusEmailSent,
     });
   } catch {
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });

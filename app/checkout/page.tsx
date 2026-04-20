@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Script from 'next/script';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import { useCart } from '@/context/CartContext';
+import { useUser } from '@/context/UserContext';
 import { getApiUrl } from '@/lib/api/browser';
 import {
   COUNTRY_OPTIONS,
@@ -35,6 +36,14 @@ interface PaymentConfig {
   keyId: string | null;
 }
 
+interface AccountSyncPayload {
+  authenticated: boolean;
+  created: boolean;
+  userId: string;
+  name: string;
+  email: string;
+}
+
 interface GatewayPayload {
   keyId: string | null;
   orderId: string;
@@ -50,6 +59,7 @@ interface CreateOrderResponse {
   trackingNumber?: string;
   requiresPayment?: boolean;
   gateway?: GatewayPayload;
+  account?: AccountSyncPayload | null;
   error?: string;
 }
 
@@ -79,6 +89,16 @@ interface RazorpayOptions {
   theme?: { color: string };
   modal?: { ondismiss?: () => void };
   handler: (payload: RazorpaySuccess) => void | Promise<void>;
+}
+
+interface VerifyPaymentResponse {
+  success?: boolean;
+  orderId?: string;
+  trackingNumber?: string;
+  paymentStatus?: 'pending' | 'paid' | 'failed';
+  status?: string;
+  account?: AccountSyncPayload | null;
+  error?: string;
 }
 
 declare global {
@@ -159,6 +179,7 @@ function SelectField(props: ComponentProps<'select'>) {
 
 export default function CheckoutPage() {
   const { cart, totalItems, totalPrice, clearCart } = useCart();
+  const { user, refreshUser } = useUser();
   const [form, setForm] = useState(initialForm);
   const [step, setStep] = useState<CheckoutStep>('details');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
@@ -169,6 +190,7 @@ export default function CheckoutPage() {
   const [orderId, setOrderId] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [completedMethod, setCompletedMethod] = useState<PaymentMethod>('cod');
+  const [accountSync, setAccountSync] = useState<AccountSyncPayload | null>(null);
   const selectedCountry = useMemo(() => getCountryOption(form.country), [form.country]);
   const selectedStateDirectory = useMemo(() => getIndianStateDirectory(form.state), [form.state]);
   const availableCities = selectedStateDirectory?.cities ?? [];
@@ -197,6 +219,18 @@ export default function CheckoutPage() {
       setPaymentMethod('cod');
     }
   }, [paymentConfig.enabled, paymentMethod]);
+
+  useEffect(() => {
+    if (!user?.email) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      name: current.name.trim() ? current.name : user.name,
+      email: user.email,
+    }));
+  }, [user?.email, user?.name]);
 
   const handleTextChange = useCallback((event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = event.target;
@@ -286,6 +320,7 @@ export default function CheckoutPage() {
     const response = await fetch(getApiUrl('/api/orders'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     const data = (await response.json()) as CreateOrderResponse;
@@ -297,11 +332,30 @@ export default function CheckoutPage() {
     const response = await fetch(getApiUrl('/api/payments/razorpay/verify'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ orderId: checkoutOrderId, ...payment }),
     });
-    const data = (await response.json()) as { error?: string };
+    const data = (await response.json()) as VerifyPaymentResponse;
     if (!response.ok) throw new Error(data.error || 'Payment verification failed');
+    return data;
   }, []);
+
+  const syncBuyerSession = useCallback(
+    async (account?: AccountSyncPayload | null) => {
+      if (!account?.authenticated) {
+        return;
+      }
+
+      setAccountSync(account);
+
+      try {
+        await refreshUser();
+      } catch {
+        // Best-effort refresh so header/profile state updates immediately after checkout.
+      }
+    },
+    [refreshUser]
+  );
 
   const handleContinue = useCallback(
     (event: React.FormEvent) => {
@@ -324,6 +378,7 @@ export default function CheckoutPage() {
     setInfoMsg('');
     try {
       const data = await createOrder();
+      await syncBuyerSession(data.account || null);
       setOrderId(data.orderId);
       setTrackingNumber(data.trackingNumber || '');
       setCompletedMethod('cod');
@@ -334,7 +389,7 @@ export default function CheckoutPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [clearCart, createOrder]);
+  }, [clearCart, createOrder, syncBuyerSession]);
 
   const handleOnlinePayment = useCallback(async () => {
     if (!paymentConfig.enabled || !paymentConfig.keyId) {
@@ -356,6 +411,8 @@ export default function CheckoutPage() {
         throw new Error('Online payment could not be initialized.');
       }
 
+      await syncBuyerSession(data.account || null);
+
       const instance = new window.Razorpay({
         key: data.gateway.keyId,
         amount: data.gateway.amount,
@@ -373,9 +430,10 @@ export default function CheckoutPage() {
         },
         handler: async (payment) => {
           try {
-            await verifyPayment(data.orderId, payment);
+            const verification = await verifyPayment(data.orderId, payment);
+            await syncBuyerSession(verification.account || data.account || null);
             setOrderId(data.orderId);
-            setTrackingNumber(data.trackingNumber || '');
+            setTrackingNumber(verification.trackingNumber || data.trackingNumber || '');
             setCompletedMethod('razorpay');
             clearCart();
             setStep('success');
@@ -397,7 +455,7 @@ export default function CheckoutPage() {
       setSubmitting(false);
       setErrorMsg(error instanceof Error ? error.message : 'Unable to start online payment.');
     }
-  }, [clearCart, createOrder, paymentConfig.enabled, paymentConfig.keyId, verifyPayment]);
+  }, [clearCart, createOrder, paymentConfig.enabled, paymentConfig.keyId, syncBuyerSession, verifyPayment]);
 
   const handlePlaceOrder = useCallback(async () => {
     const validationError = validateForm(form);
@@ -428,6 +486,9 @@ export default function CheckoutPage() {
   }
 
   if (step === 'success') {
+    const successEmail = accountSync?.email || user?.email || form.email || 'your registered email';
+    const successName = accountSync?.name || user?.name || form.name;
+
     return (
       <main className="relative min-h-screen overflow-hidden bg-transparent px-6 pb-20 pt-32 md:px-10">
         <div className="relative z-10 mx-auto max-w-2xl text-center">
@@ -436,9 +497,22 @@ export default function CheckoutPage() {
             <AnimatedHeading as="h1" className="mt-4 font-display text-5xl text-theme-ivory">Thank you!</AnimatedHeading>
             <p className="mt-4 text-lg text-theme-ivory/70">
               {completedMethod === 'razorpay'
-                ? 'Your order is confirmed and the payment has been completed online.'
-                : 'Your order is confirmed. Our team will contact you for delivery and payment details.'}
+                ? 'Your order is confirmed and your online payment has been received successfully.'
+                : 'Your order is confirmed. Payment will be collected when your delivery arrives.'}
             </p>
+            {accountSync?.authenticated ? (
+              <div className="mt-6 rounded-2xl border border-theme-bronze/20 bg-theme-bronze/10 px-6 py-4 text-left">
+                <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze">Customer Account</p>
+                <p className="mt-2 text-sm text-theme-ivory/85">
+                  Signed in as {successName} ({successEmail}).
+                </p>
+                <p className="mt-2 text-sm text-theme-ivory/65">
+                  {accountSync.created
+                    ? 'A Furniture Lele customer account was created automatically from your checkout details.'
+                    : 'Your Furniture Lele customer profile is linked to this order already.'}
+                </p>
+              </div>
+            ) : null}
             <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-left">
               <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze">Order Reference</p>
               <p className="mt-1 break-all font-mono text-sm text-theme-ivory/80">{orderId}</p>
@@ -451,7 +525,7 @@ export default function CheckoutPage() {
             </div>
             <p className="mt-4 text-sm text-theme-ivory/50">Payment mode: {completedMethod === 'razorpay' ? 'Online payment' : 'Cash on Delivery'}</p>
             <p className="mt-2 text-sm text-theme-ivory/55">
-              Shipping updates will be sent to {form.email || 'your checkout email'} and will also appear in website notifications when you sign in with the same email.
+              Your tracking ID, order confirmation, and payment updates have been sent to {successEmail}, and future order updates will also appear in your website notifications.
             </p>
             <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link href={`/track-order?orderId=${encodeURIComponent(orderId)}`} className="rounded-full bg-theme-bronze px-8 py-3 text-sm font-semibold uppercase tracking-[0.28em] text-white transition-all hover:bg-theme-ink">Track Order</Link>
@@ -497,7 +571,23 @@ export default function CheckoutPage() {
                   <h2 className="mb-6 text-xs font-bold uppercase tracking-[0.3em] text-theme-bronze">Delivery Details</h2>
                   <div className="grid gap-5 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5 sm:col-span-2"><FieldLabel>Full Name *</FieldLabel><TextField name="name" value={form.name} onChange={handleTextChange} required placeholder="Your full name" /></div>
-                    <div className="flex flex-col gap-1.5"><FieldLabel>Email *</FieldLabel><TextField name="email" type="email" value={form.email} onChange={handleTextChange} required placeholder="you@email.com" /></div>
+                    <div className="flex flex-col gap-1.5">
+                      <FieldLabel>Email *</FieldLabel>
+                      <TextField
+                        name="email"
+                        type="email"
+                        value={form.email}
+                        onChange={handleTextChange}
+                        required
+                        readOnly={Boolean(user?.email)}
+                        placeholder="you@email.com"
+                      />
+                      {user?.email ? (
+                        <p className="text-xs text-theme-walnut/55 dark:text-theme-ivory/52">
+                          Order confirmations and tracking updates will be sent to your signed-in email.
+                        </p>
+                      ) : null}
+                    </div>
                     <div className="flex flex-col gap-1.5"><FieldLabel>Phone *</FieldLabel><TextField name="phone" type="tel" value={form.phone} onChange={handleTextChange} required placeholder="+91 98765 43210" /></div>
                     <div className="flex flex-col gap-1.5"><FieldLabel>Country / Region *</FieldLabel><SelectField name="country" value={form.country} onChange={handleCountryChange} required>{COUNTRY_OPTIONS.map((country) => (<option key={country.code} value={country.code}>{country.flag} {country.name}</option>))}</SelectField></div>
                     <div className="flex flex-col gap-1.5"><FieldLabel>State *</FieldLabel><SelectField name="state" value={form.state} onChange={handleStateChange} required><option value="">Choose state</option>{INDIA_ADDRESS_DIRECTORY.map((state) => (<option key={state.code} value={state.name}>{state.name}</option>))}</SelectField></div>
@@ -542,7 +632,7 @@ export default function CheckoutPage() {
                 {errorMsg ? <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">{errorMsg}</div> : null}
                 {infoMsg ? <div className="rounded-xl border border-theme-bronze/20 bg-theme-bronze/10 px-5 py-4 text-sm text-theme-walnut dark:text-theme-ivory/75">{infoMsg}</div> : null}
                 <button type="button" onClick={() => void handlePlaceOrder()} disabled={submitting} className="w-full rounded-full bg-theme-ink py-4 text-sm font-bold uppercase tracking-[0.28em] text-white transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-60 dark:bg-white dark:text-[var(--theme-contrast-ink)]">
-                  {submitting ? (paymentMethod === 'razorpay' ? 'Opening Payment Gateway...' : 'Placing Order...') : (paymentMethod === 'razorpay' ? `Pay Securely · Rs. ${totalPrice.toLocaleString('en-IN')}` : `Place Order · Rs. ${totalPrice.toLocaleString('en-IN')}`)}
+                  {submitting ? (paymentMethod === 'razorpay' ? 'Opening Payment Gateway...' : 'Placing Order...') : (paymentMethod === 'razorpay' ? `Pay Securely - Rs. ${totalPrice.toLocaleString('en-IN')}` : `Place Order - Rs. ${totalPrice.toLocaleString('en-IN')}`)}
                 </button>
               </>
             )}
