@@ -47,31 +47,9 @@ MONGODB_URI=mongodb://127.0.0.1:27017/luxe-furniture
 JWT_SECRET=replace-with-a-long-random-secret
 APP_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-SITE_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 ```
-
-## Checkout, Payments, And Order Emails
-
-To enable Razorpay checkout, branded order emails, payment confirmation emails, and website notifications tied to customer sessions, add:
-
-```bash
-RAZORPAY_KEY_ID=rzp_test_your_key_id
-RAZORPAY_KEY_SECRET=your-razorpay-key-secret
-RESEND_API_KEY=your-resend-api-key
-RESEND_FROM_EMAIL=orders@yourdomain.com
-ORDER_STATUS_FROM_EMAIL=orders@yourdomain.com
-ORDER_STATUS_FROM_NAME=Furniture Lele Orders
-```
-
-Notes:
-
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` now stay server-side. The checkout page receives the public key ID only from the backend at runtime, so the secret never goes into the browser bundle.
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` must both be present or online payment stays unavailable in checkout.
-- `RESEND_API_KEY` plus a verified sender (`ORDER_STATUS_FROM_EMAIL` or `RESEND_FROM_EMAIL`) are required for order-confirmation and payment-confirmation emails.
-- Admin and Furniture Lele new-order alert emails use the saved admin profile email, `ADMIN_EMAIL`, and the latest storefront contact email from Settings when those values are available.
-- Guest buyers are now auto-linked to a customer session during checkout, so their name and email can appear in the website profile immediately after ordering.
 
 Admin access is now backed by a stored admin account instead of the old hardcoded fallback credentials. For a secure admin setup, add:
 
