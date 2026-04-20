@@ -6,6 +6,15 @@ import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getApiUrl } from '@/lib/api/browser';
+import {
+  COUNTRY_OPTIONS,
+  DEFAULT_COUNTRY_CODE,
+  INDIA_ADDRESS_DIRECTORY,
+  buildCustomerAddress,
+  getCountryOption,
+  getIndianCityDirectory,
+  getIndianStateDirectory,
+} from '@/lib/addressDirectory';
 
 
 const FEATURED_COLORS = [
@@ -112,6 +121,8 @@ const SOFA_CONFIGURATIONS = [
 ];
 
 const DEFAULT_CUSTOM_COLOR_PICKER = '#A8D8D8';
+const SELECT_FIELD_STYLE = { colorScheme: 'light' };
+const SELECT_OPTION_STYLE = { color: '#2f2118', backgroundColor: '#f7efe4' };
 
 function cleanString(value) {
   return String(value || '').trim();
@@ -163,7 +174,12 @@ export default function LuxeCustomizationStudio({ products = [] }) {
     delivery: {
       contact: 'email',
       callTime: '',
+      country: DEFAULT_COUNTRY_CODE,
+      state: '',
       city: '',
+      pincode: '',
+      addressLine1: '',
+      addressLine2: '',
       timeline: '',
     },
   });
@@ -218,8 +234,48 @@ export default function LuxeCustomizationStudio({ products = [] }) {
   const hasFeaturedColor = Boolean(customization.color.featured?.name);
   const hasMaterial = Boolean(cleanString(customization.material));
   const hasFinish = Boolean(cleanString(customization.finish));
-  const hasDeliveryCity = Boolean(cleanString(customization.delivery.city));
+  const selectedDeliveryCountry = useMemo(
+    () => getCountryOption(customization.delivery.country),
+    [customization.delivery.country]
+  );
+  const selectedDeliveryState = useMemo(
+    () => getIndianStateDirectory(customization.delivery.state),
+    [customization.delivery.state]
+  );
+  const availableDeliveryCities = selectedDeliveryState?.cities ?? [];
+  const hasDeliveryAddressLine1 = Boolean(cleanString(customization.delivery.addressLine1));
+  const hasDeliveryState = Boolean(cleanString(customization.delivery.state));
+  const hasDeliveryCity = Boolean(
+    cleanString(customization.delivery.city) &&
+      getIndianCityDirectory(customization.delivery.state, customization.delivery.city)
+  );
+  const hasDeliveryPincode = /^\d{6}$/.test(cleanString(customization.delivery.pincode));
   const hasExpectedTimeline = Boolean(cleanString(customization.delivery.timeline));
+  const hasStructuredDeliveryAddress =
+    hasDeliveryAddressLine1 && hasDeliveryState && hasDeliveryCity && hasDeliveryPincode;
+  const deliveryAddressPreview = useMemo(
+    () =>
+      [
+        buildCustomerAddress(
+          cleanString(customization.delivery.addressLine1),
+          cleanString(customization.delivery.addressLine2)
+        ),
+        cleanString(customization.delivery.city),
+        cleanString(customization.delivery.state),
+        cleanString(customization.delivery.pincode),
+        selectedDeliveryCountry?.name || '',
+      ]
+        .filter(Boolean)
+        .join(', '),
+    [
+      customization.delivery.addressLine1,
+      customization.delivery.addressLine2,
+      customization.delivery.city,
+      customization.delivery.state,
+      customization.delivery.pincode,
+      selectedDeliveryCountry,
+    ]
+  );
   const isSofaProduct = cleanString(selectedProduct?.category).toLowerCase() === 'sofa';
   const hasStepOneDetails =
     hasSelectedProduct && hasCustomerName && hasCustomerEmail && hasCustomerPhone;
@@ -240,7 +296,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
     2: hasFeaturedColor || hasCustomColor,
     3: hasMaterial && hasFinish,
     4: true,
-    5: hasDeliveryCity && hasExpectedTimeline,
+    5: hasStructuredDeliveryAddress && hasExpectedTimeline,
   };
   const canContinue = Boolean(stepCompletion[currentStep]);
   const canSubmit = Object.values(stepCompletion).every(Boolean) && !isSubmitting;
@@ -261,6 +317,55 @@ export default function LuxeCustomizationStudio({ products = [] }) {
 
   const handleCustomerInfoChange = (field, value) => {
     setCustomerInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleDeliveryFieldChange = (field, value) => {
+    const nextValue =
+      field === 'pincode' ? String(value || '').replace(/\D/g, '').slice(0, 6) : value;
+
+    setCustomization((prev) => ({
+      ...prev,
+      delivery: {
+        ...prev.delivery,
+        [field]: nextValue,
+      },
+    }));
+  };
+
+  const handleDeliveryCountryChange = (value) => {
+    setCustomization((prev) => ({
+      ...prev,
+      delivery: {
+        ...prev.delivery,
+        country: value,
+        state: '',
+        city: '',
+        pincode: '',
+      },
+    }));
+  };
+
+  const handleDeliveryStateChange = (value) => {
+    setCustomization((prev) => ({
+      ...prev,
+      delivery: {
+        ...prev.delivery,
+        state: value,
+        city: '',
+        pincode: '',
+      },
+    }));
+  };
+
+  const handleDeliveryCityChange = (value) => {
+    setCustomization((prev) => ({
+      ...prev,
+      delivery: {
+        ...prev.delivery,
+        city: value,
+        pincode: '',
+      },
+    }));
   };
 
   const handleProductSelect = (product) => {
@@ -399,7 +504,16 @@ export default function LuxeCustomizationStudio({ products = [] }) {
         customDescription: cleanString(customization.notes),
         preferredContactMethod: cleanString(customization.delivery.contact) || 'email',
         preferredCallTime: cleanString(customization.delivery.callTime),
+        deliveryCountry: cleanString(customization.delivery.country) || DEFAULT_COUNTRY_CODE,
+        deliveryState: cleanString(customization.delivery.state),
         deliveryCity: cleanString(customization.delivery.city),
+        deliveryPincode: cleanString(customization.delivery.pincode),
+        deliveryAddressLine1: cleanString(customization.delivery.addressLine1),
+        deliveryAddressLine2: cleanString(customization.delivery.addressLine2),
+        deliveryAddress: buildCustomerAddress(
+          cleanString(customization.delivery.addressLine1),
+          cleanString(customization.delivery.addressLine2)
+        ),
         expectedTimeline: cleanString(customization.delivery.timeline),
       };
 
@@ -1242,78 +1356,186 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                   </h2>
 
                   <div className="grid gap-6">
-                    <div>
-                      <label className="mb-3 block font-semibold text-theme-ivory">
-                        Preferred Contact Method
-                      </label>
-                      <select
-                        value={customization.delivery.contact}
-                        onChange={(e) =>
-                          setCustomization((prev) => ({
-                            ...prev,
-                            delivery: { ...prev.delivery, contact: e.target.value },
-                          }))
-                        }
-                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
-                      >
-                        <option value="email">Email</option>
-                        <option value="phone">Phone</option>
-                        <option value="both">Both</option>
-                      </select>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div>
+                        <label className="mb-3 block font-semibold text-theme-ivory">
+                          Preferred Contact Method
+                        </label>
+                        <select
+                          value={customization.delivery.contact}
+                          onChange={(e) => handleDeliveryFieldChange('contact', e.target.value)}
+                          className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          style={SELECT_FIELD_STYLE}
+                        >
+                          <option value="email" style={SELECT_OPTION_STYLE}>Email</option>
+                          <option value="phone" style={SELECT_OPTION_STYLE}>Phone</option>
+                          <option value="both" style={SELECT_OPTION_STYLE}>Both</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-3 block font-semibold text-theme-ivory">
+                          Preferred Call Time (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g., 9 AM - 12 PM weekdays"
+                          value={customization.delivery.callTime}
+                          onChange={(e) => handleDeliveryFieldChange('callTime', e.target.value)}
+                          className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                        />
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="mb-3 block font-semibold text-theme-ivory">
-                        Preferred Call Time (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g., 9-12 PM weekdays"
-                        value={customization.delivery.callTime}
-                        onChange={(e) =>
-                          setCustomization((prev) => ({
-                            ...prev,
-                            delivery: { ...prev.delivery, callTime: e.target.value },
-                          }))
-                        }
-                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
-                      />
+                    <div className="rounded-[1.4rem] border border-theme-bronze/15 bg-white/5 p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.26em] text-theme-bronze">
+                            Delivery Address
+                          </p>
+                          <p className="mt-2 max-w-2xl text-sm leading-7 text-theme-ivory/62">
+                            Share the exact address where our team should plan delivery access,
+                            installation guidance, and follow-up.
+                          </p>
+                        </div>
+                        <div className="rounded-full border border-theme-bronze/20 bg-theme-bronze/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                          Structured entry
+                        </div>
+                      </div>
+
+                      <div className="mt-5 grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            Country / Region
+                          </label>
+                          <select
+                            value={customization.delivery.country}
+                            onChange={(e) => handleDeliveryCountryChange(e.target.value)}
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                            style={SELECT_FIELD_STYLE}
+                          >
+                            {COUNTRY_OPTIONS.map((country) => (
+                              <option key={country.code} value={country.code} style={SELECT_OPTION_STYLE}>
+                                {country.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            State
+                          </label>
+                          <select
+                            value={customization.delivery.state}
+                            onChange={(e) => handleDeliveryStateChange(e.target.value)}
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                            style={SELECT_FIELD_STYLE}
+                          >
+                            <option value="" style={SELECT_OPTION_STYLE}>Choose state</option>
+                            {INDIA_ADDRESS_DIRECTORY.map((state) => (
+                              <option key={state.code} value={state.name} style={SELECT_OPTION_STYLE}>
+                                {state.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            City
+                          </label>
+                          <select
+                            value={customization.delivery.city}
+                            onChange={(e) => handleDeliveryCityChange(e.target.value)}
+                            disabled={!selectedDeliveryState}
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                            style={SELECT_FIELD_STYLE}
+                          >
+                            <option value="" style={SELECT_OPTION_STYLE}>
+                              {selectedDeliveryState ? 'Choose city' : 'Choose state first'}
+                            </option>
+                            {availableDeliveryCities.map((city) => (
+                              <option key={city.name} value={city.name} style={SELECT_OPTION_STYLE}>
+                                {city.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            Pincode
+                          </label>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]{6}"
+                            maxLength={6}
+                            placeholder={
+                              customization.delivery.city
+                                ? 'Enter 6-digit pincode'
+                                : 'Choose city first'
+                            }
+                            value={customization.delivery.pincode}
+                            onChange={(e) => handleDeliveryFieldChange('pincode', e.target.value)}
+                            disabled={!customization.delivery.city}
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            Address Line 1
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Street address, area, house number"
+                            value={customization.delivery.addressLine1}
+                            onChange={(e) =>
+                              handleDeliveryFieldChange('addressLine1', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            Address Line 2 (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Apartment, suite, building, landmark"
+                            value={customization.delivery.addressLine2}
+                            onChange={(e) =>
+                              handleDeliveryFieldChange('addressLine2', e.target.value)
+                            }
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <label className="mb-3 block font-semibold text-theme-ivory">
+                            Expected Timeline
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g., Within 2 months"
+                            value={customization.delivery.timeline}
+                            onChange={(e) => handleDeliveryFieldChange('timeline', e.target.value)}
+                            className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                          />
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className="mb-3 block font-semibold text-theme-ivory">
-                        Delivery City
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Your city"
-                        value={customization.delivery.city}
-                        onChange={(e) =>
-                          setCustomization((prev) => ({
-                            ...prev,
-                            delivery: { ...prev.delivery, city: e.target.value },
-                          }))
-                        }
-                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="mb-3 block font-semibold text-theme-ivory">
-                        Expected Timeline
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g., Within 2 months"
-                        value={customization.delivery.timeline}
-                        onChange={(e) =>
-                          setCustomization((prev) => ({
-                            ...prev,
-                            delivery: { ...prev.delivery, timeline: e.target.value },
-                          }))
-                        }
-                        className="w-full rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
-                      />
+                    <div className="rounded-[1.4rem] border border-theme-bronze/15 bg-theme-bronze/10 p-5">
+                      <p className="text-xs font-semibold uppercase tracking-[0.26em] text-theme-bronze">
+                        Delivery Address Preview
+                      </p>
+                      <p className="mt-3 text-sm leading-7 text-theme-ivory">
+                        {deliveryAddressPreview || 'Your full delivery address will appear here once you complete the fields above.'}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1377,6 +1599,30 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                       </p>
                       <p className="text-theme-ivory">
                         {selectedAddons.length > 0 ? selectedAddons.join(', ') : 'None'}
+                      </p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Delivery Address
+                      </p>
+                      <p className="text-theme-ivory">
+                        {deliveryAddressPreview || 'Not shared yet'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Contact Preference
+                      </p>
+                      <p className="capitalize text-theme-ivory">
+                        {customization.delivery.contact || 'Not selected'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                        Timeline
+                      </p>
+                      <p className="text-theme-ivory">
+                        {customization.delivery.timeline || 'Not selected'}
                       </p>
                     </div>
                   </div>

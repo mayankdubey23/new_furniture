@@ -145,11 +145,16 @@ export default function FaqPageClient({ faqs, siteSetting }: FaqPageClientProps)
             </div>
 
             <div className="section-shell rounded-[1.9rem] border border-theme-line/50 px-6 py-7">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
-                What You&apos;ll Find Here
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
+                  What You&apos;ll Find Here
+                </p>
+                <span className="rounded-full border border-theme-bronze/20 bg-theme-bronze/10 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-theme-bronze">
+                  {faqs.length} Questions
+                </span>
+              </div>
               <div className="mt-5 space-y-3">
-                {faqs.slice(0, 5).map((faq, index) => (
+                {faqs.map((faq, index) => (
                   <button
                     key={faq.id}
                     type="button"

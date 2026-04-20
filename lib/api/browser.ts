@@ -39,6 +39,11 @@ export function getApiUrl(path: string, source: DataSource = getBrowserDataSourc
   }
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+  if (source === 'external' && normalizedPath.startsWith('/api/')) {
+    return normalizedPath;
+  }
+
   const baseUrl = getBrowserApiBaseUrl(source);
 
   return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;

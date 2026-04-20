@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { getApiUrl } from '@/lib/api/browser';
+import { getCountryOption } from '@/lib/addressDirectory';
 
 interface CustomizationRequest {
   _id: string;
@@ -33,7 +34,13 @@ interface CustomizationRequest {
   customDescription: string;
   preferredContactMethod: string;
   preferredCallTime?: string;
+  deliveryCountry?: string;
+  deliveryState?: string;
   deliveryCity?: string;
+  deliveryPincode?: string;
+  deliveryAddressLine1?: string;
+  deliveryAddressLine2?: string;
+  deliveryAddress?: string;
   expectedTimeline?: string;
   adminNotes?: string;
   status: 'pending' | 'in-review' | 'approved' | 'contacted' | 'completed' | 'rejected';
@@ -92,6 +99,32 @@ function formatDate(value?: string, withTime = false) {
         month: 'short',
         year: 'numeric',
       });
+}
+
+function formatDeliveryLocation(item: Pick<CustomizationRequest, 'deliveryCity' | 'deliveryState'>) {
+  return [item.deliveryCity, item.deliveryState].filter(Boolean).join(', ') || 'Address not shared';
+}
+
+function formatDeliveryAddress(
+  item: Pick<
+    CustomizationRequest,
+    | 'deliveryAddress'
+    | 'deliveryAddressLine1'
+    | 'deliveryAddressLine2'
+    | 'deliveryCity'
+    | 'deliveryState'
+    | 'deliveryPincode'
+    | 'deliveryCountry'
+  >
+) {
+  const countryName = getCountryOption(item.deliveryCountry)?.name || item.deliveryCountry || '';
+  const addressBase =
+    item.deliveryAddress ||
+    [item.deliveryAddressLine1, item.deliveryAddressLine2].filter(Boolean).join(', ');
+
+  return [addressBase, item.deliveryCity, item.deliveryState, item.deliveryPincode, countryName]
+    .filter(Boolean)
+    .join(', ') || 'Address not shared';
 }
 
 function StatCard({
@@ -173,7 +206,12 @@ export default function AdminCustomizationsPage() {
           item.customerName,
           item.customerEmail,
           item.productName,
+          item.deliveryAddress,
+          item.deliveryAddressLine1,
+          item.deliveryAddressLine2,
           item.deliveryCity,
+          item.deliveryState,
+          item.deliveryPincode,
           item.sizeOrConfiguration,
         ]
           .join(' ')
@@ -288,7 +326,7 @@ export default function AdminCustomizationsPage() {
             <Search className="h-4 w-4 text-theme-bronze" />
             <input
               type="text"
-              placeholder="Search by customer, email, product, or city"
+              placeholder="Search by customer, email, product, or address"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               className="w-full bg-transparent text-sm outline-none"
@@ -362,7 +400,7 @@ export default function AdminCustomizationsPage() {
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <MapPin className="h-3.5 w-3.5 text-theme-bronze" />
-                        {item.deliveryCity || 'City not shared'}
+                        {formatDeliveryLocation(item)}
                       </span>
                       <span className="inline-flex items-center gap-1.5">
                         <Clock3 className="h-3.5 w-3.5 text-theme-bronze" />
@@ -447,7 +485,7 @@ export default function AdminCustomizationsPage() {
                   <div className="mt-4 grid gap-3 text-sm">
                     <p><span className="font-semibold">Email:</span> {selectedItem.customerEmail}</p>
                     <p><span className="font-semibold">Phone:</span> {selectedItem.customerPhone}</p>
-                    <p><span className="font-semibold">City:</span> {selectedItem.deliveryCity || 'Not shared'}</p>
+                    <p><span className="font-semibold">Delivery address:</span> {formatDeliveryAddress(selectedItem)}</p>
                     <p><span className="font-semibold">Preferred contact:</span> {selectedItem.preferredContactMethod || 'Not shared'}</p>
                     <p><span className="font-semibold">Preferred time:</span> {selectedItem.preferredCallTime || 'Not shared'}</p>
                   </div>

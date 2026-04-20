@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Customization from '@/models/Customization';
+import {
+  DEFAULT_COUNTRY_CODE,
+  buildCustomerAddress,
+  getCountryOption,
+  getIndianCityDirectory,
+} from '@/lib/addressDirectory';
 
 const VALID_CONTACT_METHODS = new Set(['email', 'phone', 'both']);
 
@@ -20,7 +26,15 @@ export async function POST(request: NextRequest) {
     const productName = cleanString(body.productName);
     const selectedMaterial = cleanString(body.selectedMaterial);
     const selectedFinish = cleanString(body.selectedFinish);
+    const deliveryCountry = cleanString(body.deliveryCountry || DEFAULT_COUNTRY_CODE).toUpperCase();
+    const deliveryState = cleanString(body.deliveryState);
     const deliveryCity = cleanString(body.deliveryCity);
+    const deliveryPincode = cleanString(body.deliveryPincode).replace(/\D/g, '').slice(0, 6);
+    const deliveryAddressLine1 = cleanString(body.deliveryAddressLine1);
+    const deliveryAddressLine2 = cleanString(body.deliveryAddressLine2);
+    const deliveryAddress =
+      buildCustomerAddress(deliveryAddressLine1, deliveryAddressLine2) ||
+      cleanString(body.deliveryAddress);
     const expectedTimeline = cleanString(body.expectedTimeline);
     const customColorName = cleanString(body.customColorName);
     const customColorCode = cleanString(body.customColorCode);
@@ -77,9 +91,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!deliveryCity || !expectedTimeline) {
+    if (!getCountryOption(deliveryCountry) || deliveryCountry !== DEFAULT_COUNTRY_CODE) {
       return NextResponse.json(
-        { error: 'Delivery city and expected timeline are required.' },
+        { error: 'Structured customization delivery currently supports India addresses only.' },
+        { status: 400 }
+      );
+    }
+
+    if (
+      !deliveryAddressLine1 ||
+      !deliveryState ||
+      !deliveryCity ||
+      !deliveryPincode ||
+      !expectedTimeline
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'Delivery address, state, city, pincode, and expected timeline are required.',
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!getIndianCityDirectory(deliveryState, deliveryCity)) {
+      return NextResponse.json(
+        { error: 'Please choose a valid city for the selected state.' },
+        { status: 400 }
+      );
+    }
+
+    if (!/^\d{6}$/.test(deliveryPincode)) {
+      return NextResponse.json(
+        { error: 'Please enter a valid 6-digit pincode.' },
         { status: 400 }
       );
     }
@@ -103,7 +147,13 @@ export async function POST(request: NextRequest) {
       uploadedReference: cleanString(body.uploadedReference),
       preferredContactMethod,
       preferredCallTime: cleanString(body.preferredCallTime),
+      deliveryCountry,
+      deliveryState,
       deliveryCity,
+      deliveryPincode,
+      deliveryAddressLine1,
+      deliveryAddressLine2,
+      deliveryAddress,
       expectedTimeline,
       status: 'pending',
     });

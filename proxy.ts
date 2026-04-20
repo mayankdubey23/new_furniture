@@ -1,8 +1,76 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { mapLocalApiPathToExternalPath } from '@/lib/api/externalRoutes';
 import {
   getAdminInternalPath,
+  getAdminPortalAliasBasePaths,
   getAdminPortalBasePath,
+  getAdminPortalPath,
 } from '@/lib/adminPortal';
+
+function readEnv(...names: string[]) {
+  for (const name of names) {
+    const value = String(process.env[name] || '').trim();
+    if (value) {
+      return value;
+    }
+  }
+
+  return '';
+}
+
+function normalizeBaseUrl(value: string) {
+  return value.replace(/\/+$/, '');
+}
+
+function getProxyDataSource() {
+  return readEnv('DATA_SOURCE', 'NEXT_PUBLIC_DATA_SOURCE').toLowerCase() || 'internal';
+}
+
+function getExternalApiBaseUrl() {
+  return normalizeBaseUrl(
+    readEnv('EXTERNAL_API_BASE_URL', 'NEXT_PUBLIC_EXTERNAL_API_BASE_URL')
+  );
+}
+
+function getExternalApiBearerToken() {
+  return readEnv('EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
+}
+
+function maybeRewriteExternalApiRequest(request: NextRequest) {
+  if (getProxyDataSource() !== 'external') {
+    return null;
+  }
+
+  const mappedPath = mapLocalApiPathToExternalPath(request.nextUrl.pathname);
+  const baseUrl = getExternalApiBaseUrl();
+
+  if (!mappedPath || !baseUrl) {
+    return null;
+  }
+
+  const targetUrl = new URL(`${baseUrl}${mappedPath}`);
+  request.nextUrl.searchParams.forEach((value, key) => {
+    targetUrl.searchParams.append(key, value);
+  });
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.delete('cookie');
+  requestHeaders.delete('host');
+  requestHeaders.delete('content-length');
+
+  const bearerToken = getExternalApiBearerToken();
+  if (bearerToken) {
+    requestHeaders.set('authorization', `Bearer ${bearerToken}`);
+  }
+
+  const response = NextResponse.rewrite(targetUrl, {
+    request: {
+      headers: requestHeaders,
+    },
+  });
+  response.headers.set('Cache-Control', 'no-store');
+  return response;
+}
 
 async function readMaintenanceMode(request: NextRequest) {
   try {
@@ -27,6 +95,11 @@ async function readMaintenanceMode(request: NextRequest) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const portalBasePath = getAdminPortalBasePath();
+  const legacyPortalBasePath = getAdminPortalAliasBasePaths().find(
+    (candidate) =>
+      candidate !== portalBasePath &&
+      (pathname === candidate || pathname.startsWith(`${candidate}/`))
+  );
 
   if (pathname === '/admin' || pathname.startsWith('/admin/')) {
     return new NextResponse('Not Found', {
@@ -36,6 +109,17 @@ export async function proxy(request: NextRequest) {
         'Cache-Control': 'no-store',
       },
     });
+  }
+
+  if (legacyPortalBasePath) {
+    const redirectUrl = request.nextUrl.clone();
+    const suffix = pathname.slice(legacyPortalBasePath.length);
+    redirectUrl.pathname = getAdminPortalPath(suffix);
+
+    const response = NextResponse.redirect(redirectUrl);
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+    response.headers.set('Cache-Control', 'no-store');
+    return response;
   }
 
   if (pathname === portalBasePath || pathname.startsWith(`${portalBasePath}/`)) {
@@ -50,6 +134,12 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api')) {
+    const externalApiResponse = maybeRewriteExternalApiRequest(request);
+
+    if (externalApiResponse) {
+      return externalApiResponse;
+    }
+
     return NextResponse.next();
   }
 

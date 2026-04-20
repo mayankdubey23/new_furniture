@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongoose';
 import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
 import { revalidateCatalogRoutes } from '@/lib/server/catalogRevalidation';
+import { ensureRenderableProductAssets } from '@/lib/server/productAssets';
 import { normalizeProduct, prepareProductMutationInput } from '@/lib/productCatalog';
 
 export const dynamic = 'force-dynamic';
@@ -18,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .populate('brand')
       .lean();
     if (!product) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    return NextResponse.json(normalizeProduct(product), {
+    return NextResponse.json(await ensureRenderableProductAssets(normalizeProduct(product)), {
       headers: {
         'Cache-Control': 'no-store',
       },
@@ -78,7 +79,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     revalidateCatalogRoutes(normalizedProduct);
 
-    return NextResponse.json(normalizedProduct, {
+    return NextResponse.json(await ensureRenderableProductAssets(normalizedProduct), {
       headers: {
         'Cache-Control': 'no-store',
       },

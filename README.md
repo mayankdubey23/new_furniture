@@ -31,10 +31,17 @@ NEXT_PUBLIC_DATA_SOURCE=mock
 Optional API base URLs:
 
 ```bash
+DATA_SOURCE=external
 NEXT_PUBLIC_EXTERNAL_API_BASE_URL=https://your-backend.example.com
 EXTERNAL_API_BASE_URL=https://your-backend.example.com
+EXTERNAL_API_BEARER_TOKEN=your-backend-bearer-token
+EXTERNAL_PRODUCTS_PATH=/api/product
 NEXT_PUBLIC_MOCK_API_BASE_URL=http://localhost:4000
 ```
+
+`EXTERNAL_API_BEARER_TOKEN` is a server-only bearer token for calling your backend. Do not place JWT session tokens or secrets in client-side env vars.
+
+In `external` mode, browser-side `/api/*` calls now stay same-origin and are rewritten by `proxy.ts` to the backend so the bearer token can be attached server-side. The built-in mapping covers the routes already mirrored in the repo, including `/api/products -> /api/product`, `/api/maincategories -> /api/maincategory`, and `/api/orders -> /api/checkout`.
 
 ## Authentication Setup
 
@@ -102,6 +109,16 @@ Homepage hero and footer videos are no longer hardcoded in the components. They 
 - JSON mock data
 - your external backend
 
+## Uploads On Vercel
+
+Admin uploads currently write to the local filesystem under `public/uploads/...`. That works in local development, but Vercel does not provide persistent local storage for runtime uploads.
+
+For deployed environments:
+
+- keep bundled assets in `public/` when they ship with the app
+- use a public hosted URL for product `.glb` models and uploaded media
+- store admin-uploaded assets in Vercel Blob, S3, Cloudinary, or another persistent public storage service
+
 ## Backend Handoff
 
-See [docs/backend-integration.md](/docs/backend-integration.md) for the env setup, mock server details, and the minimum endpoints already wired into the storefront.
+See [docs/backend-integration.md](/docs/backend-integration.md) for the env setup, mock server details, route rewrites, and the minimum endpoints already wired into the storefront.

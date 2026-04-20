@@ -36,6 +36,9 @@ export const SITE_UPLOAD_ROOT =
 export const SITE_UPLOAD_PUBLIC_BASE =
   process.env.SITE_UPLOAD_PUBLIC_BASE || '/uploads/site';
 
+const IS_VERCEL_RUNTIME = Boolean(process.env.VERCEL || process.env.VERCEL_URL);
+const ALLOW_RUNTIME_DISK_UPLOADS = process.env.ALLOW_RUNTIME_DISK_UPLOADS === 'true';
+
 export type CatalogUploadCollection = 'maincategory' | 'subcategory' | 'brand';
 
 export function sanitizeUploadSegment(value: string, fallback: string) {
@@ -153,7 +156,17 @@ async function persistUpload(target: {
   directory: string;
   absolutePath: string;
   publicPath: string;
-}, file: File) {
+}, file: File, kind: 'image' | 'model' | 'video') {
+  if (IS_VERCEL_RUNTIME && !ALLOW_RUNTIME_DISK_UPLOADS) {
+    const assetLabel =
+      kind === 'model' ? '.glb model' : kind === 'video' ? 'video' : 'image';
+
+    return {
+      ok: false as const,
+      error: `Runtime ${assetLabel} uploads to the local filesystem are not persistent on Vercel. Host the asset in Vercel Blob, S3, Cloudinary, or another public storage service and paste its public URL instead.`,
+    };
+  }
+
   await mkdir(target.directory, { recursive: true });
 
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -199,7 +212,7 @@ export async function saveProductUpload({
     extension,
   });
 
-  return persistUpload(target, file);
+  return persistUpload(target, file, kind);
 }
 
 export async function saveCatalogUpload({
@@ -226,7 +239,7 @@ export async function saveCatalogUpload({
     extension,
   });
 
-  return persistUpload(target, file);
+  return persistUpload(target, file, 'image');
 }
 
 export async function saveSiteUpload({
@@ -260,5 +273,5 @@ export async function saveSiteUpload({
     extension,
   });
 
-  return persistUpload(target, file);
+  return persistUpload(target, file, kind);
 }

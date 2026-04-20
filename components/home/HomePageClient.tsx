@@ -150,7 +150,9 @@ export default function HomePageClient({
 
       <div id="collections">
         {products.map((product, index) => {
-          const targetId = collections[index]?.targetId || getProductCollectionTargetId(product);
+          const targetId =
+            collections[index]?.targetId ||
+            `product-${String(product.id || product._id || getProductCollectionTargetId(product))}`;
           const surfaceClassName =
             index % 2 === 0 ? 'bg-transparent' : 'bg-theme-mist/55 dark:bg-theme-mist/20';
 

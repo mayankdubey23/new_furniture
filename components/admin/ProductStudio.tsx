@@ -1,6 +1,6 @@
 'use client';
 
-import { Fragment, useMemo, useState, type FormEvent } from 'react';
+import { Fragment, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertCircle,
@@ -160,11 +160,11 @@ function sanitizeStringArray(values: string[]) {
   return values.map((value) => value.trim()).filter(Boolean);
 }
 
-function sanitizeColors(colors: ProductColorEntry[]) {
+function sanitizeColors(colors: ProductColorEntry[], fallbackImage = '') {
   return colors
     .map((color) => ({
       name: String(color.name || '').trim(),
-      image: String(color.image || '').trim(),
+      image: String(color.image || '').trim() || fallbackImage,
     }))
     .filter((color) => color.name && color.image);
 }
@@ -316,6 +316,7 @@ export default function ProductStudio({
   const [creatingMainCategory, setCreatingMainCategory] = useState(false);
   const [newMainCategoryName, setNewMainCategoryName] = useState('');
   const [newMainCategoryImage, setNewMainCategoryImage] = useState('');
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -333,8 +334,7 @@ export default function ProductStudio({
           .join(' ')
           .toLowerCase();
         return matchesFilter && (!query || text.includes(query));
-      })
-      .sort((a, b) => (a.mainCategoryName || a.category).localeCompare(b.mainCategoryName || b.category) || a.name.localeCompare(b.name));
+      });
   }, [products, search, mainCategoryFilter]);
 
   const resetForm = () => {
@@ -368,6 +368,14 @@ export default function ProductStudio({
 
   const openCreate = () => {
     resetForm();
+    if (catalogOptions.mainCategories.length === 1) {
+      const onlyMainCategory = catalogOptions.mainCategories[0];
+      setForm((current) => ({
+        ...current,
+        mainCategoryId: onlyMainCategory._id,
+        mainCategoryName: onlyMainCategory.name,
+      }));
+    }
     if (catalogOptions.brands.length === 1) {
       const onlyBrand = catalogOptions.brands[0];
       setForm((current) => ({
@@ -571,6 +579,7 @@ export default function ProductStudio({
     setApiError('');
     setSuccessMessage('');
     try {
+      const mainImage = form.views.main.trim();
       const selectedMainCategoryName =
         optionName(catalogOptions.mainCategories, form.mainCategoryId) || form.mainCategoryName.trim();
       const selectedBrandName =
@@ -588,18 +597,19 @@ export default function ProductStudio({
         throw new Error('Product description is required.');
       }
 
-      if (!form.views.main.trim()) {
+      if (!mainImage) {
         throw new Error('Add the main product image for Details & Purchase.');
       }
 
       const galleryImages = sanitizeStringArray(form.gallery);
-      if (!galleryImages.length) {
-        throw new Error('Add at least one gallery image.');
+      const resolvedGalleryImages = galleryImages.length ? galleryImages : [mainImage];
+      if (!resolvedGalleryImages.length) {
+        throw new Error('Add at least one gallery image or keep the main image filled.');
       }
 
-      const colors = sanitizeColors(form.colors);
+      const colors = sanitizeColors(form.colors, mainImage);
       if (!colors.length) {
-        throw new Error('Add at least one color variant with a name and image.');
+        throw new Error('Add at least one color variant name. Its image can reuse the main product image.');
       }
 
       const modelPath = form.modelPath.trim();
@@ -616,6 +626,17 @@ export default function ProductStudio({
         throw new Error('Add at least one View More Specs section with one detail row.');
       }
 
+      const resolvedBasePrice = form.basePrice.trim() || form.finalPrice.trim();
+      const resolvedFinalPrice = form.finalPrice.trim() || form.basePrice.trim();
+
+      if (!resolvedBasePrice) {
+        throw new Error('Add the base price or final price.');
+      }
+
+      if (!resolvedFinalPrice) {
+        throw new Error('Add the final price or base price.');
+      }
+
       const payload = prepareProductMutationInput({
         name: form.name,
         description: form.description,
@@ -626,9 +647,9 @@ export default function ProductStudio({
         subCategoryName: '',
         brandName: selectedBrandName,
         eyebrow: form.eyebrow,
-        basePrice: form.basePrice,
+        basePrice: resolvedBasePrice,
         discount: form.discount,
-        finalPrice: form.finalPrice,
+        finalPrice: resolvedFinalPrice,
         stockQuantity: form.stockQuantity,
         inStock: form.inStock,
         active: form.active,
@@ -638,7 +659,7 @@ export default function ProductStudio({
           views: Object.fromEntries(
             VIEW_KEYS.map((key) => [key, form.views[key].trim()])
           ) as Record<ProductViewKey, string>,
-          gallery: galleryImages,
+          gallery: resolvedGalleryImages,
         },
         colors,
         specs: {
@@ -660,11 +681,20 @@ export default function ProductStudio({
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) throw new Error(data?.error || 'Failed to save product');
+      const savedProductId = String(data?._id || data?.id || editingId || '');
 
       resetForm();
       setShowForm(false);
       setSuccessMessage(wasEditing ? 'Product updated.' : 'Product created.');
       await onRefresh();
+      if (savedProductId && typeof window !== 'undefined') {
+        window.setTimeout(() => {
+          document.getElementById(`product-card-${savedProductId}`)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center',
+          });
+        }, 120);
+      }
       announceStorefrontUpdate(wasEditing ? 'product-update' : 'product-create');
       emitAdminToast({
         type: 'success',
@@ -675,6 +705,14 @@ export default function ProductStudio({
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Save failed';
       setApiError(message);
+      if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(() => {
+          formRef.current?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        });
+      }
       emitAdminToast({ type: 'error', message });
     } finally {
       setSaving(false);
@@ -777,6 +815,7 @@ export default function ProductStudio({
 
         const formNode = (
         <form
+          ref={formRef}
           id={editingId ? `product-editor-${editingId}` : 'product-editor-create'}
           onSubmit={handleSubmit}
           className="mb-8 rounded-[2rem] border border-theme-line/50 bg-white/74 p-5 text-[color:var(--theme-contrast-ink)] shadow-[0_20px_60px_rgba(49,30,21,0.07)] dark:bg-white/5 sm:p-6"
@@ -1023,7 +1062,7 @@ export default function ProductStudio({
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/80 dark:text-theme-ivory/76">Gallery</p>
-                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">Add the gallery images shown in the separate Gallery tab.</p>
+                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">Add the gallery images shown in the separate Gallery tab. If you leave it empty, the main image will be reused automatically.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <button type="button" onClick={() => setForm((current) => ({ ...current, gallery: [...current.gallery, ''] }))} className={subtleButtonClass()}>
@@ -1050,13 +1089,15 @@ export default function ProductStudio({
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/80 dark:text-theme-ivory/76">3D Model</p>
-                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">Upload a `.glb` file only for the live 3D viewer.</p>
+                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">
+                      Upload a `.glb` file only for the live 3D viewer. On Vercel, use a hosted public URL for models instead of relying on local runtime uploads.
+                    </p>
                   </div>
                   <UploadButton busy={uploadingKey === 'model'} accept=".glb,model/gltf-binary" label="Upload GLB" onSelect={(file) => handleUpload('model', (path) => setForm((current) => ({ ...current, modelPath: path })), file, 'model')} />
                 </div>
-                <input value={form.modelPath} onChange={(event) => setForm((current) => ({ ...current, modelPath: event.target.value }))} className={inputClass(form.modelPath.trim() !== '' && !GLB_FILE_PATTERN.test(form.modelPath))} placeholder="/uploads/products/.../model.glb" />
+                <input value={form.modelPath} onChange={(event) => setForm((current) => ({ ...current, modelPath: event.target.value }))} className={inputClass(form.modelPath.trim() !== '' && !GLB_FILE_PATTERN.test(form.modelPath))} placeholder="/3D%20models/example.glb or https://cdn.example.com/model.glb" />
                 <p className="mt-2 text-xs leading-6 text-black/65 dark:text-theme-ivory/62">
-                  This field is required for the product viewer and must end with `.glb`.
+                  This field is required for the product viewer and must end with `.glb`. Hosted HTTPS model URLs are supported.
                 </p>
               </div>
 
@@ -1064,7 +1105,7 @@ export default function ProductStudio({
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-black/80 dark:text-theme-ivory/76">Color Variants</p>
-                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">Manage the color names and images shown in the Color Variants section.</p>
+                    <p className="mt-1 text-sm text-black/72 dark:text-theme-ivory/68">Manage the color names and images shown in the Color Variants section. If a swatch image is left blank, the main product image will be reused.</p>
                   </div>
                   <button type="button" onClick={() => setForm((current) => ({ ...current, colors: [...current.colors, { name: '', image: '' }] }))} className={subtleButtonClass()}>
                     <PlusCircle className="h-3.5 w-3.5" />
@@ -1145,6 +1186,13 @@ export default function ProductStudio({
             </div>
           </div>
 
+          {apiError ? (
+            <div className="mt-6 flex items-center gap-3 rounded-[1.2rem] border border-red-400/30 bg-red-50/90 px-4 py-3 text-sm text-red-600">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {apiError}
+            </div>
+          ) : null}
+
           <div className="mt-6 flex flex-wrap gap-3">
             <button type="submit" disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--theme-contrast-ink)] px-6 py-3 text-xs font-semibold uppercase tracking-[0.24em] text-white shadow-[0_14px_34px_rgba(34,27,23,0.18)] transition hover:bg-black disabled:opacity-60 sm:w-auto">
               {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
@@ -1171,7 +1219,7 @@ export default function ProductStudio({
 
             return (
               <Fragment key={product._id}>
-                <div className={`rounded-[1.8rem] border p-5 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5 ${isEditingThisProduct ? 'border-theme-bronze/50 bg-[linear-gradient(145deg,rgba(255,255,255,0.88),rgba(247,239,228,0.84))]' : 'border-theme-line/50 bg-white/76'}`}>
+                <div id={`product-card-${product._id}`} className={`rounded-[1.8rem] border p-5 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5 ${isEditingThisProduct ? 'border-theme-bronze/50 bg-[linear-gradient(145deg,rgba(255,255,255,0.88),rgba(247,239,228,0.84))]' : 'border-theme-line/50 bg-white/76'}`}>
                 <div className="flex flex-wrap items-center gap-4">
                   <div className="h-16 w-16 overflow-hidden rounded-[1rem] border border-theme-line/50">
                     {product.imageUrl ? (

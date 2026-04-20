@@ -17,6 +17,10 @@ import {
   getServerDataSource,
 } from '@/lib/api/server';
 import { readMockDatabase } from '@/lib/mocks/serverDb';
+import {
+  ensureRenderableProductAssetList,
+  ensureRenderableProductAssets,
+} from '@/lib/server/productAssets';
 
 type NormalizableProduct = Parameters<typeof normalizeProduct>[0];
 
@@ -31,14 +35,16 @@ async function getInternalProducts() {
       .populate('mainCategory')
       .populate('subCategory')
       .populate('brand')
-      .sort({ category: 1, name: 1 })
+      .sort({ createdAt: 1, name: 1 })
       .lean();
 
     if (!products.length) {
       return getDefaultProducts();
     }
 
-    return products.map((product) => normalizeProduct(product as NormalizableProduct));
+    return ensureRenderableProductAssetList(
+      products.map((product) => normalizeProduct(product as NormalizableProduct))
+    );
   } catch {
     return getDefaultProducts();
   }
@@ -53,7 +59,9 @@ async function getMockProducts() {
       return getDefaultProducts();
     }
 
-    return products.map((product) => normalizeProduct(product as NormalizableProduct));
+    return ensureRenderableProductAssetList(
+      products.map((product) => normalizeProduct(product as NormalizableProduct))
+    );
   } catch {
     return getDefaultProducts();
   }
@@ -67,7 +75,9 @@ async function getExternalProducts() {
       return getDefaultProducts();
     }
 
-    return products.map((product) => normalizeProduct(product as NormalizableProduct));
+    return ensureRenderableProductAssetList(
+      products.map((product) => normalizeProduct(product as NormalizableProduct))
+    );
   } catch {
     return getDefaultProducts();
   }
@@ -85,6 +95,13 @@ export async function getAllProducts(): Promise<ProductRecord[]> {
   }
 
   return getInternalProducts();
+}
+
+export async function getStorefrontProducts(): Promise<ProductRecord[]> {
+  const products = await getAllProducts();
+  const visibleProducts = products.filter((product) => product.active !== false);
+
+  return visibleProducts.length ? visibleProducts : products;
 }
 
 export async function getFeaturedProducts(): Promise<ProductRecord[]> {
@@ -116,7 +133,7 @@ export async function getProductById(id: string): Promise<ProductRecord | null> 
         .lean();
 
       if (product) {
-        return normalizeProduct(product);
+        return ensureRenderableProductAssets(normalizeProduct(product));
       }
     } catch {
 
@@ -128,7 +145,9 @@ export async function getProductById(id: string): Promise<ProductRecord | null> 
       const product = await fetchServerJson<unknown>(
         `${getExternalProductsPath()}/${encodeURIComponent(normalizedId)}`
       );
-      return normalizeProduct(product as NormalizableProduct);
+      return ensureRenderableProductAssets(
+        normalizeProduct(product as NormalizableProduct)
+      );
     } catch {
 
     }
@@ -136,9 +155,10 @@ export async function getProductById(id: string): Promise<ProductRecord | null> 
 
   const products = await getAllProducts();
 
-  return (
+  const matchedProduct =
     products.find((product) => {
       return matchesProductRouteSegment(product, normalizedId);
-    }) || null
-  );
+    }) || null;
+
+  return matchedProduct ? ensureRenderableProductAssets(matchedProduct) : null;
 }

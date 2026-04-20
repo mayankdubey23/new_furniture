@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { DataSource } from '@/lib/api/browser';
 import { DATA_SOURCE_VALUES } from '@/lib/api/browser';
+import { getDefaultExternalProductsPath } from '@/lib/api/externalRoutes';
 
 const DEFAULT_MOCK_API_BASE_URL = 'http://localhost:4000';
 
@@ -22,6 +23,10 @@ function readEnv(...names: string[]) {
   }
 
   return '';
+}
+
+function getExternalApiBearerToken() {
+  return readEnv('EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
 }
 
 export function getServerDataSource(): DataSource {
@@ -46,7 +51,10 @@ export function getServerApiBaseUrl(source: DataSource = getServerDataSource()) 
 }
 
 export function getExternalProductsPath() {
-  return readEnv('EXTERNAL_PRODUCTS_PATH', 'NEXT_PUBLIC_EXTERNAL_PRODUCTS_PATH') || '/api/products';
+  return (
+    readEnv('EXTERNAL_PRODUCTS_PATH', 'NEXT_PUBLIC_EXTERNAL_PRODUCTS_PATH') ||
+    getDefaultExternalProductsPath()
+  );
 }
 
 export function getExternalSiteContentPath() {
@@ -72,6 +80,24 @@ export function getServerApiUrl(path: string, source: DataSource = getServerData
   return `${baseUrl}${normalizedPath}`;
 }
 
+export function getServerApiHeaders(
+  source: DataSource = getServerDataSource(),
+  headers?: HeadersInit
+) {
+  const normalizedHeaders = new Headers(headers);
+  normalizedHeaders.set('Accept', normalizedHeaders.get('Accept') || 'application/json');
+
+  if (source === 'external') {
+    const bearerToken = getExternalApiBearerToken();
+
+    if (bearerToken && !normalizedHeaders.has('Authorization')) {
+      normalizedHeaders.set('Authorization', `Bearer ${bearerToken}`);
+    }
+  }
+
+  return normalizedHeaders;
+}
+
 export async function fetchServerJson<T>(
   path: string,
   init?: RequestInit,
@@ -79,10 +105,7 @@ export async function fetchServerJson<T>(
 ) {
   const response = await fetch(getServerApiUrl(path, source), {
     ...init,
-    headers: {
-      Accept: 'application/json',
-      ...init?.headers,
-    },
+    headers: getServerApiHeaders(source, init?.headers),
     cache: init?.cache ?? 'no-store',
   });
 

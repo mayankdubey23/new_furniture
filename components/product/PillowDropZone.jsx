@@ -38,11 +38,16 @@ export default function PillowDropZone({
   const activePillows = useMemo(() => {
     return Array.from({ length: totalPillows }).map((_, index) => {
       const preset = PILLOW_PRESETS[index % PILLOW_PRESETS.length];
+      const normalizedRadius = Number(
+        (preset.radius * (0.85 + seededUnit(index, 1) * 0.3)).toFixed(4)
+      );
+      const diameterStyle = `${(normalizedRadius * 2).toFixed(4)}px`;
 
       return {
         ...preset,
         id: `pillow-instance-${index}`,
-        radius: preset.radius * (0.85 + seededUnit(index, 1) * 0.3),
+        radius: normalizedRadius,
+        diameterStyle,
         svgSrc: getColoredCushionSvgMotif(preset.label),
       };
     });
@@ -180,8 +185,8 @@ export default function PillowDropZone({
             }}
             className="pointer-events-none absolute left-0 top-0 select-none will-change-transform"
             style={{
-              width: pillow.radius * 2,
-              height: pillow.radius * 2,
+              width: pillow.diameterStyle,
+              height: pillow.diameterStyle,
             }}
           >
             <div

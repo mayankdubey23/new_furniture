@@ -4,6 +4,10 @@ import Product from '@/models/Product';
 import { adminMiddleware } from '@/lib/auth';
 import { revalidateCatalogRoutes } from '@/lib/server/catalogRevalidation';
 import {
+  ensureRenderableProductAssetList,
+  ensureRenderableProductAssets,
+} from '@/lib/server/productAssets';
+import {
   DEFAULT_PRODUCTS,
   normalizeProduct,
   prepareProductMutationInput,
@@ -47,12 +51,14 @@ export async function GET(request: NextRequest) {
       .populate('mainCategory')
       .populate('subCategory')
       .populate('brand')
-      .sort({ category: 1, name: 1 })
+      .sort({ createdAt: 1, name: 1 })
       .lean();
 
     if (!products.length) {
       return NextResponse.json(
-        DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category)),
+        await ensureRenderableProductAssetList(
+          DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category))
+        ),
         {
           headers: {
             'Cache-Control': 'no-store',
@@ -61,11 +67,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(products.map((product) => normalizeProduct(product)), {
-      headers: {
-        'Cache-Control': 'no-store',
-      },
-    });
+    return NextResponse.json(
+      await ensureRenderableProductAssetList(
+        products.map((product) => normalizeProduct(product))
+      ),
+      {
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      }
+    );
   } catch {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
@@ -90,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     revalidateCatalogRoutes(normalizedProduct);
 
-    return NextResponse.json(normalizedProduct, {
+    return NextResponse.json(await ensureRenderableProductAssets(normalizedProduct), {
       status: 201,
       headers: {
         'Cache-Control': 'no-store',

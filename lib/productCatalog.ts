@@ -1309,7 +1309,11 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
     throw new Error('Product description is required.');
   }
 
-  const basePrice = Math.max(0, cleanNumber(source.basePrice, cleanNumber(source.price, Number.NaN)));
+  const rawPrice = cleanNumber(source.price, Number.NaN);
+  const basePrice = Math.max(
+    0,
+    cleanNumber(source.basePrice, cleanNumber(source.finalPrice, rawPrice))
+  );
   const finalPrice = Math.max(0, cleanNumber(source.finalPrice, cleanNumber(source.price, basePrice)));
   const discount = Math.max(0, cleanNumber(source.discount, 0));
   const stockQuantity = Math.max(
@@ -1348,11 +1352,13 @@ export function prepareProductMutationInput(value: ProductLike | DefaultProduct)
   }
 
   const views = extractProductViews(source);
+  const fallbackGalleryImage = views.main || cleanString(source.imageUrl);
   const gallery = dedupeStrings([
     ...extractAdditionalGalleryImages(source),
     ...cleanStringArray(source.images),
     ...cleanStringArray(source.pic),
     ...(isRecord(source.media) ? cleanStringArray(source.media.gallery) : []),
+    fallbackGalleryImage,
   ]);
 
   if (!gallery.length) {

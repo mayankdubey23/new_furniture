@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .populate('mainCategory')
       .populate('subCategory')
       .populate('brand')
-      .sort({ createdAt: -1, name: 1 })
+      .sort({ createdAt: 1, name: 1 })
       .lean();
 
     return legacySuccess(items.map((item) => serializeLegacyProduct(item)));

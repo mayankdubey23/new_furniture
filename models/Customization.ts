@@ -35,7 +35,13 @@ export interface ICustomization extends Document {
 
   preferredContactMethod?: string;
   preferredCallTime?: string;
+  deliveryCountry?: string;
+  deliveryState?: string;
   deliveryCity?: string;
+  deliveryPincode?: string;
+  deliveryAddressLine1?: string;
+  deliveryAddressLine2?: string;
+  deliveryAddress?: string;
   expectedTimeline?: string;
 
 
@@ -89,7 +95,18 @@ const CustomizationSchema = new Schema<ICustomization>(
       default: 'email',
     },
     preferredCallTime: String,
+    deliveryCountry: {
+      type: String,
+      default: 'IN',
+      trim: true,
+      uppercase: true,
+    },
+    deliveryState: String,
     deliveryCity: String,
+    deliveryPincode: String,
+    deliveryAddressLine1: String,
+    deliveryAddressLine2: String,
+    deliveryAddress: String,
     expectedTimeline: String,
 
 

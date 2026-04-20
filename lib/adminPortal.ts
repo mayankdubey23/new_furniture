@@ -20,8 +20,18 @@ export function getAdminPortalSlug() {
   return normalizeSegment(process.env.NEXT_PUBLIC_ADMIN_PORTAL_SLUG);
 }
 
-export function getAdminPortalBasePath() {
-  return `/${getAdminPortalSlug()}`;
+export function getAdminPortalBasePath(slug = getAdminPortalSlug()) {
+  return `/${normalizeSegment(slug)}`;
+}
+
+export function getAdminPortalAliasBasePaths() {
+  const activeBasePath = getAdminPortalBasePath();
+  const aliasBasePaths = new Set([
+    activeBasePath,
+    getAdminPortalBasePath(DEFAULT_ADMIN_PORTAL_SLUG),
+  ]);
+
+  return Array.from(aliasBasePaths);
 }
 
 export function getAdminInternalPath(path = '') {
@@ -35,8 +45,8 @@ export function getAdminInternalPath(path = '') {
     : `${INTERNAL_ADMIN_ROOT}/${suffix}`;
 }
 
-export function getAdminPortalPath(path = '') {
-  const basePath = getAdminPortalBasePath();
+export function getAdminPortalPath(path = '', slug = getAdminPortalSlug()) {
+  const basePath = getAdminPortalBasePath(slug);
   const suffix = String(path || '').trim();
 
   if (!suffix || suffix === '/') {
@@ -82,4 +92,3 @@ export function isAdminPortalPath(pathname: string | null | undefined) {
 export function isAdminLoginPath(pathname: string | null | undefined) {
   return getAdminRouteSuffix(pathname) === '/login';
 }
-
