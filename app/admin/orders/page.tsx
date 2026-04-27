@@ -10,6 +10,37 @@ interface OrderItem {
   quantity: number;
 }
 
+type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+type ReturnRefundRequestStatus =
+  | 'requested'
+  | 'approved'
+  | 'rejected'
+  | 'received'
+  | 'refunded'
+  | 'closed';
+
+interface ReturnRefundRequestItem {
+  itemIndex: number;
+  productId?: string;
+  name: string;
+  quantity: number;
+}
+
+interface ReturnRefundRequest {
+  _id: string;
+  requestType: ReturnRefundRequestType;
+  status: ReturnRefundRequestStatus;
+  reason: string;
+  details: string;
+  customerEmail: string;
+  items: ReturnRefundRequestItem[];
+  requestedAt: string;
+  reviewedAt?: string;
+  resolvedAt?: string;
+  refundAmount?: number;
+  adminNotes?: string;
+}
+
 interface Customer {
   name: string;
   email: string;
@@ -45,6 +76,7 @@ interface Order {
   }>;
   customer: Customer;
   notes?: string;
+  returnRefundRequests?: ReturnRefundRequest[];
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -65,10 +97,45 @@ const PAYMENT_LABELS: Record<string, string> = {
   razorpay: 'Razorpay',
 };
 
+const REQUEST_STATUS_COLORS: Record<ReturnRefundRequestStatus, string> = {
+  requested: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  approved: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  received: 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300',
+  refunded: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  closed: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
+};
+
+const REQUEST_STATUS_OPTIONS: ReturnRefundRequestStatus[] = [
+  'requested',
+  'approved',
+  'received',
+  'refunded',
+  'rejected',
+  'closed',
+];
+
+function getRequestTypeLabel(value: ReturnRefundRequestType) {
+  switch (value) {
+    case 'return':
+      return 'Return';
+    case 'refund':
+      return 'Refund';
+    case 'return-refund':
+      return 'Return + Refund';
+    default:
+      return value;
+  }
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [requestEdits, setRequestEdits] = useState<
+    Record<string, { status: ReturnRefundRequestStatus; adminNotes: string; refundAmount: string }>
+  >({});
+  const [savingRequestKey, setSavingRequestKey] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchOrders();
@@ -96,6 +163,55 @@ export default function AdminOrders() {
 
     if (response.ok) {
       void fetchOrders();
+    }
+  };
+
+  const updateRequestEdit = (
+    requestId: string,
+    patch: Partial<{ status: ReturnRefundRequestStatus; adminNotes: string; refundAmount: string }>
+  ) => {
+    setRequestEdits((current) => ({
+      ...current,
+      [requestId]: {
+        status: current[requestId]?.status || 'requested',
+        adminNotes: current[requestId]?.adminNotes || '',
+        refundAmount: current[requestId]?.refundAmount || '',
+        ...patch,
+      },
+    }));
+  };
+
+  const saveReturnRequest = async (orderId: string, request: ReturnRefundRequest) => {
+    const edit = requestEdits[request._id] || {
+      status: request.status,
+      adminNotes: request.adminNotes || '',
+      refundAmount:
+        typeof request.refundAmount === 'number' ? String(request.refundAmount) : '',
+    };
+
+    setSavingRequestKey(request._id);
+    try {
+      const response = await fetch(getApiUrl(`/api/orders/${orderId}/returns`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          requestId: request._id,
+          status: edit.status,
+          adminNotes: edit.adminNotes,
+          refundAmount: edit.refundAmount ? Number(edit.refundAmount) : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update return/refund request.');
+      }
+
+      await fetchOrders();
+    } catch {
+      // Keep the current inline state; the admin can retry immediately.
+    } finally {
+      setSavingRequestKey(null);
     }
   };
 
@@ -273,6 +389,126 @@ export default function AdminOrders() {
                                   <p className="mt-2 text-theme-walnut/72 dark:text-theme-ivory/62">{entry.message}</p>
                                 </div>
                               ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {order.returnRefundRequests?.length ? (
+                        <div className="mt-6">
+                          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-theme-bronze">
+                            Return & Refund Requests
+                          </p>
+                          <div className="space-y-3">
+                            {[...order.returnRefundRequests]
+                              .sort(
+                                (left, right) =>
+                                  new Date(right.requestedAt).getTime() -
+                                  new Date(left.requestedAt).getTime()
+                              )
+                              .map((request) => {
+                                const requestEdit = requestEdits[request._id] || {
+                                  status: request.status,
+                                  adminNotes: request.adminNotes || '',
+                                  refundAmount:
+                                    typeof request.refundAmount === 'number'
+                                      ? String(request.refundAmount)
+                                      : '',
+                                };
+
+                                return (
+                                  <div
+                                    key={request._id}
+                                    className="rounded-xl border border-theme-line/40 bg-white/60 px-3 py-3 text-sm dark:bg-white/5"
+                                  >
+                                    <div className="flex flex-wrap items-start justify-between gap-3">
+                                      <div>
+                                        <p className="text-[0.68rem] font-bold uppercase tracking-[0.24em] text-theme-bronze">
+                                          {getRequestTypeLabel(request.requestType)}
+                                        </p>
+                                        <p className="mt-1 font-semibold text-theme-ink dark:text-theme-ivory">
+                                          {request.reason}
+                                        </p>
+                                      </div>
+                                      <span
+                                        className={`inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${REQUEST_STATUS_COLORS[request.status]}`}
+                                      >
+                                        {request.status}
+                                      </span>
+                                    </div>
+
+                                    <p className="mt-2 text-theme-walnut/72 dark:text-theme-ivory/62">
+                                      {request.details}
+                                    </p>
+                                    <p className="mt-2 text-xs text-theme-walnut/50 dark:text-theme-ivory/45">
+                                      Requested on {new Date(request.requestedAt).toLocaleString('en-IN')} by{' '}
+                                      {request.customerEmail}
+                                    </p>
+
+                                    {request.items?.length ? (
+                                      <div className="mt-3 flex flex-wrap gap-2">
+                                        {request.items.map((item) => (
+                                          <span
+                                            key={`${request._id}-${item.itemIndex}`}
+                                            className="rounded-full border border-theme-line/40 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-theme-walnut/64 dark:text-theme-ivory/58"
+                                          >
+                                            {item.name} x {item.quantity}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : null}
+
+                                    <div className="mt-4 grid gap-3 lg:grid-cols-[180px_1fr_160px_auto]">
+                                      <select
+                                        value={requestEdit.status}
+                                        onChange={(event) =>
+                                          updateRequestEdit(request._id, {
+                                            status: event.target.value as ReturnRefundRequestStatus,
+                                          })
+                                        }
+                                        className="rounded-lg border border-theme-line/60 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-theme-ink outline-none focus:border-theme-bronze dark:bg-theme-ink dark:text-theme-ivory"
+                                      >
+                                        {REQUEST_STATUS_OPTIONS.map((status) => (
+                                          <option key={status} value={status}>
+                                            {status}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <textarea
+                                        rows={3}
+                                        value={requestEdit.adminNotes}
+                                        onChange={(event) =>
+                                          updateRequestEdit(request._id, {
+                                            adminNotes: event.target.value.slice(0, 1200),
+                                          })
+                                        }
+                                        placeholder="Admin notes for the customer or internal team"
+                                        className="rounded-xl border border-theme-line/60 bg-white px-3 py-2 text-sm text-theme-ink outline-none focus:border-theme-bronze dark:bg-theme-ink dark:text-theme-ivory"
+                                      />
+                                      <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={requestEdit.refundAmount}
+                                        onChange={(event) =>
+                                          updateRequestEdit(request._id, {
+                                            refundAmount: event.target.value,
+                                          })
+                                        }
+                                        placeholder="Refund amount"
+                                        className="rounded-lg border border-theme-line/60 bg-white px-3 py-2 text-sm text-theme-ink outline-none focus:border-theme-bronze dark:bg-theme-ink dark:text-theme-ivory"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => void saveReturnRequest(order._id, request)}
+                                        disabled={savingRequestKey === request._id}
+                                        className="rounded-full bg-theme-ink px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-white transition hover:bg-theme-bronze disabled:opacity-50"
+                                      >
+                                        {savingRequestKey === request._id ? 'Saving' : 'Update'}
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                           </div>
                         </div>
                       ) : null}

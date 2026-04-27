@@ -7,21 +7,47 @@ import {
   getCountryOption,
   getIndianCityDirectory,
 } from '@/lib/addressDirectory';
+import { getProductById } from '@/lib/services/storefront';
+import { buildCustomizationQuote } from '@/lib/customizationPricing';
+import { getUserFromCookie } from '@/lib/userAuth';
+import { saveCustomerAddress } from '@/lib/server/customerAddresses';
+import { normalizePhoneNumber } from '@/lib/phoneOtp';
+import User from '@/models/User';
 
 const VALID_CONTACT_METHODS = new Set(['email', 'phone', 'both']);
+const ENGLISH_NAME_PATTERN = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const CUSTOMIZATION_PHONE_PATTERN = /^\d{10}$/;
 
 function cleanString(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function normalizeEnglishName(value: unknown) {
+  return cleanString(value)
+    .replace(/[^A-Za-z\s]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 60);
+}
+
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
+    const signedInUser = await getUserFromCookie();
+
+    if (!signedInUser?.userId) {
+      return NextResponse.json(
+        { error: 'Please sign in before submitting a customization request.' },
+        { status: 401 }
+      );
+    }
 
     const body = await request.json();
-    const customerName = cleanString(body.customerName);
-    const customerEmail = cleanString(body.customerEmail).toLowerCase();
-    const customerPhone = cleanString(body.customerPhone);
+    const customerName = normalizeEnglishName(body.customerName);
+    const customerEmail = cleanString(signedInUser.email).toLowerCase();
+    const customerPhone = cleanString(body.customerPhone).replace(/\D/g, '').slice(0, 10);
+    const normalizedUserPhone = normalizePhoneNumber(customerPhone);
     const productId = cleanString(body.productId);
     const productName = cleanString(body.productName);
     const selectedMaterial = cleanString(body.selectedMaterial);
@@ -62,7 +88,6 @@ export async function POST(request: NextRequest) {
       customColorName && (customColorCode || customColorPickerValue)
     );
 
-
     if (!customerName || !customerEmail || !customerPhone) {
       return NextResponse.json(
         { error: 'Customer name, email, and phone are required' },
@@ -70,9 +95,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!ENGLISH_NAME_PATTERN.test(customerName)) {
+      return NextResponse.json(
+        { error: 'Name must contain English letters only.' },
+        { status: 400 }
+      );
+    }
+
+    if (!EMAIL_PATTERN.test(customerEmail)) {
+      return NextResponse.json(
+        { error: 'Please use a valid signed-in email address.' },
+        { status: 400 }
+      );
+    }
+
+    if (!CUSTOMIZATION_PHONE_PATTERN.test(customerPhone) || !normalizedUserPhone) {
+      return NextResponse.json(
+        { error: 'Please enter a valid 10-digit phone number.' },
+        { status: 400 }
+      );
+    }
+
     if (!productId || !productName) {
       return NextResponse.json(
         { error: 'Please choose the product you want to customize.' },
+        { status: 400 }
+      );
+    }
+
+    const selectedProduct = await getProductById(productId);
+
+    if (!selectedProduct) {
+      return NextResponse.json(
+        { error: 'The selected product could not be found.' },
         { status: 400 }
       );
     }
@@ -128,6 +183,80 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const quote = buildCustomizationQuote({
+      product: selectedProduct,
+      quantity,
+      selectedFeaturedColorName: hasFeaturedColor ? cleanString(selectedFeaturedColor.name) : '',
+      customColorName,
+      selectedMaterial,
+      selectedFinish,
+      selectedAddons,
+      sizeOrConfiguration: cleanString(body.sizeOrConfiguration),
+    });
+
+    const userRecord = await User.findById(signedInUser.userId);
+
+    if (!userRecord) {
+      return NextResponse.json(
+        { error: 'Your account could not be found. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
+    let shouldSaveUser = false;
+
+    if (String(userRecord.name || '').trim() !== customerName) {
+      userRecord.name = customerName;
+      shouldSaveUser = true;
+    }
+
+    if (String(userRecord.email || '').trim().toLowerCase() !== customerEmail) {
+      userRecord.email = customerEmail;
+      shouldSaveUser = true;
+    }
+
+    if (String(userRecord.phone || '').trim() !== normalizedUserPhone) {
+      const existingPhoneOwner = await User.findOne({
+        phone: normalizedUserPhone,
+        _id: { $ne: userRecord._id },
+      })
+        .select('_id')
+        .lean();
+
+      if (existingPhoneOwner) {
+        return NextResponse.json(
+          { error: 'That phone number is already linked to another account.' },
+          { status: 409 }
+        );
+      }
+
+      userRecord.phone = normalizedUserPhone;
+      shouldSaveUser = true;
+    }
+
+    if (userRecord.active === false) {
+      userRecord.active = true;
+      shouldSaveUser = true;
+    }
+
+    if (shouldSaveUser) {
+      await userRecord.save();
+    }
+
+    await saveCustomerAddress(signedInUser.userId, {
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone,
+      country: deliveryCountry,
+      state: deliveryState,
+      city: deliveryCity,
+      pincode: deliveryPincode,
+      addressLine1: deliveryAddressLine1,
+      addressLine2: deliveryAddressLine2,
+      address: deliveryAddress,
+      isDefault: true,
+    });
+
     const customization = new Customization({
       customerName,
       customerEmail,
@@ -155,6 +284,21 @@ export async function POST(request: NextRequest) {
       deliveryAddressLine2,
       deliveryAddress,
       expectedTimeline,
+      quoteCurrency: quote.currency,
+      quotedBaseUnitPrice: quote.baseUnitPrice,
+      quotedUnitPrice: quote.customizedUnitPrice,
+      quotedBaseTotal: quote.baseTotal,
+      quotedAdjustmentsTotal: quote.adjustmentsTotal,
+      quotedGrandTotal: quote.grandTotal,
+      quoteLineItems: quote.lines
+        .filter((line) => line.included)
+        .map((line) => ({
+          id: line.id,
+          label: line.label,
+          description: line.description,
+          unitAmount: line.unitAmount,
+          totalAmount: line.totalAmount,
+        })),
       status: 'pending',
     });
 
@@ -165,6 +309,15 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Your customization request has been submitted successfully. Our team will review your preferences shortly.',
         referenceId: customization._id,
+        quote: {
+          currency: quote.currency,
+          baseUnitPrice: quote.baseUnitPrice,
+          customizedUnitPrice: quote.customizedUnitPrice,
+          baseTotal: quote.baseTotal,
+          adjustmentsTotal: quote.adjustmentsTotal,
+          grandTotal: quote.grandTotal,
+          lines: quote.lines.filter((line) => line.included),
+        },
       },
       { status: 201 }
     );
@@ -186,20 +339,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect();
+    const signedInUser = await getUserFromCookie();
 
-    const email = request.nextUrl.searchParams.get('email');
-
-    if (!email) {
+    if (!signedInUser?.userId) {
       return NextResponse.json(
-        { error: 'Email parameter is required' },
-        { status: 400 }
+        { error: 'Please sign in to view your customization requests.' },
+        { status: 401 }
       );
     }
 
-    const customizations = await Customization.find({ customerEmail: email.toLowerCase() })
+    const userRecord = await User.findById(signedInUser.userId).select('email').lean();
+    const allowedEmails = [
+      cleanString(signedInUser.email).toLowerCase(),
+      cleanString(userRecord?.email).toLowerCase(),
+    ].filter(Boolean);
+    const uniqueEmails = Array.from(new Set(allowedEmails));
+
+    if (!uniqueEmails.length) {
+      return NextResponse.json(
+        { error: 'Your account email could not be resolved. Please sign in again.' },
+        { status: 401 }
+      );
+    }
+
+    const customizations = await Customization.find({
+      customerEmail:
+        uniqueEmails.length === 1
+          ? uniqueEmails[0]
+          : {
+              $in: uniqueEmails,
+            },
+    })
       .sort({ createdAt: -1 })
       .lean();
 

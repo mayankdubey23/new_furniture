@@ -147,18 +147,18 @@ function SectionCard({ section, index, productName, currentColorName }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, amount: 0.18 }}
       transition={{ duration: 0.45, delay: index * 0.05, ease: 'easeOut' }}
-      className="relative overflow-hidden rounded-[1.7rem] border border-theme-line/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(246,237,227,0.55))] p-5 shadow-[0_18px_44px_rgba(49,30,21,0.05)] dark:bg-[linear-gradient(180deg,rgba(48,37,31,0.48),rgba(23,17,14,0.7))] md:p-6"
+      className="relative overflow-hidden rounded-[1.7rem] border border-theme-line/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(246,237,227,0.55))] p-5 shadow-[0_18px_44px_rgba(49,30,21,0.05)] dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(55,42,35,0.78),rgba(20,15,12,0.92))] dark:shadow-[0_20px_52px_rgba(0,0,0,0.28)] md:p-6"
     >
       <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-theme-bronze/10 blur-3xl" />
 
       <div className="relative">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-theme-bronze/20 bg-white/78 text-theme-bronze shadow-[0_10px_24px_rgba(49,30,21,0.06)] dark:bg-white/8">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-theme-bronze/20 bg-white/78 text-theme-bronze shadow-[0_10px_24px_rgba(49,30,21,0.06)] dark:border-theme-bronze/35 dark:bg-theme-bronze/12 dark:text-[#f0b47d]">
               {getSectionIcon(section.title)}
             </div>
             <div>
-              <p className="text-[0.58rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze/82">
+              <p className="text-[0.58rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze/82 dark:text-[#f0b47d]">
                 {String(index + 1).padStart(2, '0')}
               </p>
               <h3 className="mt-1 font-display text-[1.45rem] leading-none text-theme-ink dark:text-theme-ivory md:text-[1.7rem]">
@@ -167,7 +167,7 @@ function SectionCard({ section, index, productName, currentColorName }) {
             </div>
           </div>
 
-          <div className="rounded-full border border-theme-line/60 bg-white/74 px-3 py-1.5 text-[0.56rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:bg-white/6 dark:text-theme-ivory/60">
+          <div className="rounded-full border border-theme-line/60 bg-white/74 px-3 py-1.5 text-[0.56rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:border-white/12 dark:bg-white/8 dark:text-theme-ivory/72">
             {section.items.length} items
           </div>
         </div>
@@ -178,10 +178,10 @@ function SectionCard({ section, index, productName, currentColorName }) {
               key={`${section.title}-${item.label}`}
               className="grid gap-1 py-3.5 md:grid-cols-[minmax(10rem,0.75fr)_1fr] md:gap-5"
             >
-              <dt className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/54 dark:text-theme-ivory/54">
+              <dt className="text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/54 dark:text-theme-ivory/68">
                 {item.label}
               </dt>
-              <dd className="text-sm leading-7 text-theme-ink/82 dark:text-theme-ivory/82 md:text-[0.95rem]">
+              <dd className="text-sm leading-7 text-theme-ink/82 dark:text-theme-ivory/88 md:text-[0.95rem]">
                 {resolveItemValue(item.label, item.value, productName, currentColorName)}
               </dd>
             </div>
@@ -209,7 +209,7 @@ export default function ProductSpecs({
   const totalEntries = sections.reduce((count, section) => count + section.items.length, 0);
 
   return (
-    <section className="relative overflow-hidden rounded-[2.2rem] border border-white/55 bg-[linear-gradient(165deg,rgba(255,255,255,0.48),rgba(246,238,229,0.82))] p-5 shadow-[0_34px_100px_rgba(49,30,21,0.08)] dark:border-white/10 dark:bg-[linear-gradient(165deg,rgba(43,33,28,0.58),rgba(20,15,12,0.84))] md:p-7">
+    <section className="relative overflow-hidden rounded-[2.2rem] border border-white/55 bg-[linear-gradient(165deg,rgba(255,255,255,0.48),rgba(246,238,229,0.82))] p-5 shadow-[0_34px_100px_rgba(49,30,21,0.08)] dark:border-white/12 dark:bg-[linear-gradient(165deg,rgba(43,33,28,0.82),rgba(15,11,9,0.96))] dark:shadow-[0_34px_100px_rgba(0,0,0,0.34)] md:p-7">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.12),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(214,194,170,0.16),transparent_24%)]" />
 
       <div className="relative z-10">
@@ -246,11 +246,11 @@ export default function ProductSpecs({
               </p>
             </div>
             {normalizeText(currentColorName) ? (
-              <div className="rounded-[1.25rem] border border-theme-bronze/18 bg-theme-bronze/8 px-4 py-3 shadow-[0_10px_28px_rgba(49,30,21,0.04)]">
-                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze/72">
+              <div className="rounded-[1.25rem] border border-theme-bronze/18 bg-theme-bronze/8 px-4 py-3 shadow-[0_10px_28px_rgba(49,30,21,0.04)] dark:border-theme-bronze/30 dark:bg-theme-bronze/12">
+                <p className="text-[0.56rem] font-semibold uppercase tracking-[0.3em] text-theme-bronze/72 dark:text-[#f0b47d]">
                   Finish
                 </p>
-                <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-theme-ink">
+                <p className="mt-1 text-sm font-semibold uppercase tracking-[0.18em] text-theme-ink dark:text-theme-ivory">
                   {currentColorName}
                 </p>
               </div>

@@ -9,18 +9,53 @@ import {
 } from '@/lib/phoneOtp';
 import { createUserToken, setUserSession } from '@/lib/userAuth';
 
+const ENGLISH_NAME_PATTERN = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function cleanString(value: unknown) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function normalizeEnglishName(value: unknown) {
+  return cleanString(value)
+    .replace(/[^A-Za-z\s]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .slice(0, 60);
+}
+
+function normalizeEmail(value: unknown) {
+  return cleanString(value).replace(/\s+/g, '').toLowerCase().slice(0, 120);
+}
+
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const { name, email, password, phone, otpCode, userName, username } = await request.json();
     const phoneOtpEnabled = isPhoneOtpConfigured();
+    const normalizedName = normalizeEnglishName(name);
+    const normalizedEmail = normalizeEmail(email);
     const normalizedUsername = String(username || userName || '')
       .trim()
       .toLowerCase();
 
-    if (!name?.trim() || !email?.trim() || !password) {
+    if (!normalizedName || !normalizedEmail || !password) {
       return NextResponse.json(
         { error: 'Name, email, and password are required' },
+        { status: 400 }
+      );
+    }
+
+    if (!ENGLISH_NAME_PATTERN.test(normalizedName)) {
+      return NextResponse.json(
+        { error: 'Name must contain English letters only.' },
+        { status: 400 }
+      );
+    }
+
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address.' },
         { status: 400 }
       );
     }
@@ -75,20 +110,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const existing = await User.findOne({ email: email.trim().toLowerCase() });
-    if (existing) {
+    const existing = await User.findOne({ email: normalizedEmail });
+    const existingUserId = existing?._id ? String(existing._id) : null;
+
+    if (existing?.password) {
       return NextResponse.json(
-        {
-          error: existing.googleId
-            ? 'An account with this email already exists. Please continue with Google.'
-            : 'An account with this email already exists',
-        },
+        { error: 'An account with this email already exists.' },
+        { status: 409 }
+      );
+    }
+
+    if (existing?.googleId) {
+      return NextResponse.json(
+        { error: 'An account with this email already exists. Please continue with Google.' },
         { status: 409 }
       );
     }
 
     if (normalizedPhone) {
-      const existingPhoneUser = await User.findOne({ phone: normalizedPhone });
+      const existingPhoneUser = await User.findOne({
+        phone: normalizedPhone,
+        ...(existingUserId ? { _id: { $ne: existingUserId } } : {}),
+      });
       if (existingPhoneUser) {
         return NextResponse.json(
           { error: 'An account with this contact number already exists.' },
@@ -98,7 +141,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (normalizedUsername) {
-      const existingUsernameUser = await User.findOne({ username: normalizedUsername });
+      const existingUsernameUser = await User.findOne({
+        username: normalizedUsername,
+        ...(existingUserId ? { _id: { $ne: existingUserId } } : {}),
+      });
       if (existingUsernameUser) {
         return NextResponse.json(
           { error: 'An account with this username already exists.' },
@@ -111,14 +157,38 @@ export async function POST(request: NextRequest) {
       await verifyPhoneOtp(normalizedPhone, normalizedOtpCode);
     }
 
-    const user = await User.create({
-      name: name.trim(),
-      username: normalizedUsername || undefined,
-      email: email.trim().toLowerCase(),
-      phone: normalizedPhone || undefined,
-      phoneVerifiedAt: phoneOtpEnabled && normalizedPhone ? new Date() : null,
-      password,
-    });
+    let user;
+
+    if (existing) {
+      const phoneChanged = normalizedPhone && existing.phone !== normalizedPhone;
+
+      existing.name = normalizedName;
+      existing.email = normalizedEmail;
+      existing.username = normalizedUsername || existing.username || undefined;
+      existing.password = password;
+      existing.active = true;
+
+      if (normalizedPhone) {
+        existing.phone = normalizedPhone;
+      }
+
+      if (phoneOtpEnabled && normalizedPhone) {
+        existing.phoneVerifiedAt = new Date();
+      } else if (phoneChanged) {
+        existing.phoneVerifiedAt = null;
+      }
+
+      user = await existing.save();
+    } else {
+      user = await User.create({
+        name: normalizedName,
+        username: normalizedUsername || undefined,
+        email: normalizedEmail,
+        phone: normalizedPhone || undefined,
+        phoneVerifiedAt: phoneOtpEnabled && normalizedPhone ? new Date() : null,
+        password,
+      });
+    }
 
     const token = createUserToken(user._id.toString(), user.name, user.email);
 
@@ -126,8 +196,8 @@ export async function POST(request: NextRequest) {
     setUserSession(cookieStore, token);
 
     return NextResponse.json(
-      { success: true, name: user.name, email: user.email },
-      { status: 201 }
+      { success: true, name: user.name, email: user.email, completedAccount: Boolean(existing) },
+      { status: existing ? 200 : 201 }
     );
   } catch (err) {
     if (

@@ -24,12 +24,41 @@ export interface ICustomerInfo {
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
 export type PaymentMethod = 'cod' | 'razorpay';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
+export type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+export type ReturnRefundRequestStatus =
+  | 'requested'
+  | 'approved'
+  | 'rejected'
+  | 'received'
+  | 'refunded'
+  | 'closed';
 
 export interface IOrderStatusTimelineEntry {
   status: OrderStatus;
   title: string;
   message: string;
   createdAt: Date;
+}
+
+export interface IReturnRefundRequestItem {
+  itemIndex: number;
+  productId?: string;
+  name: string;
+  quantity: number;
+}
+
+export interface IReturnRefundRequest {
+  requestType: ReturnRefundRequestType;
+  status: ReturnRefundRequestStatus;
+  reason: string;
+  details: string;
+  customerEmail: string;
+  items: IReturnRefundRequestItem[];
+  requestedAt: Date;
+  reviewedAt?: Date;
+  resolvedAt?: Date;
+  refundAmount?: number;
+  adminNotes?: string;
 }
 
 export interface IOrder {
@@ -50,6 +79,7 @@ export interface IOrder {
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
   paidAt?: Date;
+  returnRefundRequests?: IReturnRefundRequest[];
   createdAt?: Date;
 }
 
@@ -86,6 +116,45 @@ const OrderStatusTimelineSchema = new Schema(
     createdAt: { type: Date, default: Date.now, required: true },
   },
   { _id: false }
+);
+
+const ReturnRefundRequestItemSchema = new Schema(
+  {
+    itemIndex: { type: Number, required: true, min: 0 },
+    productId: { type: String, trim: true },
+    name: { type: String, required: true, trim: true },
+    quantity: { type: Number, required: true, min: 1 },
+  },
+  { _id: false }
+);
+
+const ReturnRefundRequestSchema = new Schema(
+  {
+    requestType: {
+      type: String,
+      enum: ['return', 'refund', 'return-refund'],
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ['requested', 'approved', 'rejected', 'received', 'refunded', 'closed'],
+      default: 'requested',
+      required: true,
+    },
+    reason: { type: String, required: true, trim: true },
+    details: { type: String, required: true, trim: true },
+    customerEmail: { type: String, required: true, trim: true, lowercase: true },
+    items: {
+      type: [ReturnRefundRequestItemSchema],
+      default: [],
+    },
+    requestedAt: { type: Date, default: Date.now, required: true },
+    reviewedAt: Date,
+    resolvedAt: Date,
+    refundAmount: Number,
+    adminNotes: { type: String, trim: true },
+  },
+  { _id: true }
 );
 
 const OrderSchema = new Schema<IOrder>(
@@ -131,6 +200,10 @@ const OrderSchema = new Schema<IOrder>(
     gatewayOrderId: String,
     gatewayPaymentId: String,
     paidAt: Date,
+    returnRefundRequests: {
+      type: [ReturnRefundRequestSchema],
+      default: [],
+    },
     customer: { type: CustomerInfoSchema, required: true },
     notes: String,
   },

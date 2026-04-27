@@ -13,6 +13,8 @@ export default function MaintenanceGate() {
   const pathname = usePathname();
   const router = useRouter();
   const pathnameRef = useRef(pathname);
+  const inFlightRef = useRef(false);
+  const lastRequestAtRef = useRef(0);
 
   useEffect(() => {
     pathnameRef.current = pathname;
@@ -21,11 +23,27 @@ export default function MaintenanceGate() {
   useEffect(() => {
     let cancelled = false;
 
-    const run = async (shouldRefresh = false) => {
+    const run = async ({ shouldRefresh = false, force = false } = {}) => {
       const currentPathname = pathnameRef.current;
       const isAllowedRoute =
         currentPathname === '/maintenance' ||
         isAdminPortalPath(currentPathname);
+      const now = Date.now();
+
+      if (cancelled) {
+        return;
+      }
+
+      if (inFlightRef.current) {
+        return;
+      }
+
+      if (!force && now - lastRequestAtRef.current < 1200) {
+        return;
+      }
+
+      inFlightRef.current = true;
+      lastRequestAtRef.current = now;
 
       try {
         const response = await fetch(getApiUrl('/api/admin/settings'), { cache: 'no-store' });
@@ -48,20 +66,18 @@ export default function MaintenanceGate() {
           router.refresh();
         }
       } catch {
-
+      } finally {
+        inFlightRef.current = false;
       }
     };
 
-    void run();
-    const intervalId = window.setInterval(() => {
-      void run();
-    }, 3000);
+    void run({ force: true });
     const handleFocus = () => {
-      void run(true);
+      void run();
     };
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        void run(true);
+        void run();
       }
     };
 
@@ -70,7 +86,7 @@ export default function MaintenanceGate() {
         return;
       }
 
-      void run(true);
+      void run({ shouldRefresh: true });
     };
 
     window.addEventListener('storage', handleStorage);
@@ -81,19 +97,18 @@ export default function MaintenanceGate() {
     if (typeof window.BroadcastChannel === 'function') {
       channel = new window.BroadcastChannel(STOREFRONT_SYNC_CHANNEL);
       channel.onmessage = () => {
-        void run(true);
+        void run({ shouldRefresh: true });
       };
     }
 
     return () => {
       cancelled = true;
-      window.clearInterval(intervalId);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       channel?.close();
     };
-  }, [router]);
+  }, [pathname, router]);
 
   return null;
 }

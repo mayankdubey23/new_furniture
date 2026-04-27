@@ -132,7 +132,10 @@ export default function AdminLogin() {
     resetMessages();
 
     if (!status?.hasPassword) {
-      setError('No admin password is active yet. Create one first using email or contact number recovery.');
+      setError(
+        status?.guidance ||
+          'No admin password is active yet. Create one first using email or contact number recovery.'
+      );
       return;
     }
 

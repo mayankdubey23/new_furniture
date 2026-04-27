@@ -5,6 +5,7 @@ import Link from 'next/link';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Download } from 'lucide-react';
 import { getApiUrl } from '@/lib/api/browser';
 import {
   COUNTRY_OPTIONS,
@@ -15,6 +16,10 @@ import {
   getIndianCityDirectory,
   getIndianStateDirectory,
 } from '@/lib/addressDirectory';
+import {
+  buildCustomizationQuote,
+  getCustomizationOptionProfile,
+} from '@/lib/customizationPricing';
 
 
 const FEATURED_COLORS = [
@@ -40,6 +45,13 @@ const FINISHES = [
   'Matte Black',
   'Brushed Brass',
   'Polished Nickel',
+];
+
+const DEFAULT_ADDONS = [
+  'Premium Cushion Fill',
+  'Accent Stitching',
+  'Extended Depth',
+  'Swivel Base',
 ];
 
 const SOFA_CONFIGURATIONS = [
@@ -123,6 +135,10 @@ const SOFA_CONFIGURATIONS = [
 const DEFAULT_CUSTOM_COLOR_PICKER = '#A8D8D8';
 const SELECT_FIELD_STYLE = { colorScheme: 'light' };
 const SELECT_OPTION_STYLE = { color: '#2f2118', backgroundColor: '#f7efe4' };
+const PRIMARY_ACTION_BUTTON_CLASS =
+  'inline-flex min-h-[3.2rem] items-center justify-center gap-2 rounded-full bg-theme-bronze px-8 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-white shadow-[0_16px_34px_rgba(165,106,63,0.24)] transition-all hover:-translate-y-0.5 hover:bg-theme-bronze/90 disabled:cursor-not-allowed disabled:opacity-55';
+const SECONDARY_ACTION_BUTTON_CLASS =
+  'inline-flex min-h-[3.2rem] items-center justify-center gap-2 rounded-full border border-theme-bronze/45 bg-theme-bronze/12 px-8 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-theme-ink shadow-[0_14px_30px_rgba(49,30,21,0.08)] transition-all hover:-translate-y-0.5 hover:border-theme-bronze hover:bg-theme-bronze/18 disabled:cursor-not-allowed disabled:opacity-55';
 
 function cleanString(value) {
   return String(value || '').trim();
@@ -132,26 +148,62 @@ function isEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanString(value));
 }
 
-function formatCurrency(value) {
-  return `Rs. ${Number(value || 0).toLocaleString('en-IN')}`;
+function isEnglishName(value) {
+  return /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/.test(cleanString(value));
 }
 
-/**
- * @param {{ products?: import('@/lib/productCatalog').ProductRecord[] }} props
- */
-export default function LuxeCustomizationStudio({ products = [] }) {
-  const containerRef = useRef();
-  const formRef = useRef();
-  const progressRef = useRef([]);
+function isValidCustomizationPhone(value) {
+  return /^\d{10}$/.test(cleanString(value));
+}
 
+function sanitizeEnglishNameInput(value) {
+  return String(value || '')
+    .replace(/[^A-Za-z\s]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s+/g, '')
+    .slice(0, 60);
+}
 
-  const [customerInfo, setCustomerInfo] = useState({
-    name: '',
-    email: '',
-    phone: '',
-  });
+function sanitizeEmailInput(value) {
+  return String(value || '').replace(/\s+/g, '').toLowerCase().slice(0, 120);
+}
 
-  const [customization, setCustomization] = useState({
+function sanitizePhoneInput(value) {
+  return String(value || '').replace(/\D/g, '').slice(0, 10);
+}
+
+function formatStoredPhoneForInput(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits.slice(2);
+  }
+
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return digits.slice(1);
+  }
+
+  return digits.slice(0, 10);
+}
+
+function getDefaultSavedAddress(savedAddresses = []) {
+  if (!Array.isArray(savedAddresses) || !savedAddresses.length) {
+    return null;
+  }
+
+  return savedAddresses.find((address) => address?.isDefault) || savedAddresses[0] || null;
+}
+
+function buildInitialCustomerInfo(signedInUser, savedAddress) {
+  return {
+    name: sanitizeEnglishNameInput(savedAddress?.name || signedInUser?.name || ''),
+    email: sanitizeEmailInput(signedInUser?.email || savedAddress?.email || ''),
+    phone: sanitizePhoneInput(savedAddress?.phone || formatStoredPhoneForInput(signedInUser?.phone)),
+  };
+}
+
+function buildInitialCustomizationState(savedAddress) {
+  return {
     product: {
       id: '',
       name: '',
@@ -174,21 +226,180 @@ export default function LuxeCustomizationStudio({ products = [] }) {
     delivery: {
       contact: 'email',
       callTime: '',
-      country: DEFAULT_COUNTRY_CODE,
-      state: '',
-      city: '',
-      pincode: '',
-      addressLine1: '',
-      addressLine2: '',
+      country: cleanString(savedAddress?.country).toUpperCase() || DEFAULT_COUNTRY_CODE,
+      state: cleanString(savedAddress?.state),
+      city: cleanString(savedAddress?.city),
+      pincode: cleanString(savedAddress?.pincode).replace(/\D/g, '').slice(0, 6),
+      addressLine1: cleanString(savedAddress?.addressLine1),
+      addressLine2: cleanString(savedAddress?.addressLine2),
       timeline: '',
     },
-  });
+  };
+}
+
+function formatCurrency(value) {
+  return `Rs. ${Number(value || 0).toLocaleString('en-IN')}`;
+}
+
+function formatSignedCurrency(value) {
+  const amount = Number(value || 0);
+  return `${amount >= 0 ? '+' : '-'} ${formatCurrency(Math.abs(amount))}`;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeFilename(value) {
+  return cleanString(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'customization-invoice';
+}
+
+function buildInvoiceMarkup({
+  customerInfo,
+  customization,
+  deliveryAddressPreview,
+  quote,
+  referenceId,
+}) {
+  const lines = quote.lines.filter((line) => line.included);
+  const selectedColor =
+    customization.color.featured?.name || customization.color.custom.name || quote.defaults.color || 'Not selected';
+  const addons = customization.addons?.length ? customization.addons.join(', ') : 'None';
+  const invoiceTitle = referenceId
+    ? `Customization Invoice - ${referenceId}`
+    : 'Customization Invoice Preview';
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(invoiceTitle)}</title>
+    <style>
+      body { font-family: Georgia, serif; margin: 0; background: #f6efe6; color: #2b2018; }
+      .page { max-width: 920px; margin: 0 auto; padding: 40px 24px 56px; }
+      .card { background: rgba(255, 250, 245, 0.98); border: 1px solid rgba(137, 88, 54, 0.18); border-radius: 28px; padding: 32px; box-shadow: 0 24px 70px rgba(49, 30, 21, 0.08); }
+      .eyebrow { font-size: 11px; letter-spacing: 0.34em; text-transform: uppercase; color: #a56a3f; margin: 0 0 12px; font-family: Arial, sans-serif; font-weight: 700; }
+      h1 { margin: 0; font-size: 38px; }
+      h2 { margin: 0 0 14px; font-size: 20px; }
+      p { margin: 0; line-height: 1.7; }
+      .grid { display: grid; gap: 18px; }
+      .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .section { margin-top: 28px; }
+      .panel { border: 1px solid rgba(137, 88, 54, 0.14); border-radius: 20px; padding: 20px; background: rgba(255,255,255,0.65); }
+      .row { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(137, 88, 54, 0.12); font-family: Arial, sans-serif; }
+      .row:last-child { border-bottom: 0; }
+      .muted { color: #6b5242; font-size: 13px; font-family: Arial, sans-serif; }
+      .value { font-family: Arial, sans-serif; font-weight: 700; }
+      .total { margin-top: 16px; padding-top: 16px; border-top: 2px solid rgba(137, 88, 54, 0.2); display: flex; justify-content: space-between; font-size: 22px; font-family: Arial, sans-serif; font-weight: 700; }
+      @media (max-width: 720px) {
+        .grid.two { grid-template-columns: 1fr; }
+        .row { flex-direction: column; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="card">
+        <p class="eyebrow">Furniture Lele Custom Studio</p>
+        <h1>${escapeHtml(invoiceTitle)}</h1>
+        <p class="muted" style="margin-top: 12px;">
+          ${referenceId ? `Reference ID: ${escapeHtml(referenceId)}` : 'Draft quote generated before submission'} 
+        </p>
+
+        <div class="section grid two">
+          <div class="panel">
+            <h2>Customer</h2>
+            <p><strong>Name:</strong> ${escapeHtml(customerInfo.name || 'Not provided')}</p>
+            <p><strong>Email:</strong> ${escapeHtml(customerInfo.email || 'Not provided')}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(customerInfo.phone || 'Not provided')}</p>
+          </div>
+          <div class="panel">
+            <h2>Delivery</h2>
+            <p><strong>Address:</strong> ${escapeHtml(deliveryAddressPreview || 'Not provided')}</p>
+            <p><strong>Timeline:</strong> ${escapeHtml(customization.delivery.timeline || 'Not provided')}</p>
+            <p><strong>Contact:</strong> ${escapeHtml(customization.delivery.contact || 'email')}</p>
+          </div>
+        </div>
+
+        <div class="section grid two">
+          <div class="panel">
+            <h2>Customization Summary</h2>
+            <p><strong>Product:</strong> ${escapeHtml(customization.product.name || 'Not selected')}</p>
+            <p><strong>Quantity:</strong> ${escapeHtml(String(customization.product.quantity || 1))}</p>
+            <p><strong>Configuration:</strong> ${escapeHtml(quote.selections.configuration || 'Standard')}</p>
+            <p><strong>Color:</strong> ${escapeHtml(selectedColor)}</p>
+            <p><strong>Material:</strong> ${escapeHtml(quote.selections.material || 'Standard')}</p>
+            <p><strong>Finish:</strong> ${escapeHtml(quote.selections.finish || 'Standard')}</p>
+            <p><strong>Add-ons:</strong> ${escapeHtml(addons)}</p>
+          </div>
+          <div class="panel">
+            <h2>Price Summary</h2>
+            ${lines
+              .map(
+                (line) => `
+                  <div class="row">
+                    <div>
+                      <div class="value">${escapeHtml(line.label)}</div>
+                      <div class="muted">${escapeHtml(line.description || '')}</div>
+                    </div>
+                    <div class="value">${escapeHtml(formatCurrency(line.totalAmount))}</div>
+                  </div>
+                `
+              )
+              .join('')}
+            <div class="total">
+              <span>Grand Total</span>
+              <span>${escapeHtml(formatCurrency(quote.grandTotal))}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>`;
+}
+
+/**
+ * @param {{
+ *   products?: import('@/lib/productCatalog').ProductRecord[],
+ *   signedInUser?: { id?: string, name?: string, email?: string, phone?: string } | null,
+ *   savedAddresses?: import('@/lib/commerce').SavedCustomerAddress[],
+ * }} props
+ */
+export default function LuxeCustomizationStudio({
+  products = [],
+  signedInUser = null,
+  savedAddresses = [],
+}) {
+  const containerRef = useRef();
+  const formRef = useRef();
+  const progressRef = useRef([]);
+  const defaultSavedAddress = getDefaultSavedAddress(savedAddresses);
+  const hasSavedDefaultAddress = Boolean(defaultSavedAddress);
+
+
+  const [customerInfo, setCustomerInfo] = useState(() =>
+    buildInitialCustomerInfo(signedInUser, defaultSavedAddress)
+  );
+
+  const [customization, setCustomization] = useState(() =>
+    buildInitialCustomizationState(defaultSavedAddress)
+  );
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
   const [referenceId, setReferenceId] = useState('');
+  const [submittedQuote, setSubmittedQuote] = useState(null);
   const [showCustomColor, setShowCustomColor] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState([]);
   const [hoveredSofaConfiguration, setHoveredSofaConfiguration] = useState(
@@ -208,6 +419,19 @@ export default function LuxeCustomizationStudio({ products = [] }) {
       (product) =>
         String(product.id || product._id) === cleanString(customization.product.id)
     ) || null;
+  const customizationProfile = useMemo(
+    () => getCustomizationOptionProfile(selectedProduct),
+    [selectedProduct]
+  );
+  const materialOptions = customizationProfile.materials.length
+    ? customizationProfile.materials
+    : MATERIALS;
+  const finishOptions = customizationProfile.finishes.length
+    ? customizationProfile.finishes
+    : FINISHES;
+  const addonOptions = customizationProfile.addons.length
+    ? customizationProfile.addons
+    : DEFAULT_ADDONS;
   const featuredColorOptions = useMemo(() => {
     if (selectedProduct?.colors?.length) {
       return selectedProduct.colors.map((color, index) => ({
@@ -222,9 +446,9 @@ export default function LuxeCustomizationStudio({ products = [] }) {
   const hasSelectedProduct =
     Boolean(cleanString(customization.product.id)) &&
     Boolean(cleanString(customization.product.name));
-  const hasCustomerName = Boolean(cleanString(customerInfo.name));
+  const hasCustomerName = isEnglishName(customerInfo.name);
   const hasCustomerEmail = isEmail(customerInfo.email);
-  const hasCustomerPhone = Boolean(cleanString(customerInfo.phone));
+  const hasCustomerPhone = isValidCustomizationPhone(customerInfo.phone);
   const hasCustomColor =
     Boolean(cleanString(customization.color.custom.name)) &&
     Boolean(
@@ -291,6 +515,31 @@ export default function LuxeCustomizationStudio({ products = [] }) {
         configuration.value === cleanString(hoveredSofaConfiguration)
     ) ||
     SOFA_CONFIGURATIONS[0];
+  const liveQuote = useMemo(
+    () =>
+      buildCustomizationQuote({
+        product: selectedProduct,
+        quantity: customization.product.quantity,
+        selectedFeaturedColorName: customization.color.featured?.name,
+        customColorName: customization.color.custom.name,
+        selectedMaterial: customization.material,
+        selectedFinish: customization.finish,
+        selectedAddons: selectedAddons,
+        sizeOrConfiguration: customization.sizeOrConfiguration,
+      }),
+    [
+      customization.color.custom.name,
+      customization.color.featured?.name,
+      customization.finish,
+      customization.product.quantity,
+      customization.sizeOrConfiguration,
+      customization.material,
+      selectedAddons,
+      selectedProduct,
+    ]
+  );
+  const activeQuote = submitted && submittedQuote ? submittedQuote : liveQuote;
+  const visibleQuoteLines = liveQuote.lines.filter((line) => line.included);
   const stepCompletion = {
     1: hasStepOneDetails && hasSofaConfiguration,
     2: hasFeaturedColor || hasCustomColor,
@@ -316,7 +565,16 @@ export default function LuxeCustomizationStudio({ products = [] }) {
   );
 
   const handleCustomerInfoChange = (field, value) => {
-    setCustomerInfo((prev) => ({ ...prev, [field]: value }));
+    const nextValue =
+      field === 'name'
+        ? sanitizeEnglishNameInput(value)
+        : field === 'email'
+          ? sanitizeEmailInput(value)
+          : field === 'phone'
+            ? sanitizePhoneInput(value)
+            : value;
+
+    setCustomerInfo((prev) => ({ ...prev, [field]: nextValue }));
   };
 
   const handleDeliveryFieldChange = (field, value) => {
@@ -373,6 +631,8 @@ export default function LuxeCustomizationStudio({ products = [] }) {
       ? product.colors.map((color) => color.name)
       : FEATURED_COLORS.map((color) => color.name);
     const nextIsSofa = cleanString(product.category).toLowerCase() === 'sofa';
+    const nextProfile = getCustomizationOptionProfile(product);
+    const nextAddons = selectedAddons.filter((addon) => nextProfile.addons.includes(addon));
 
     setCustomization((prev) => ({
       ...prev,
@@ -393,8 +653,12 @@ export default function LuxeCustomizationStudio({ products = [] }) {
               featured: null,
             }
           : prev.color,
+      material: nextProfile.materials.includes(prev.material) ? prev.material : '',
+      finish: nextProfile.finishes.includes(prev.finish) ? prev.finish : '',
+      addons: nextAddons,
       sizeOrConfiguration: nextIsSofa ? prev.sizeOrConfiguration : '',
     }));
+    setSelectedAddons(nextAddons);
   };
 
   const handleColorSelect = (color) => {
@@ -534,6 +798,15 @@ export default function LuxeCustomizationStudio({ products = [] }) {
 
       const data = await response.json();
       setReferenceId(data.referenceId);
+      setSubmittedQuote(
+        data.quote
+          ? {
+              ...liveQuote,
+              ...data.quote,
+              lines: data.quote.lines || liveQuote.lines,
+            }
+          : liveQuote
+      );
       setSubmitted(true);
     } catch (error) {
       console.error('Submission error:', error);
@@ -547,11 +820,37 @@ export default function LuxeCustomizationStudio({ products = [] }) {
     }
   };
 
+  const handleDownloadInvoice = (quoteToDownload = liveQuote, downloadReferenceId = referenceId) => {
+    if (!hasSelectedProduct) {
+      return;
+    }
+
+    const markup = buildInvoiceMarkup({
+      customerInfo,
+      customization,
+      deliveryAddressPreview,
+      quote: quoteToDownload,
+      referenceId: downloadReferenceId,
+    });
+    const blob = new Blob([markup], { type: 'text/html;charset=utf-8' });
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const productSlug = sanitizeFilename(customization.product.name || 'customization');
+    const suffix = downloadReferenceId ? `-${downloadReferenceId}` : '-draft';
+
+    link.href = objectUrl;
+    link.download = `${productSlug}-invoice${suffix}.html`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
 
   if (submitted) {
     return (
-      <main className="relative min-h-screen overflow-hidden px-4 pb-20 pt-28 sm:px-6 md:px-10 lg:px-20">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_30%),linear-gradient(115deg,rgba(18,14,11,0.95)_10%,rgba(48,32,23,0.6)_50%,rgba(18,14,11,0.95)_100%)]" />
+      <main className="customization-studio relative min-h-screen overflow-hidden px-4 pb-20 pt-28 sm:px-6 md:px-10 lg:px-20">
+        <div className="studio-backdrop pointer-events-none absolute inset-x-0 top-0 h-[40rem]" />
 
         <div className="relative mx-auto max-w-2xl">
           <motion.div
@@ -590,6 +889,18 @@ export default function LuxeCustomizationStudio({ products = [] }) {
               Our team will review your preferences shortly and contact you soon.
             </p>
 
+            <div className="mb-8 rounded-lg border border-theme-bronze/20 bg-white/5 px-6 py-5">
+              <p className="text-xs uppercase tracking-widest text-theme-bronze mb-2">
+                Submitted Estimate
+              </p>
+              <p className="font-display text-3xl text-theme-ivory">
+                {formatCurrency(activeQuote.grandTotal)}
+              </p>
+              <p className="mt-2 text-sm text-theme-ivory/60">
+                Difference from the ready product: {formatSignedCurrency(activeQuote.adjustmentsTotal)}
+              </p>
+            </div>
+
 
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -623,6 +934,15 @@ export default function LuxeCustomizationStudio({ products = [] }) {
               Check your email for a detailed confirmation of your customization preferences.
             </p>
 
+            <button
+              type="button"
+              onClick={() => handleDownloadInvoice(activeQuote, referenceId)}
+              className={`${SECONDARY_ACTION_BUTTON_CLASS} mb-3 w-full sm:w-auto`}
+            >
+              <Download className="h-4 w-4" />
+              Download Invoice
+            </button>
+
             <Link
               href="/"
               className="inline-block w-full rounded-full bg-theme-bronze px-8 py-4 text-sm font-semibold uppercase tracking-widest text-white transition-all hover:bg-theme-bronze/90 sm:w-auto"
@@ -636,11 +956,11 @@ export default function LuxeCustomizationStudio({ products = [] }) {
   }
 
   return (
-    <main ref={containerRef} className="relative min-h-screen overflow-hidden px-4 pb-20 pt-24 sm:px-6 md:px-10 md:pt-28 lg:px-20">
+    <main ref={containerRef} className="customization-studio relative min-h-screen overflow-hidden px-4 pb-20 pt-24 sm:px-6 md:px-10 md:pt-28 lg:px-20">
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-[40rem] bg-[radial-gradient(circle_at_top_left,rgba(165,106,63,0.15),transparent_30%),linear-gradient(115deg,rgba(18,14,11,0.95)_10%,rgba(48,32,23,0.6)_50%,rgba(18,14,11,0.95)_100%)]" />
-      <div className="pointer-events-none absolute left-[-8rem] top-[10rem] h-[30rem] w-[30rem] rounded-full bg-theme-bronze/10 blur-[150px]" />
-      <div className="pointer-events-none absolute right-[-4rem] top-[20rem] h-[25rem] w-[25rem] rounded-full bg-theme-olive/10 blur-[150px]" />
+      <div className="studio-backdrop pointer-events-none absolute inset-x-0 top-0 h-[40rem]" />
+      <div className="studio-ambient-bronze pointer-events-none absolute left-[-8rem] top-[10rem] h-[30rem] w-[30rem] rounded-full blur-[150px]" />
+      <div className="studio-ambient-olive pointer-events-none absolute right-[-4rem] top-[20rem] h-[25rem] w-[25rem] rounded-full blur-[150px]" />
 
       <div className="relative z-10 mx-auto max-w-4xl">
 
@@ -825,7 +1145,11 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                 <div className="grid gap-6 md:grid-cols-2">
                   <input
                     type="text"
-                    placeholder="Full Name"
+                    inputMode="text"
+                    autoComplete="name"
+                    maxLength={60}
+                    pattern="[A-Za-z]+(?:\\s+[A-Za-z]+)*"
+                    placeholder="English letters only"
                     value={customerInfo.name}
                     onChange={(e) =>
                       handleCustomerInfoChange('name', e.target.value)
@@ -835,17 +1159,25 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                   />
                   <input
                     type="email"
-                    placeholder="Email Address"
+                    autoComplete="email"
+                    inputMode="email"
+                    placeholder="name@example.com"
                     value={customerInfo.email}
                     onChange={(e) =>
                       handleCustomerInfoChange('email', e.target.value)
                     }
+                    readOnly
+                    title="Your signed-in email is used for customization requests."
                     required
-                    className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none"
+                    className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none read-only:cursor-not-allowed read-only:opacity-80"
                   />
                   <input
                     type="tel"
-                    placeholder="Phone Number"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    maxLength={10}
+                    pattern="[0-9]{10}"
+                    placeholder="10-digit phone number"
                     value={customerInfo.phone}
                     onChange={(e) =>
                       handleCustomerInfoChange('phone', e.target.value)
@@ -853,6 +1185,20 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                     required
                     className="rounded-lg border border-theme-bronze/20 bg-white/5 px-4 py-3 text-theme-ivory placeholder-theme-ivory/40 backdrop-blur-sm focus:border-theme-bronze/60 focus:outline-none md:col-span-2"
                   />
+                </div>
+
+                <div className="mt-4 rounded-[1.2rem] border border-theme-bronze/15 bg-theme-bronze/10 px-4 py-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                    Signed-In Customization
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-theme-ivory/62">
+                    Your account email stays linked to this request. Name accepts English letters only, phone accepts numbers only, and any saved delivery address below can be edited before you submit.
+                  </p>
+                  {hasSavedDefaultAddress ? (
+                    <p className="mt-2 text-xs uppercase tracking-[0.2em] text-theme-ivory/50">
+                      Default saved address loaded from your account.
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="mt-10 rounded-[1.8rem] border border-theme-bronze/20 bg-white/5 p-5 sm:p-6">
@@ -938,7 +1284,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -18 }}
                           transition={{ duration: 0.25 }}
-                          className="relative overflow-hidden rounded-[1.8rem] border border-white/10 p-6 text-theme-ink shadow-[0_24px_60px_rgba(26,22,19,0.2)]"
+                          className="sofa-preview-card relative overflow-hidden rounded-[1.8rem] border border-white/10 p-6 text-theme-ink shadow-[0_24px_60px_rgba(26,22,19,0.2)]"
                           style={{
                             background: activeSofaConfiguration.surface,
                             boxShadow: `0 30px 70px ${activeSofaConfiguration.glow}`,
@@ -965,7 +1311,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                                 </p>
                               </div>
                               <div
-                                className="rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em]"
+                                className="sofa-preview-highlight rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em]"
                                 style={{
                                   borderColor: `${activeSofaConfiguration.accent}55`,
                                   color: activeSofaConfiguration.accent,
@@ -984,7 +1330,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                               ].map(([label, value]) => (
                                 <div
                                   key={label}
-                                  className="rounded-[1.1rem] border bg-white/48 px-4 py-4"
+                                  className="sofa-preview-meta rounded-[1.1rem] border bg-white/48 px-4 py-4"
                                   style={{
                                     borderColor: `${activeSofaConfiguration.accent}33`,
                                   }}
@@ -999,7 +1345,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                               ))}
                             </div>
 
-                            <div className="mt-6 rounded-[1.2rem] border border-white/40 bg-white/38 px-4 py-4">
+                            <div className="sofa-preview-details mt-6 rounded-[1.2rem] border border-white/40 bg-white/38 px-4 py-4">
                               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.22em] text-theme-ink/55">
                                 Why this layout stands out
                               </p>
@@ -1222,7 +1568,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                   </h2>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {MATERIALS.map((material) => (
+                    {materialOptions.map((material) => (
                       <button
                         key={material}
                         type="button"
@@ -1250,7 +1596,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                   </h2>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {FINISHES.map((finish) => (
+                    {finishOptions.map((finish) => (
                       <button
                         key={finish}
                         type="button"
@@ -1289,7 +1635,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                   </h2>
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {['Premium Cushion Fill', 'Accent Stitching', 'Extended Depth', 'Swivel Base'].map((addon) => (
+                    {addonOptions.map((addon) => (
                       <button
                         key={addon}
                         type="button"
@@ -1397,6 +1743,11 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                             Share the exact address where our team should plan delivery access,
                             installation guidance, and follow-up.
                           </p>
+                          {hasSavedDefaultAddress ? (
+                            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-theme-ivory/50">
+                              Loaded from your saved address. Edit any field if this request needs a different delivery location.
+                            </p>
+                          ) : null}
                         </div>
                         <div className="rounded-full border border-theme-bronze/20 bg-theme-bronze/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-theme-bronze">
                           Structured entry
@@ -1625,11 +1976,87 @@ export default function LuxeCustomizationStudio({ products = [] }) {
                         {customization.delivery.timeline || 'Not selected'}
                       </p>
                     </div>
+                    <div className="md:col-span-2 rounded-[1.2rem] border border-theme-bronze/20 bg-theme-bronze/10 px-4 py-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-theme-bronze mb-1">
+                            Estimated Total Before Submission
+                          </p>
+                          <p className="font-display text-3xl text-theme-ivory">
+                            {formatCurrency(liveQuote.grandTotal)}
+                          </p>
+                          <p className="mt-2 text-sm text-theme-ivory/60">
+                            Compared with the ready product: {formatSignedCurrency(liveQuote.adjustmentsTotal)}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadInvoice(liveQuote)}
+                          disabled={!canSubmit}
+                          className={`${SECONDARY_ACTION_BUTTON_CLASS} w-full text-xs sm:w-auto`}
+                        >
+                          <Download className="h-4 w-4" />
+                          Download Invoice
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+
+          <div className="mt-10 rounded-2xl border border-theme-bronze/20 bg-theme-ink/40 p-5 backdrop-blur-md sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-theme-bronze">
+                  Live Customization Estimate
+                </p>
+                <p className="mt-3 font-display text-3xl text-theme-ivory sm:text-4xl">
+                  {formatCurrency(liveQuote.grandTotal)}
+                </p>
+                <p className="mt-2 text-sm leading-7 text-theme-ivory/60">
+                  Ready product baseline: {formatCurrency(liveQuote.baseTotal)}. Current difference:{' '}
+                  {formatSignedCurrency(liveQuote.adjustmentsTotal)}.
+                </p>
+                <p className="mt-2 text-xs uppercase tracking-[0.2em] text-theme-ivory/42">
+                  Standard defaults: {liveQuote.defaults.color || 'Base color'} | {liveQuote.defaults.material || 'Base material'} | {liveQuote.defaults.finish || 'Base finish'}
+                  {liveQuote.defaults.configuration ? ` | ${liveQuote.defaults.configuration}` : ''}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleDownloadInvoice(liveQuote)}
+                disabled={!canSubmit}
+                className={`${SECONDARY_ACTION_BUTTON_CLASS} w-full text-xs sm:w-auto`}
+              >
+                <Download className="h-4 w-4" />
+                Download Invoice
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-2">
+              {visibleQuoteLines.map((line) => (
+                <div
+                  key={line.id}
+                  className="rounded-[1.2rem] border border-theme-bronze/15 bg-white/5 px-4 py-4"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-theme-ivory">{line.label}</p>
+                      <p className="mt-1 text-xs leading-6 text-theme-ivory/54">{line.description}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-theme-bronze">
+                      {line.id === 'base-product'
+                        ? formatCurrency(line.totalAmount)
+                        : formatSignedCurrency(line.totalAmount)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
 
           <div className="mt-12 space-y-4">
@@ -1654,7 +2081,7 @@ export default function LuxeCustomizationStudio({ products = [] }) {
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className="w-full rounded-full bg-theme-bronze px-8 py-4 font-semibold text-white transition-all hover:bg-theme-bronze/90 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                className={`${PRIMARY_ACTION_BUTTON_CLASS} w-full sm:w-auto`}
               >
                 {isSubmitting ? 'Submitting...' : 'Submit Customization Request →'}
               </button>

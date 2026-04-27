@@ -5,6 +5,7 @@ import { slugify } from '@/lib/productCatalog';
 export const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif']);
 export const MODEL_EXTENSIONS = new Set(['.glb']);
 export const VIDEO_EXTENSIONS = new Set(['.mp4', '.webm', '.ogg']);
+export const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.webm', '.ogg', '.m4a']);
 
 function resolveUploadRoot(configuredRoot: string | undefined, segments: string[]) {
   const normalizedRoot = configuredRoot?.trim();
@@ -36,6 +37,12 @@ export const SITE_UPLOAD_ROOT =
 export const SITE_UPLOAD_PUBLIC_BASE =
   process.env.SITE_UPLOAD_PUBLIC_BASE || '/uploads/site';
 
+export const SUPPORT_UPLOAD_ROOT =
+  resolveUploadRoot(process.env.SUPPORT_UPLOAD_ROOT, ['public', 'uploads', 'support']);
+
+export const SUPPORT_UPLOAD_PUBLIC_BASE =
+  process.env.SUPPORT_UPLOAD_PUBLIC_BASE || '/uploads/support';
+
 const IS_VERCEL_RUNTIME = Boolean(process.env.VERCEL || process.env.VERCEL_URL);
 const ALLOW_RUNTIME_DISK_UPLOADS = process.env.ALLOW_RUNTIME_DISK_UPLOADS === 'true';
 
@@ -57,6 +64,11 @@ export function getUploadExtension(file: File) {
   if (file.type === 'image/webp') return '.webp';
   if (file.type === 'image/avif') return '.avif';
   if (file.type === 'model/gltf-binary') return '.glb';
+  if (file.type === 'audio/mpeg') return '.mp3';
+  if (file.type === 'audio/wav') return '.wav';
+  if (file.type === 'audio/webm') return '.webm';
+  if (file.type === 'audio/ogg') return '.ogg';
+  if (file.type === 'audio/mp4') return '.m4a';
 
   return '';
 }
@@ -67,6 +79,10 @@ export function getAllowedExtensions(kind: 'image' | 'model') {
 
 export function getAllowedSiteExtensions(kind: 'image' | 'video') {
   return kind === 'video' ? VIDEO_EXTENSIONS : IMAGE_EXTENSIONS;
+}
+
+export function getAllowedSupportExtensions(kind: 'image' | 'audio') {
+  return kind === 'audio' ? AUDIO_EXTENSIONS : IMAGE_EXTENSIONS;
 }
 
 export function buildProductUploadTarget({
@@ -152,14 +168,43 @@ export function buildSiteUploadTarget({
   };
 }
 
+export function buildSupportUploadTarget({
+  ticketLabel,
+  kind,
+  extension,
+}: {
+  ticketLabel: string;
+  kind: 'image' | 'audio';
+  extension: string;
+}) {
+  const safeTicketLabel = sanitizeUploadSegment(ticketLabel, 'chatbot-ticket');
+  const folder = kind === 'audio' ? 'audio' : 'images';
+  const directory = path.join(/* turbopackIgnore: true */ SUPPORT_UPLOAD_ROOT, safeTicketLabel, folder);
+  const filename = `${kind}-${Date.now()}${extension}`;
+  const absolutePath = path.join(/* turbopackIgnore: true */ directory, filename);
+  const publicPath = `${SUPPORT_UPLOAD_PUBLIC_BASE}/${safeTicketLabel}/${folder}/${filename}`;
+
+  return {
+    directory,
+    absolutePath,
+    publicPath,
+  };
+}
+
 async function persistUpload(target: {
   directory: string;
   absolutePath: string;
   publicPath: string;
-}, file: File, kind: 'image' | 'model' | 'video') {
+}, file: File, kind: 'image' | 'model' | 'video' | 'audio') {
   if (IS_VERCEL_RUNTIME && !ALLOW_RUNTIME_DISK_UPLOADS) {
     const assetLabel =
-      kind === 'model' ? '.glb model' : kind === 'video' ? 'video' : 'image';
+      kind === 'model'
+        ? '.glb model'
+        : kind === 'video'
+          ? 'video'
+          : kind === 'audio'
+            ? 'audio'
+            : 'image';
 
     return {
       ok: false as const,
@@ -269,6 +314,37 @@ export async function saveSiteUpload({
   const target = buildSiteUploadTarget({
     section,
     slot,
+    kind,
+    extension,
+  });
+
+  return persistUpload(target, file, kind);
+}
+
+export async function saveSupportUpload({
+  file,
+  ticketLabel,
+  kind,
+}: {
+  file: File;
+  ticketLabel: string;
+  kind: 'image' | 'audio';
+}) {
+  const extension = getUploadExtension(file);
+  const allowedExtensions = getAllowedSupportExtensions(kind);
+
+  if (!allowedExtensions.has(extension)) {
+    return {
+      ok: false as const,
+      error:
+        kind === 'audio'
+          ? 'Only MP3, WAV, WEBM, OGG, and M4A audio files are supported.'
+          : 'Only JPG, PNG, WEBP, and AVIF files are supported.',
+    };
+  }
+
+  const target = buildSupportUploadTarget({
+    ticketLabel,
     kind,
     extension,
   });

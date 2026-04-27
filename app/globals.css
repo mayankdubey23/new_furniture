@@ -31,6 +31,173 @@
   --theme-shadow: 0 25px 80px rgba(0, 0, 0, 0.35);
 }
 
+/*
+  Dark-mode readability guard:
+  --theme-ivory doubles as a warm surface token in dark mode, so text classes like
+  dark:text-theme-ivory can otherwise become brown on dark brown panels. These
+  targeted overrides keep existing dark surfaces intact while making ivory text
+  render as a clear, readable foreground color.
+*/
+.dark [class~="text-theme-ivory"],
+.dark [class~="dark:text-theme-ivory"] {
+  color: rgb(244 238 229) !important;
+}
+
+.dark [class~="text-theme-ivory/92"],
+.dark [class~="dark:text-theme-ivory/92"] {
+  color: rgba(244, 238, 229, 0.92) !important;
+}
+
+.dark [class~="text-theme-ivory/90"],
+.dark [class~="dark:text-theme-ivory/90"] {
+  color: rgba(244, 238, 229, 0.9) !important;
+}
+
+.dark [class~="text-theme-ivory/88"],
+.dark [class~="dark:text-theme-ivory/88"] {
+  color: rgba(244, 238, 229, 0.88) !important;
+}
+
+.dark [class~="text-theme-ivory/85"],
+.dark [class~="dark:text-theme-ivory/85"] {
+  color: rgba(244, 238, 229, 0.85) !important;
+}
+
+.dark [class~="text-theme-ivory/80"],
+.dark [class~="dark:text-theme-ivory/80"] {
+  color: rgba(244, 238, 229, 0.8) !important;
+}
+
+.dark [class~="text-theme-ivory/78"],
+.dark [class~="dark:text-theme-ivory/78"] {
+  color: rgba(244, 238, 229, 0.78) !important;
+}
+
+.dark [class~="text-theme-ivory/75"],
+.dark [class~="dark:text-theme-ivory/75"] {
+  color: rgba(244, 238, 229, 0.75) !important;
+}
+
+.dark [class~="text-theme-ivory/74"],
+.dark [class~="dark:text-theme-ivory/74"] {
+  color: rgba(244, 238, 229, 0.74) !important;
+}
+
+.dark [class~="text-theme-ivory/72"],
+.dark [class~="dark:text-theme-ivory/72"] {
+  color: rgba(244, 238, 229, 0.72) !important;
+}
+
+.dark [class~="text-theme-ivory/70"],
+.dark [class~="dark:text-theme-ivory/70"] {
+  color: rgba(244, 238, 229, 0.7) !important;
+}
+
+.dark [class~="text-theme-ivory/68"],
+.dark [class~="dark:text-theme-ivory/68"] {
+  color: rgba(244, 238, 229, 0.68) !important;
+}
+
+.dark [class~="text-theme-ivory/66"],
+.dark [class~="dark:text-theme-ivory/66"] {
+  color: rgba(244, 238, 229, 0.66) !important;
+}
+
+.dark [class~="text-theme-ivory/65"],
+.dark [class~="dark:text-theme-ivory/65"] {
+  color: rgba(244, 238, 229, 0.65) !important;
+}
+
+.dark [class~="text-theme-ivory/64"],
+.dark [class~="dark:text-theme-ivory/64"] {
+  color: rgba(244, 238, 229, 0.64) !important;
+}
+
+.dark [class~="text-theme-ivory/62"],
+.dark [class~="dark:text-theme-ivory/62"] {
+  color: rgba(244, 238, 229, 0.62) !important;
+}
+
+.dark [class~="text-theme-ivory/60"],
+.dark [class~="dark:text-theme-ivory/60"] {
+  color: rgba(244, 238, 229, 0.6) !important;
+}
+
+.dark [class~="text-theme-ivory/58"],
+.dark [class~="dark:text-theme-ivory/58"] {
+  color: rgba(244, 238, 229, 0.58) !important;
+}
+
+.dark [class~="text-theme-ivory/56"],
+.dark [class~="dark:text-theme-ivory/56"] {
+  color: rgba(244, 238, 229, 0.56) !important;
+}
+
+.dark [class~="text-theme-ivory/55"],
+.dark [class~="dark:text-theme-ivory/55"] {
+  color: rgba(244, 238, 229, 0.55) !important;
+}
+
+.dark [class~="text-theme-ivory/54"],
+.dark [class~="dark:text-theme-ivory/54"] {
+  color: rgba(244, 238, 229, 0.54) !important;
+}
+
+.dark [class~="text-theme-ivory/52"],
+.dark [class~="dark:text-theme-ivory/52"] {
+  color: rgba(244, 238, 229, 0.52) !important;
+}
+
+.dark [class~="text-theme-ivory/50"],
+.dark [class~="dark:text-theme-ivory/50"] {
+  color: rgba(244, 238, 229, 0.5) !important;
+}
+
+.dark [class~="text-theme-ivory/48"],
+.dark [class~="dark:text-theme-ivory/48"] {
+  color: rgba(244, 238, 229, 0.48) !important;
+}
+
+.dark [class~="text-theme-ivory/46"],
+.dark [class~="dark:text-theme-ivory/46"] {
+  color: rgba(244, 238, 229, 0.46) !important;
+}
+
+.dark [class~="text-theme-ivory/45"],
+.dark [class~="dark:text-theme-ivory/45"] {
+  color: rgba(244, 238, 229, 0.45) !important;
+}
+
+.dark [class~="text-theme-ivory/44"],
+.dark [class~="dark:text-theme-ivory/44"] {
+  color: rgba(244, 238, 229, 0.44) !important;
+}
+
+.dark [class~="text-theme-ivory/42"],
+.dark [class~="dark:text-theme-ivory/42"] {
+  color: rgba(244, 238, 229, 0.42) !important;
+}
+
+.dark [class~="text-theme-ivory/40"],
+.dark [class~="dark:text-theme-ivory/40"] {
+  color: rgba(244, 238, 229, 0.4) !important;
+}
+
+.dark [class~="text-theme-ivory/35"],
+.dark [class~="dark:text-theme-ivory/35"] {
+  color: rgba(244, 238, 229, 0.35) !important;
+}
+
+.dark [class~="text-theme-ivory/30"],
+.dark [class~="dark:text-theme-ivory/30"] {
+  color: rgba(244, 238, 229, 0.3) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: rgba(244, 238, 229, 0.42);
+}
+
 @theme {
   --color-theme-ivory: var(--theme-ivory);
   --color-theme-sand: var(--theme-sand);
@@ -72,6 +239,188 @@ body {
 body * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Customization studio uses a page-specific palette so glass panels stay legible in both themes. */
+.customization-studio {
+  --studio-shell-bg:
+    linear-gradient(180deg, rgba(252, 248, 243, 0.98) 0%, rgba(246, 237, 226, 0.98) 48%, rgba(239, 229, 216, 0.98) 100%);
+  --studio-backdrop-bg:
+    radial-gradient(circle at top left, rgba(165, 106, 63, 0.16), transparent 32%),
+    linear-gradient(118deg, rgba(255, 251, 247, 0.94) 8%, rgba(243, 229, 214, 0.9) 52%, rgba(225, 207, 188, 0.88) 100%);
+  --studio-ambient-bronze: rgba(165, 106, 63, 0.16);
+  --studio-ambient-olive: rgba(102, 114, 95, 0.1);
+  --studio-panel-bg: linear-gradient(145deg, rgba(255, 253, 250, 0.95), rgba(248, 240, 230, 0.92));
+  --studio-soft-bg: rgba(255, 251, 246, 0.88);
+  --studio-muted-bg: rgba(249, 242, 234, 0.9);
+  --studio-accent-bg: rgba(165, 106, 63, 0.12);
+  --studio-border: rgba(137, 88, 54, 0.2);
+  --studio-primary: #2d2119;
+  --studio-secondary: rgba(72, 55, 44, 0.82);
+  --studio-muted: rgba(92, 70, 56, 0.64);
+  --studio-input-bg: rgba(255, 255, 255, 0.96);
+  --studio-input-text: #2b2018;
+  --studio-input-placeholder: rgba(92, 70, 56, 0.52);
+  background: var(--studio-shell-bg);
+  color: var(--studio-primary);
+}
+
+.dark .customization-studio {
+  --studio-shell-bg:
+    linear-gradient(180deg, rgba(18, 14, 11, 0.98) 0%, rgba(26, 20, 17, 0.98) 48%, rgba(33, 25, 21, 0.98) 100%);
+  --studio-backdrop-bg:
+    radial-gradient(circle at top left, rgba(199, 140, 92, 0.18), transparent 30%),
+    linear-gradient(118deg, rgba(18, 14, 11, 0.96) 10%, rgba(44, 32, 27, 0.82) 52%, rgba(17, 13, 11, 0.98) 100%);
+  --studio-ambient-bronze: rgba(199, 140, 92, 0.16);
+  --studio-ambient-olive: rgba(143, 157, 132, 0.08);
+  --studio-panel-bg: linear-gradient(145deg, rgba(38, 30, 25, 0.9), rgba(22, 17, 14, 0.94));
+  --studio-soft-bg: rgba(255, 255, 255, 0.06);
+  --studio-muted-bg: rgba(255, 255, 255, 0.04);
+  --studio-accent-bg: rgba(199, 140, 92, 0.12);
+  --studio-border: rgba(255, 255, 255, 0.12);
+  --studio-primary: rgba(255, 248, 240, 0.96);
+  --studio-secondary: rgba(245, 235, 224, 0.82);
+  --studio-muted: rgba(245, 235, 224, 0.64);
+  --studio-input-bg: rgba(255, 255, 255, 0.08);
+  --studio-input-text: rgba(255, 248, 240, 0.96);
+  --studio-input-placeholder: rgba(245, 235, 224, 0.5);
+}
+
+.customization-studio .studio-backdrop {
+  background: var(--studio-backdrop-bg);
+}
+
+.customization-studio .studio-ambient-bronze {
+  background: var(--studio-ambient-bronze);
+}
+
+.customization-studio .studio-ambient-olive {
+  background: var(--studio-ambient-olive);
+}
+
+.customization-studio input,
+.customization-studio textarea,
+.customization-studio select {
+  background: var(--studio-input-bg) !important;
+  border-color: var(--studio-border) !important;
+  color: var(--studio-input-text) !important;
+  caret-color: var(--studio-input-text);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.customization-studio input::placeholder,
+.customization-studio textarea::placeholder {
+  color: var(--studio-input-placeholder) !important;
+}
+
+.customization-studio [class~="bg-theme-ink/40"] {
+  background: var(--studio-panel-bg) !important;
+  border-color: var(--studio-border) !important;
+  box-shadow: 0 24px 70px rgba(49, 30, 21, 0.12);
+}
+
+.customization-studio [class~="bg-theme-ink/20"] {
+  background: var(--studio-muted-bg) !important;
+}
+
+.customization-studio [class~="bg-theme-bronze/8"],
+.customization-studio [class~="bg-theme-bronze/10"],
+.customization-studio [class~="bg-theme-bronze/12"] {
+  background: var(--studio-accent-bg) !important;
+  border-color: rgba(165, 106, 63, 0.24) !important;
+}
+
+.customization-studio [class~="bg-white/4"],
+.customization-studio [class~="bg-white/5"],
+.customization-studio [class~="bg-white/8"] {
+  background: var(--studio-soft-bg) !important;
+  border-color: var(--studio-border) !important;
+}
+
+.customization-studio [class~="bg-theme-ivory/20"],
+.customization-studio [class~="bg-theme-ivory/40"] {
+  background: rgba(137, 88, 54, 0.14) !important;
+}
+
+.dark .customization-studio [class~="bg-theme-ivory/20"],
+.dark .customization-studio [class~="bg-theme-ivory/40"] {
+  background: rgba(255, 248, 240, 0.16) !important;
+}
+
+.customization-studio [class~="text-theme-ivory"],
+.customization-studio [class~="text-theme-ink"] {
+  color: var(--studio-primary) !important;
+}
+
+.customization-studio [class*="text-theme-ivory/85"],
+.customization-studio [class*="text-theme-ivory/84"],
+.customization-studio [class*="text-theme-ivory/82"],
+.customization-studio [class*="text-theme-ivory/80"],
+.customization-studio [class*="text-theme-ivory/72"],
+.customization-studio [class*="text-theme-ivory/70"],
+.customization-studio [class*="text-theme-ink/82"],
+.customization-studio [class*="text-theme-ink/80"],
+.customization-studio [class*="text-theme-ink/78"],
+.customization-studio [class*="text-theme-ink/76"],
+.customization-studio [class*="text-theme-ink/72"] {
+  color: var(--studio-secondary) !important;
+}
+
+.customization-studio [class*="text-theme-ivory/66"],
+.customization-studio [class*="text-theme-ivory/65"],
+.customization-studio [class*="text-theme-ivory/64"],
+.customization-studio [class*="text-theme-ivory/62"],
+.customization-studio [class*="text-theme-ivory/60"],
+.customization-studio [class*="text-theme-ink/68"],
+.customization-studio [class*="text-theme-ink/66"],
+.customization-studio [class*="text-theme-ink/65"],
+.customization-studio [class*="text-theme-ink/62"],
+.customization-studio [class*="text-theme-ink/58"],
+.customization-studio [class*="text-theme-ink/55"],
+.customization-studio [class*="text-theme-ink/52"] {
+  color: var(--studio-secondary) !important;
+}
+
+.customization-studio [class*="text-theme-ivory/56"],
+.customization-studio [class*="text-theme-ivory/55"],
+.customization-studio [class*="text-theme-ivory/54"],
+.customization-studio [class*="text-theme-ivory/52"],
+.customization-studio [class*="text-theme-ivory/50"],
+.customization-studio [class*="text-theme-ivory/46"],
+.customization-studio [class*="text-theme-ivory/44"],
+.customization-studio [class*="text-theme-ivory/42"],
+.customization-studio [class*="text-theme-ivory/40"] {
+  color: var(--studio-muted) !important;
+}
+
+.customization-studio .sofa-preview-card [class~="text-theme-ink"] {
+  color: rgba(34, 27, 23, 0.96) !important;
+}
+
+.customization-studio .sofa-preview-card [class*="text-theme-ink/82"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/80"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/78"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/76"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/72"] {
+  color: rgba(34, 27, 23, 0.82) !important;
+}
+
+.customization-studio .sofa-preview-card [class*="text-theme-ink/68"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/66"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/62"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/58"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/55"],
+.customization-studio .sofa-preview-card [class*="text-theme-ink/52"] {
+  color: rgba(34, 27, 23, 0.68) !important;
+}
+
+.customization-studio .sofa-preview-card .sofa-preview-highlight {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.customization-studio .sofa-preview-card .sofa-preview-meta,
+.customization-studio .sofa-preview-card .sofa-preview-details {
+  background-color: rgba(255, 255, 255, 0.66) !important;
 }
 
 

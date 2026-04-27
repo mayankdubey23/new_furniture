@@ -9,6 +9,14 @@ import { getApiUrl } from '@/lib/api/browser';
 import { ORDER_TRACKING_PREFIX, SITE_NAME } from '@/lib/brand';
 
 type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
+type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+type ReturnRefundRequestStatus =
+  | 'requested'
+  | 'approved'
+  | 'rejected'
+  | 'received'
+  | 'refunded'
+  | 'closed';
 
 interface OrderItem {
   name: string;
@@ -22,6 +30,28 @@ interface TimelineEntry {
   title: string;
   message: string;
   createdAt: string;
+}
+
+interface ReturnRefundRequestItem {
+  itemIndex: number;
+  productId?: string;
+  name: string;
+  quantity: number;
+}
+
+interface ReturnRefundRequest {
+  _id: string;
+  requestType: ReturnRefundRequestType;
+  status: ReturnRefundRequestStatus;
+  reason: string;
+  details: string;
+  customerEmail: string;
+  items: ReturnRefundRequestItem[];
+  requestedAt: string;
+  reviewedAt?: string;
+  resolvedAt?: string;
+  refundAmount?: number;
+  adminNotes?: string;
 }
 
 interface TrackedOrder {
@@ -47,6 +77,7 @@ interface TrackedOrder {
   };
   items: OrderItem[];
   statusTimeline?: TimelineEntry[];
+  returnRefundRequests?: ReturnRefundRequest[];
 }
 
 const ORDER_STEPS: Array<{ key: OrderStatus; label: string }> = [
@@ -55,6 +86,68 @@ const ORDER_STEPS: Array<{ key: OrderStatus; label: string }> = [
   { key: 'shipped', label: 'Shipped' },
   { key: 'delivered', label: 'Delivered' },
 ];
+
+const RETURN_REQUEST_REASONS = [
+  'Damaged item',
+  'Wrong item delivered',
+  'Product mismatch',
+  'Quality issue',
+  'Delivery issue',
+  'Changed my mind',
+  'Payment or refund issue',
+  'Other',
+];
+
+function getReturnRequestTypeLabel(value: ReturnRefundRequestType) {
+  switch (value) {
+    case 'return':
+      return 'Return';
+    case 'refund':
+      return 'Refund';
+    case 'return-refund':
+      return 'Return + Refund';
+    default:
+      return 'Request';
+  }
+}
+
+function getReturnRequestStatusLabel(value: ReturnRefundRequestStatus) {
+  switch (value) {
+    case 'requested':
+      return 'Requested';
+    case 'approved':
+      return 'Approved';
+    case 'received':
+      return 'Item Received';
+    case 'refunded':
+      return 'Refunded';
+    case 'rejected':
+      return 'Rejected';
+    case 'closed':
+      return 'Closed';
+    default:
+      return value;
+  }
+}
+
+function getReturnRequestStatusClass(value: ReturnRefundRequestStatus) {
+  switch (value) {
+    case 'requested':
+      return 'border-amber-300/70 bg-amber-50 text-amber-700';
+    case 'approved':
+      return 'border-blue-300/70 bg-blue-50 text-blue-700';
+    case 'received':
+      return 'border-violet-300/70 bg-violet-50 text-violet-700';
+    case 'refunded':
+      return 'border-emerald-300/70 bg-emerald-50 text-emerald-700';
+    case 'rejected':
+      return 'border-red-300/70 bg-red-50 text-red-700';
+    case 'closed':
+      return 'border-theme-line/60 bg-theme-ivory/62 text-theme-walnut/62';
+    default:
+      return 'border-theme-line/60 bg-theme-ivory/62 text-theme-walnut/62';
+  }
+}
 
 function formatDateTime(value?: string) {
   if (!value) return 'Pending update';
@@ -109,6 +202,12 @@ function TrackOrderPageContent() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [order, setOrder] = useState<TrackedOrder | null>(null);
+  const [requestType, setRequestType] = useState<ReturnRefundRequestType>('return');
+  const [requestReason, setRequestReason] = useState(RETURN_REQUEST_REASONS[0]);
+  const [requestDetails, setRequestDetails] = useState('');
+  const [selectedItemIndexes, setSelectedItemIndexes] = useState<number[]>([]);
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
+  const [requestMessage, setRequestMessage] = useState('');
 
   const timeline = useMemo(() => {
     if (!order?.statusTimeline?.length) return [];
@@ -119,6 +218,23 @@ function TrackOrderPageContent() {
 
   const completedStatuses = useMemo(
     () => new Set((order?.statusTimeline || []).map((entry) => entry.status)),
+    [order]
+  );
+
+  const requestable = useMemo(() => {
+    if (!order) return false;
+    return (
+      order.status === 'paid' ||
+      order.status === 'shipped' ||
+      order.status === 'delivered'
+    );
+  }, [order]);
+
+  const activeReturnRequest = useMemo(
+    () =>
+      order?.returnRefundRequests?.find((entry) =>
+        ['requested', 'approved', 'received', 'refunded'].includes(entry.status)
+      ) || null,
     [order]
   );
 
@@ -157,6 +273,10 @@ function TrackOrderPageContent() {
         }
 
         setOrder(data);
+        setSelectedItemIndexes(
+          Array.isArray(data.items) ? data.items.map((_, index) => index) : []
+        );
+        setRequestMessage('');
       } catch (error) {
         setOrder(null);
         setErrorMsg(error instanceof Error ? error.message : 'Unable to track your order.');
@@ -166,6 +286,84 @@ function TrackOrderPageContent() {
     },
     [email, reference, user?.email]
   );
+
+  const toggleSelectedItem = (index: number) => {
+    setSelectedItemIndexes((current) =>
+      current.includes(index)
+        ? current.filter((value) => value !== index)
+        : [...current, index].sort((left, right) => left - right)
+    );
+  };
+
+  const submitReturnRefundRequest = async () => {
+    if (!order) {
+      return;
+    }
+
+    const viewerEmail = (user?.email || email).trim().toLowerCase();
+
+    if (!viewerEmail) {
+      setRequestMessage('Please provide the checkout email before submitting a request.');
+      return;
+    }
+
+    if (!selectedItemIndexes.length) {
+      setRequestMessage('Select at least one item for the return/refund request.');
+      return;
+    }
+
+    if (!requestDetails.trim()) {
+      setRequestMessage('Add a short explanation so the support team can review it quickly.');
+      return;
+    }
+
+    setRequestSubmitting(true);
+    setRequestMessage('');
+
+    try {
+      const response = await fetch(getApiUrl(`/api/orders/${order._id}/returns`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: viewerEmail,
+          requestType,
+          reason: requestReason,
+          details: requestDetails,
+          items: selectedItemIndexes.map((itemIndex) => ({
+            itemIndex,
+            quantity: order.items[itemIndex]?.quantity || 1,
+          })),
+        }),
+      });
+      const data = (await response.json()) as {
+        error?: string;
+        message?: string;
+        order?: TrackedOrder;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to submit your return/refund request.');
+      }
+
+      if (data.order) {
+        setOrder(data.order);
+      }
+
+      setRequestDetails('');
+      setRequestMessage(
+        data.message || 'Your return/refund request has been submitted successfully.'
+      );
+    } catch (error) {
+      setRequestMessage(
+        error instanceof Error
+          ? error.message
+          : 'Unable to submit your return/refund request.'
+      );
+    } finally {
+      setRequestSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const orderId = searchParams.get('orderId') || '';
@@ -375,6 +573,196 @@ function TrackOrderPageContent() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="rounded-[1.6rem] border border-theme-line/50 bg-white/50 p-5 dark:bg-white/5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.28em] text-theme-bronze">
+                        Returns & Refunds
+                      </p>
+                      <p className="mt-2 max-w-2xl text-sm leading-7 text-theme-walnut/66 dark:text-theme-ivory/62">
+                        Use this panel to request a return, refund, or both for eligible orders.
+                      </p>
+                    </div>
+                    {activeReturnRequest ? (
+                      <span
+                        className={`rounded-full border px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] ${getReturnRequestStatusClass(activeReturnRequest.status)}`}
+                      >
+                        {getReturnRequestStatusLabel(activeReturnRequest.status)}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {order.returnRefundRequests?.length ? (
+                    <div className="mt-4 space-y-3">
+                      {order.returnRefundRequests
+                        .slice()
+                        .sort(
+                          (left, right) =>
+                            new Date(right.requestedAt).getTime() -
+                            new Date(left.requestedAt).getTime()
+                        )
+                        .map((request) => (
+                          <div
+                            key={request._id}
+                            className="rounded-[1.2rem] border border-theme-line/40 bg-theme-ivory/58 px-4 py-4 dark:bg-white/5"
+                          >
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                                  {getReturnRequestTypeLabel(request.requestType)}
+                                </p>
+                                <p className="mt-1 text-base font-semibold text-theme-ink dark:text-theme-ivory">
+                                  {request.reason}
+                                </p>
+                              </div>
+                              <span
+                                className={`rounded-full border px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] ${getReturnRequestStatusClass(request.status)}`}
+                              >
+                                {getReturnRequestStatusLabel(request.status)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-sm leading-6 text-theme-walnut/66 dark:text-theme-ivory/62">
+                              {request.details}
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs text-theme-walnut/58 dark:text-theme-ivory/56">
+                              <span>Requested {formatDateTime(request.requestedAt)}</span>
+                              {typeof request.refundAmount === 'number' ? (
+                                <span>Refund Rs. {request.refundAmount.toLocaleString('en-IN')}</span>
+                              ) : null}
+                            </div>
+                            {request.items?.length ? (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {request.items.map((item) => (
+                                  <span
+                                    key={`${request._id}-${item.itemIndex}`}
+                                    className="rounded-full border border-theme-line/50 px-3 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-theme-walnut/62 dark:text-theme-ivory/58"
+                                  >
+                                    {item.name} x {item.quantity}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : null}
+                            {request.adminNotes ? (
+                              <p className="mt-3 rounded-[1rem] border border-theme-line/40 bg-white/65 px-3 py-3 text-sm text-theme-walnut/66 dark:bg-white/8 dark:text-theme-ivory/62">
+                                Team note: {request.adminNotes}
+                              </p>
+                            ) : null}
+                          </div>
+                        ))}
+                    </div>
+                  ) : null}
+
+                  {requestable ? (
+                    <div className="mt-5 rounded-[1.4rem] border border-theme-line/40 bg-white/60 p-4 dark:bg-white/5">
+                      <div className="grid gap-4 lg:grid-cols-[220px_220px_1fr]">
+                        <div>
+                          <label className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                            Request Type
+                          </label>
+                          <select
+                            value={requestType}
+                            onChange={(event) =>
+                              setRequestType(event.target.value as ReturnRefundRequestType)
+                            }
+                            disabled={Boolean(activeReturnRequest) || requestSubmitting}
+                            className="mt-2 w-full rounded-xl border border-theme-line/60 bg-white px-3 py-3 text-sm text-theme-ink outline-none focus:border-theme-bronze dark:bg-white/10 dark:text-theme-ivory"
+                          >
+                            <option value="return">Return</option>
+                            <option value="refund">Refund</option>
+                            <option value="return-refund">Return + Refund</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                            Reason
+                          </label>
+                          <select
+                            value={requestReason}
+                            onChange={(event) => setRequestReason(event.target.value)}
+                            disabled={Boolean(activeReturnRequest) || requestSubmitting}
+                            className="mt-2 w-full rounded-xl border border-theme-line/60 bg-white px-3 py-3 text-sm text-theme-ink outline-none focus:border-theme-bronze dark:bg-white/10 dark:text-theme-ivory"
+                          >
+                            {RETURN_REQUEST_REASONS.map((reason) => (
+                              <option key={reason} value={reason}>
+                                {reason}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                            Details
+                          </label>
+                          <textarea
+                            rows={4}
+                            value={requestDetails}
+                            onChange={(event) => setRequestDetails(event.target.value.slice(0, 1200))}
+                            disabled={Boolean(activeReturnRequest) || requestSubmitting}
+                            placeholder="Describe the issue and what resolution you expect."
+                            className="mt-2 w-full rounded-xl border border-theme-line/60 bg-white px-3 py-3 text-sm text-theme-ink outline-none focus:border-theme-bronze dark:bg-white/10 dark:text-theme-ivory"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <p className="text-[0.62rem] font-semibold uppercase tracking-[0.24em] text-theme-bronze">
+                          Select Items
+                        </p>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          {order.items.map((item, index) => (
+                            <label
+                              key={`${item.name}-${index}`}
+                              className="flex cursor-pointer items-start gap-3 rounded-[1rem] border border-theme-line/40 bg-theme-ivory/58 px-3 py-3 dark:bg-white/5"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedItemIndexes.includes(index)}
+                                onChange={() => toggleSelectedItem(index)}
+                                disabled={Boolean(activeReturnRequest) || requestSubmitting}
+                                className="mt-1 h-4 w-4 rounded border-theme-line text-theme-bronze focus:ring-theme-bronze"
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-sm font-semibold text-theme-ink dark:text-theme-ivory">
+                                  {item.name}
+                                </span>
+                                <span className="mt-1 block text-xs text-theme-walnut/60 dark:text-theme-ivory/56">
+                                  Qty: {item.quantity} | Rs. {(item.price * item.quantity).toLocaleString('en-IN')}
+                                </span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {requestMessage ? (
+                        <div className="mt-4 rounded-xl border border-theme-line/40 bg-theme-ivory/58 px-4 py-3 text-sm text-theme-walnut/68 dark:bg-white/5 dark:text-theme-ivory/62">
+                          {requestMessage}
+                        </div>
+                      ) : null}
+
+                      <div className="mt-4 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void submitReturnRefundRequest()}
+                          disabled={Boolean(activeReturnRequest) || requestSubmitting}
+                          className="rounded-full bg-theme-ink px-6 py-3 text-xs font-bold uppercase tracking-[0.22em] text-white transition hover:bg-theme-bronze disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {requestSubmitting ? 'Submitting...' : 'Submit Request'}
+                        </button>
+                        {activeReturnRequest ? (
+                          <p className="text-sm text-theme-walnut/60 dark:text-theme-ivory/56">
+                            A request is already under review for this order.
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-[1.2rem] border border-theme-line/40 bg-theme-ivory/58 px-4 py-4 text-sm text-theme-walnut/66 dark:bg-white/5 dark:text-theme-ivory/60">
+                      Return/refund requests become available after payment confirmation or when the order starts moving toward delivery.
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

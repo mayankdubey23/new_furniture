@@ -26,8 +26,26 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user.password) {
+      if (!user.googleId && !user.phoneVerifiedAt) {
+        return NextResponse.json(
+          {
+            code: 'PASSWORD_SETUP_REQUIRED',
+            error:
+              'This email was saved without a password. Continue with Create Account using the same email to set your password.',
+          },
+          { status: 409 }
+        );
+      }
+
       return NextResponse.json(
-        { error: 'This account does not have a password. Please continue with Google or phone OTP.' },
+        {
+          code: user.googleId && user.phoneVerifiedAt ? 'USE_GOOGLE_OR_OTP_LOGIN' : user.googleId ? 'USE_GOOGLE_LOGIN' : 'USE_OTP_LOGIN',
+          error: user.googleId
+            ? user.phoneVerifiedAt
+              ? 'This account does not have a password. Please continue with Google or phone OTP.'
+              : 'This account does not have a password. Please continue with Google sign-in.'
+            : 'This account does not have a password. Please continue with phone OTP.',
+        },
         { status: 401 }
       );
     }

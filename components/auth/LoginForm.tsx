@@ -24,6 +24,29 @@ function sanitizeOtp(value: string) {
   return value.replace(/\D/g, '').slice(0, 6);
 }
 
+const ENGLISH_NAME_PATTERN = /^[A-Za-z]+(?:\s+[A-Za-z]+)*$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function sanitizeEnglishName(value: string) {
+  return value
+    .replace(/[^A-Za-z\s]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^\s+/g, '')
+    .slice(0, 60);
+}
+
+function sanitizeEmail(value: string) {
+  return value.replace(/\s+/g, '').toLowerCase().slice(0, 120);
+}
+
+function isEnglishName(value: string) {
+  return ENGLISH_NAME_PATTERN.test(value.trim());
+}
+
+function isValidEmail(value: string) {
+  return EMAIL_PATTERN.test(value.trim());
+}
+
 function getGoogleAuthErrorMessage(errorCode: string | null) {
   switch (errorCode) {
     case 'google_not_configured':
@@ -57,6 +80,9 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
   const authErrorCode = searchParams.get('authError');
+  const returnTo = normalizeReturnTo(
+    searchParams.get('returnTo') || searchParams.get('next')
+  );
   const [tab, setTab] = useState<Tab>(initialTab);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>('password');
   const [phoneOtpEnabled, setPhoneOtpEnabled] = useState(false);
@@ -88,9 +114,9 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
 
   useEffect(() => {
     if (user) {
-      router.replace('/');
+      router.replace(returnTo || '/');
     }
-  }, [user, router]);
+  }, [returnTo, router, user]);
 
   useEffect(() => {
     setTab(initialTab);
@@ -206,12 +232,37 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.code === 'PASSWORD_SETUP_REQUIRED') {
+          const normalizedEmail = sanitizeEmail(loginForm.email);
+
+          setSignupForm((current) => ({
+            ...current,
+            email: normalizedEmail,
+          }));
+          setLoginForm((current) => ({
+            ...current,
+            email: normalizedEmail,
+            password: '',
+          }));
+          setTab('signup');
+          setInfo(
+            'We found this email in our records. Complete account creation below to set your password and continue.'
+          );
+          return;
+        }
+
+        if (data.code === 'USE_OTP_LOGIN' && phoneOtpEnabled) {
+          setLoginMethod('otp');
+          setInfo('This account uses phone verification. Continue with Phone OTP below.');
+          return;
+        }
+
         setError(data.error || 'Login failed. Please try again.');
         return;
       }
 
       await refreshUser();
-      router.push('/');
+      router.push(returnTo || '/');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -242,7 +293,7 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
       }
 
       await refreshUser();
-      router.push('/');
+      router.push(returnTo || '/');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -252,6 +303,26 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
 
   const handleSignup = async (event: React.FormEvent) => {
     event.preventDefault();
+    const normalizedName = sanitizeEnglishName(signupForm.name);
+    const normalizedEmail = sanitizeEmail(signupForm.email);
+
+    if (normalizedName !== signupForm.name || normalizedEmail !== signupForm.email) {
+      setSignupForm((current) => ({
+        ...current,
+        name: normalizedName,
+        email: normalizedEmail,
+      }));
+    }
+
+    if (!isEnglishName(normalizedName)) {
+      setError('Name must contain English letters only.');
+      return;
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
 
     if (signupForm.password !== signupForm.confirm) {
       setError('Passwords do not match.');
@@ -271,8 +342,8 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: signupForm.name,
-          email: signupForm.email,
+          name: normalizedName,
+          email: normalizedEmail,
           phone: phoneOtpEnabled ? signupForm.phone : '',
           otpCode: phoneOtpEnabled ? signupForm.otpCode : '',
           password: signupForm.password,
@@ -287,7 +358,7 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
       }
 
       await refreshUser();
-      router.push('/');
+      router.push(returnTo || '/');
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {
@@ -308,9 +379,6 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
   }, [sendOtp, signupForm.phone]);
 
   const googleAuthParams = new URLSearchParams({ intent: tab });
-  const returnTo = normalizeReturnTo(
-    searchParams.get('returnTo') || searchParams.get('next')
-  );
   if (returnTo) {
     googleAuthParams.set('returnTo', returnTo);
   }
@@ -387,57 +455,53 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
           </div>
         ) : null}
 
-        <>
-          <div className="mb-5">
-            <button
-              type="button"
-              onClick={handleGoogleRedirect}
-              disabled={loading || googleRedirecting}
-              className="flex w-full items-center justify-center gap-3 rounded-full border border-theme-line/60 bg-white/90 px-5 py-3 text-sm font-semibold text-theme-ink transition hover:border-theme-bronze hover:bg-white disabled:opacity-60 dark:border-white/15 dark:bg-white/10 dark:text-theme-ivory dark:hover:border-theme-bronze dark:hover:bg-white/12"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="h-5 w-5 shrink-0"
+        {googleConfigured ? (
+          <>
+            <div className="mb-5">
+              <button
+                type="button"
+                onClick={handleGoogleRedirect}
+                disabled={loading || googleRedirecting}
+                className="flex w-full items-center justify-center gap-3 rounded-full border border-theme-line/60 bg-white/90 px-5 py-3 text-sm font-semibold text-theme-ink transition hover:border-theme-bronze hover:bg-white disabled:opacity-60 dark:border-white/15 dark:bg-white/10 dark:text-theme-ivory dark:hover:border-theme-bronze dark:hover:bg-white/12"
               >
-                <path
-                  fill="#EA4335"
-                  d="M12.24 10.285V14.4h5.879c-.258 1.322-1.551 3.878-5.879 3.878-3.538 0-6.42-2.929-6.42-6.538s2.882-6.538 6.42-6.538c2.014 0 3.364.858 4.136 1.601l2.821-2.727C17.405 2.406 15.091 1.4 12.24 1.4 6.98 1.4 2.72 5.66 2.72 10.9s4.26 9.5 9.52 9.5c5.495 0 9.141-3.861 9.141-9.305 0-.626-.069-1.101-.152-1.572z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M2.72 10.9c0 1.688.612 3.233 1.626 4.426l3.165-2.438c-.209-.626-.331-1.293-.331-1.988s.122-1.362.331-1.988L4.346 6.474C3.332 7.667 2.72 9.212 2.72 10.9z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M12.24 20.4c2.851 0 5.244-.938 6.992-2.555l-3.399-2.633c-.91.634-2.069 1.066-3.593 1.066-3.364 0-6.217-2.272-7.237-5.329l-3.165 2.438C3.542 17.513 7.546 20.4 12.24 20.4z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M19.232 17.845c1.971-1.815 3.149-4.486 3.149-7.75 0-.625-.069-1.101-.152-1.572H12.24V12.64h5.879c-.258 1.322-1.018 2.441-2.286 3.205z"
-                />
-              </svg>
-              <span>
-                {googleRedirecting
-                  ? 'Redirecting to Google...'
-                  : tab === 'signup'
-                    ? 'Create Account with Google'
-                    : 'Sign In with Google'}
-              </span>
-            </button>
-            {!googleConfigured ? (
-              <p className="mt-2 text-center text-xs text-theme-walnut/55 dark:text-theme-ivory/55">
-                Google sign-in is visible now, but it still needs `GOOGLE_CLIENT_ID` and
-                `GOOGLE_CLIENT_SECRET` in your environment to work.
-              </p>
-            ) : null}
-          </div>
-          <div className="mb-6 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-theme-walnut/45 dark:text-theme-ivory/35">
-            <span className="h-px flex-1 bg-theme-line/60" />
-            Or continue below
-            <span className="h-px flex-1 bg-theme-line/60" />
-          </div>
-        </>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5 shrink-0"
+                >
+                  <path
+                    fill="#EA4335"
+                    d="M12.24 10.285V14.4h5.879c-.258 1.322-1.551 3.878-5.879 3.878-3.538 0-6.42-2.929-6.42-6.538s2.882-6.538 6.42-6.538c2.014 0 3.364.858 4.136 1.601l2.821-2.727C17.405 2.406 15.091 1.4 12.24 1.4 6.98 1.4 2.72 5.66 2.72 10.9s4.26 9.5 9.52 9.5c5.495 0 9.141-3.861 9.141-9.305 0-.626-.069-1.101-.152-1.572z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M2.72 10.9c0 1.688.612 3.233 1.626 4.426l3.165-2.438c-.209-.626-.331-1.293-.331-1.988s.122-1.362.331-1.988L4.346 6.474C3.332 7.667 2.72 9.212 2.72 10.9z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M12.24 20.4c2.851 0 5.244-.938 6.992-2.555l-3.399-2.633c-.91.634-2.069 1.066-3.593 1.066-3.364 0-6.217-2.272-7.237-5.329l-3.165 2.438C3.542 17.513 7.546 20.4 12.24 20.4z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M19.232 17.845c1.971-1.815 3.149-4.486 3.149-7.75 0-.625-.069-1.101-.152-1.572H12.24V12.64h5.879c-.258 1.322-1.018 2.441-2.286 3.205z"
+                  />
+                </svg>
+                <span>
+                  {googleRedirecting
+                    ? 'Redirecting to Google...'
+                    : tab === 'signup'
+                      ? 'Create Account with Google'
+                      : 'Sign In with Google'}
+                </span>
+              </button>
+            </div>
+            <div className="mb-6 flex items-center gap-3 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-theme-walnut/45 dark:text-theme-ivory/35">
+              <span className="h-px flex-1 bg-theme-line/60" />
+              Or continue below
+              <span className="h-px flex-1 bg-theme-line/60" />
+            </div>
+          </>
+        ) : null}
 
         {tab === 'login' ? (
           <>
@@ -479,11 +543,15 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
                     type="email"
                     required
                     autoComplete="email"
+                    inputMode="email"
                     value={loginForm.email}
                     onChange={(event) =>
-                      setLoginForm((current) => ({ ...current, email: event.target.value }))
+                      setLoginForm((current) => ({
+                        ...current,
+                        email: sanitizeEmail(event.target.value),
+                      }))
                     }
-                    placeholder="your@email.com"
+                    placeholder="name@example.com"
                     className={inputClass}
                   />
                 </div>
@@ -599,11 +667,18 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
                 type="text"
                 required
                 autoComplete="name"
+                inputMode="text"
+                maxLength={60}
+                pattern="[A-Za-z]+(?:\\s+[A-Za-z]+)*"
+                title="Use English letters only."
                 value={signupForm.name}
                 onChange={(event) =>
-                  setSignupForm((current) => ({ ...current, name: event.target.value }))
+                  setSignupForm((current) => ({
+                    ...current,
+                    name: sanitizeEnglishName(event.target.value),
+                  }))
                 }
-                placeholder="Your full name"
+                placeholder="English letters only"
                 className={inputClass}
               />
             </div>
@@ -617,11 +692,15 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
                 type="email"
                 required
                 autoComplete="email"
+                inputMode="email"
                 value={signupForm.email}
                 onChange={(event) =>
-                  setSignupForm((current) => ({ ...current, email: event.target.value }))
+                  setSignupForm((current) => ({
+                    ...current,
+                    email: sanitizeEmail(event.target.value),
+                  }))
                 }
-                placeholder="your@email.com"
+                placeholder="name@example.com"
                 className={inputClass}
               />
             </div>

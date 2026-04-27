@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import FooterBurstOverlay from '@/components/decor/FooterBurstOverlay';
 import { DEFAULT_SITE_CONTENT } from '@/lib/content/siteContent';
 import { getApiUrl } from '@/lib/api/browser';
+import { getAdminPortalPath } from '@/lib/adminPortal';
 
 
 
@@ -26,6 +27,7 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
   const [statusMessage, setStatusMessage] = useState('');
   const [statusTone, setStatusTone] = useState('success');
   const pathname = usePathname();
+  const adminPanelHref = getAdminPortalPath();
 
   const handleBackToTop = useCallback((event) => {
     if (pathname !== '/') {
@@ -100,8 +102,8 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
 
       <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.52),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(246,238,229,0.36)_52%,rgba(232,219,203,0.68)_100%)] dark:bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(18,14,11,0.08)_0%,rgba(18,14,11,0.7)_50%,rgba(12,9,8,0.94)_100%)]" />
 
-      <div className="relative z-20 mx-auto flex h-full max-w-[96rem] flex-col justify-between px-6 pb-10 pt-24 text-theme-walnut md:px-10 lg:px-16 dark:text-white">
-        <div className="grid grid-cols-1 gap-10 rounded-[2rem] border border-theme-line/60 bg-white/62 p-6 shadow-[0_24px_70px_rgba(49,30,21,0.08)] backdrop-blur-xl md:grid-cols-4 md:gap-12 md:p-8 dark:border-white/10 dark:bg-white/8 dark:shadow-none">
+      <div className="relative z-20 mx-auto flex min-h-[560px] w-full max-w-[96rem] flex-col justify-end px-6 pb-10 pt-24 text-theme-walnut md:px-10 lg:px-16 dark:text-white">
+        <div className="mx-auto grid w-full max-w-[88rem] grid-cols-1 gap-8 rounded-[2rem] border border-theme-line/60 bg-white/62 px-5 py-5 shadow-[0_24px_70px_rgba(49,30,21,0.08)] backdrop-blur-xl md:grid-cols-4 md:gap-10 md:px-7 md:py-6 dark:border-white/10 dark:bg-white/8 dark:shadow-none">
           <div className="md:col-span-1">
             <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-theme-bronze">{content.brandLabel}</p>
             <h2 className="mb-4 font-display text-4xl tracking-[0.08em] text-theme-ink dark:text-theme-ivory">{content.brandName}</h2>
@@ -131,6 +133,7 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
               <li><Link href="/customization" className="transition-colors hover:text-theme-bronze">Customization</Link></li>
               <li><Link href="/faq" className="transition-colors hover:text-theme-bronze">FAQ</Link></li>
               <li><Link href="/contact" className="transition-colors hover:text-theme-bronze">Contact</Link></li>
+              <li><Link href={adminPanelHref} className="transition-colors hover:text-theme-bronze">Admin Panel</Link></li>
               <li><Link href="/" onClick={handleBackToTop} className="transition-colors hover:text-theme-bronze">Back to top</Link></li>
             </ul>
           </div>
@@ -168,14 +171,16 @@ export default function Footer({ collections = [], content = DEFAULT_SITE_CONTEN
               ) : null}
             </form>
           </div>
-        </div>
 
-        <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-theme-line/50 pt-6 text-sm text-theme-walnut/52 dark:border-white/10 dark:text-white/44 md:flex-row">
-          <p>&copy; {new Date().getFullYear()} {content.brandName}. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="/faq" className="transition-colors hover:text-theme-ink dark:hover:text-white">FAQ</Link>
-            <Link href="/privacy" className="transition-colors hover:text-theme-ink dark:hover:text-white">Privacy Policy</Link>
-            <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms & Conditions</Link>
+          <div className="md:col-span-4">
+            <div className="flex flex-col items-center justify-between gap-3 border-t border-theme-line/50 pt-5 text-center text-sm text-theme-walnut/52 dark:border-white/10 dark:text-white/44 md:flex-row md:text-left">
+              <p>&copy; {new Date().getFullYear()} {content.brandName}. All rights reserved.</p>
+              <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:justify-end">
+                <Link href="/faq" className="transition-colors hover:text-theme-ink dark:hover:text-white">FAQ</Link>
+                <Link href="/privacy" className="transition-colors hover:text-theme-ink dark:hover:text-white">Privacy Policy</Link>
+                <Link href="/terms" className="transition-colors hover:text-theme-ink dark:hover:text-white">Terms & Conditions</Link>
+              </div>
+            </div>
           </div>
         </div>
       </div>

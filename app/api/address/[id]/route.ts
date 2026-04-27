@@ -2,37 +2,31 @@ import { NextRequest } from 'next/server';
 import dbConnect from '@/lib/mongoose';
 import Address from '@/models/Address';
 import {
-  cleanString,
   legacyError,
   legacyMessage,
   legacySuccess,
   readRequestData,
 } from '@/lib/server/legacyApi';
 import { serializeLegacyAddress } from '@/lib/server/legacyRelations';
+import { deleteCustomerAddress, saveCustomerAddress } from '@/lib/server/customerAddresses';
+import { getUserFromCookie } from '@/lib/userAuth';
 
 export const dynamic = 'force-dynamic';
-
-function buildPayload(data: Record<string, unknown>) {
-  return {
-    user: cleanString(data.user),
-    name: cleanString(data.name),
-    email: cleanString(data.email).toLowerCase(),
-    phone: cleanString(data.phone),
-    address: cleanString(data.address),
-    pin: cleanString(data.pin),
-    city: cleanString(data.city),
-    state: cleanString(data.state),
-  };
-}
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const user = await getUserFromCookie();
+
+    if (!user?.userId) {
+      return legacyError('Not authenticated', 401);
+    }
+
     await dbConnect();
     const { id } = await params;
-    const item = await Address.findById(id).populate('user').lean();
+    const item = await Address.findOne({ _id: id, user: user.userId }).populate('user').lean();
 
     if (!item) {
       return legacyError('Address record not found.', 404);
@@ -49,12 +43,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
+    const user = await getUserFromCookie();
+
+    if (!user?.userId) {
+      return legacyError('Not authenticated', 401);
+    }
+
     const { id } = await params;
-    const item = await Address.findByIdAndUpdate(id, buildPayload(await readRequestData(request)), {
-      returnDocument: 'after',
-      runValidators: true,
-    })
+    const payload = (await readRequestData(request)) as Record<string, unknown>;
+    const address = await saveCustomerAddress(user.userId, payload, { id });
+    await dbConnect();
+    const item = await Address.findOne({ _id: address.id, user: user.userId })
       .populate('user')
       .lean();
 
@@ -76,9 +75,14 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await dbConnect();
+    const user = await getUserFromCookie();
+
+    if (!user?.userId) {
+      return legacyError('Not authenticated', 401);
+    }
+
     const { id } = await params;
-    const deleted = await Address.findByIdAndDelete(id);
+    const deleted = await deleteCustomerAddress(user.userId, id);
 
     if (!deleted) {
       return legacyError('Address record not found.', 404);

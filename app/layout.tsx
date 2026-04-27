@@ -6,6 +6,7 @@ import SmoothScrolling from '@/components/SmoothScrolling';
 import ThemeProvider from '@/components/ThemeProvider';
 import MaintenanceGate from '@/components/MaintenanceGate';
 import PerformanceMonitoring from '@/components/PerformanceMonitoring';
+import ChatbotWidget from '@/components/ChatbotWidget';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { UserProvider } from '@/context/UserContext';
@@ -41,6 +42,7 @@ export default async function RootLayout({
                     <SmoothScrolling>
                       <Navbar collections={collections} />
                       {children}
+                      <ChatbotWidget />
                     </SmoothScrolling>
                   </div>
                 </div>

@@ -400,7 +400,7 @@ export async function getAdminAuthStatus(): Promise<AdminAuthStatus> {
   let guidance = '';
   if (!hasPassword && !emailRecovery.available && !phoneRecovery.available) {
     guidance =
-      'Configure a real admin email with Resend, or add an admin phone with Twilio Verify, or set ADMIN_PASSWORD once to bootstrap access.';
+      'No admin password or recovery method is configured yet. For local setup, add JWT_SECRET, ADMIN_USERNAME, and ADMIN_PASSWORD to .env.local, then restart the dev server. You can configure Resend or Twilio recovery later.';
   } else if (hasPassword && !emailRecovery.available && !phoneRecovery.available) {
     guidance = 'Password reset is unavailable until you configure admin email or phone recovery.';
   }

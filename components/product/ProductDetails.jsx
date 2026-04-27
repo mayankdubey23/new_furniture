@@ -150,7 +150,7 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             <AnimatedHeading as="h3" className="font-display text-4xl font-semibold text-theme-bronze sm:text-5xl">
               {`Rs. ${data.price.toLocaleString('en-IN')}`}
             </AnimatedHeading>
-            <p className="mt-2 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/50 dark:text-theme-ink/45 sm:text-xs sm:tracking-[0.28em]">
+            <p className="mt-2 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/50 dark:text-theme-ivory/62 sm:text-xs sm:tracking-[0.28em]">
               Free white-glove delivery
             </p>
             <div className="mt-4 flex flex-wrap gap-3 sm:gap-2">
@@ -164,15 +164,15 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
             </div>
           </div>
 
-          <p className="text-base leading-7 text-theme-walnut/72 dark:text-theme-ink/68 sm:text-sm sm:leading-[1.85]">
+          <p className="text-base leading-7 text-theme-walnut/72 dark:text-theme-ivory/76 sm:text-sm sm:leading-[1.85]">
             {data.description}
           </p>
 
-          <div className="rounded-[1.6rem] border border-theme-line/60 bg-white/60 px-4 py-4 dark:bg-white/5">
-            <p className="text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ink/55 sm:text-xs sm:tracking-[0.28em]">
+          <div className="rounded-[1.6rem] border border-theme-line/60 bg-white/60 px-4 py-4 shadow-[0_12px_34px_rgba(49,30,21,0.05)] dark:border-white/12 dark:bg-white/8 dark:shadow-[0_16px_42px_rgba(0,0,0,0.2)]">
+            <p className="text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ivory/82 sm:text-xs sm:tracking-[0.28em]">
               View More Specs
             </p>
-            <p className="mt-2 text-sm leading-7 text-theme-walnut/68 dark:text-theme-ink/62">
+            <p className="mt-2 text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/72">
               Material options, base finishes, add-ons, and configuration guidance now live in the
               {' '}
               <span className="font-semibold text-theme-bronze">View More Specs</span>
@@ -215,14 +215,14 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
               className={`relative flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-full border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-theme-bronze ${
                 saved || wishlistAdded
                   ? 'border-theme-bronze bg-theme-bronze text-white shadow-lg'
-                  : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-theme-mist/15 dark:text-theme-ink'
+                  : 'border-theme-line bg-white/55 text-theme-walnut hover:border-theme-bronze hover:bg-theme-bronze/10 hover:text-theme-bronze dark:bg-white/8 dark:text-theme-ivory'
               }`}
             >
               <HeartIcon filled={saved || wishlistAdded} className="h-5 w-5" />
             </button>
           </div>
 
-          <p className="text-center text-xs leading-5 text-theme-walnut/40 dark:text-theme-ink/35">
+          <p className="text-center text-xs leading-5 text-theme-walnut/40 dark:text-theme-ivory/50">
             {isOutOfStock
               ? 'This piece is currently unavailable to order. Re-enable it from the admin panel when stock returns.'
               : '5-year warranty · Easy returns · Nationwide delivery'}
@@ -231,10 +231,10 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
 
         <div className="flex flex-col gap-8 border-t border-theme-line bg-theme-sand/10 p-8 sm:gap-6 sm:p-7 dark:bg-theme-mist/10 md:border-l md:border-t-0 md:p-9">
           <div>
-            <p className="mb-1 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ink/55 sm:text-xs sm:tracking-[0.28em]">
+            <p className="mb-1 text-[0.75rem] font-semibold uppercase tracking-wider text-theme-walnut/65 dark:text-theme-ivory/70 sm:text-xs sm:tracking-[0.28em]">
               Finish
             </p>
-            <AnimatedHeading as="h3" className="font-display text-xl text-theme-ink">
+            <AnimatedHeading as="h3" className="font-display text-xl text-theme-ink dark:text-theme-ivory">
               {currentColor?.name || data.colors?.[0]?.name}
             </AnimatedHeading>
           </div>
@@ -252,14 +252,14 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className={data.size?.length ? "rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5" : "rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5 sm:col-span-2"}>
-              <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ink/58">
+              <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ivory/68">
                 Quantity
               </p>
               <div className="inline-flex items-center rounded-full border border-theme-line bg-theme-mist/60 dark:bg-theme-mist/25">
                 <button
                   onClick={() => setQuantity((current) => Math.max(1, current - 1))}
                   disabled={isOutOfStock || quantity <= 1}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ivory"
                   aria-label="Decrease quantity"
                 >
                   -
@@ -268,7 +268,7 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
                 <button
                   onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))}
                   disabled={isOutOfStock || quantity >= maxQuantity}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ink"
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-lg text-theme-walnut transition-colors hover:text-theme-bronze disabled:cursor-not-allowed disabled:opacity-35 dark:text-theme-ivory"
                   aria-label="Increase quantity"
                 >
                   +
@@ -278,7 +278,7 @@ export default function ProductDetails({ data, currentColor, currentImage, onCol
 
             {data.size?.length ? (
               <div className="rounded-[1.4rem] border border-theme-line/60 bg-white/60 p-4 dark:bg-white/5">
-                <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ink/58">
+                <p className="mb-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-theme-walnut/62 dark:text-theme-ivory/68">
                   Size / Configuration
                 </p>
                 <div className="flex flex-wrap gap-2">

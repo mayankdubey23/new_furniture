@@ -42,6 +42,17 @@ interface CustomizationRequest {
   deliveryAddressLine2?: string;
   deliveryAddress?: string;
   expectedTimeline?: string;
+  quoteCurrency?: string;
+  quotedBaseTotal?: number;
+  quotedAdjustmentsTotal?: number;
+  quotedGrandTotal?: number;
+  quoteLineItems?: Array<{
+    id?: string;
+    label?: string;
+    description?: string;
+    unitAmount?: number;
+    totalAmount?: number;
+  }>;
   adminNotes?: string;
   status: 'pending' | 'in-review' | 'approved' | 'contacted' | 'completed' | 'rejected';
   createdAt: string;
@@ -125,6 +136,15 @@ function formatDeliveryAddress(
   return [addressBase, item.deliveryCity, item.deliveryState, item.deliveryPincode, countryName]
     .filter(Boolean)
     .join(', ') || 'Address not shared';
+}
+
+function formatCurrency(value?: number) {
+  return `Rs. ${Number(value || 0).toLocaleString('en-IN')}`;
+}
+
+function formatSignedCurrency(value?: number) {
+  const amount = Number(value || 0);
+  return `${amount >= 0 ? '+' : '-'} ${formatCurrency(Math.abs(amount))}`;
 }
 
 function StatCard({
@@ -406,6 +426,10 @@ export default function AdminCustomizationsPage() {
                         <Clock3 className="h-3.5 w-3.5 text-theme-bronze" />
                         {formatDate(item.createdAt)}
                       </span>
+                      <span className="inline-flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5 text-theme-bronze" />
+                        Estimate {formatCurrency(item.quotedGrandTotal)}
+                      </span>
                     </div>
                   </div>
 
@@ -502,6 +526,8 @@ export default function AdminCustomizationsPage() {
                     <p><span className="font-semibold">Material:</span> {selectedItem.selectedMaterial || 'Not specified'}</p>
                     <p><span className="font-semibold">Finish:</span> {selectedItem.selectedFinish || 'Not specified'}</p>
                     <p><span className="font-semibold">Expected timeline:</span> {selectedItem.expectedTimeline || 'Not specified'}</p>
+                    <p><span className="font-semibold">Quoted total:</span> {formatCurrency(selectedItem.quotedGrandTotal)}</p>
+                    <p><span className="font-semibold">Customization delta:</span> {formatSignedCurrency(selectedItem.quotedAdjustmentsTotal)}</p>
                   </div>
                 </div>
               </div>
@@ -560,6 +586,24 @@ export default function AdminCustomizationsPage() {
                   <p className="mt-4 text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/62">
                     {selectedItem.customDescription || 'No extra description provided.'}
                   </p>
+                  {selectedItem.quoteLineItems?.length ? (
+                    <div className="mt-4 rounded-[1rem] border border-theme-line/50 bg-theme-ivory/62 px-3 py-3 dark:bg-white/6">
+                      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-theme-bronze">
+                        Quote Breakdown
+                      </p>
+                      <div className="mt-3 space-y-2 text-sm text-theme-walnut/70 dark:text-theme-ivory/62">
+                        {selectedItem.quoteLineItems.map((line, index) => (
+                          <div key={`${line.id || line.label || 'line'}-${index}`} className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold">{line.label || 'Adjustment'}</p>
+                              {line.description ? <p className="text-xs opacity-70">{line.description}</p> : null}
+                            </div>
+                            <p>{formatCurrency(line.totalAmount)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                   {selectedItem.adminNotes ? (
                     <p className="mt-4 rounded-[1rem] border border-theme-line/50 bg-theme-ivory/62 px-3 py-3 text-sm text-theme-walnut/70 dark:bg-white/6 dark:text-theme-ivory/62">
                       Admin notes: {selectedItem.adminNotes}

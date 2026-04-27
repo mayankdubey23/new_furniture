@@ -44,6 +44,20 @@ export interface ICustomization extends Document {
   deliveryAddress?: string;
   expectedTimeline?: string;
 
+  quoteCurrency?: string;
+  quotedBaseUnitPrice?: number;
+  quotedUnitPrice?: number;
+  quotedBaseTotal?: number;
+  quotedAdjustmentsTotal?: number;
+  quotedGrandTotal?: number;
+  quoteLineItems?: Array<{
+    id?: string;
+    label?: string;
+    description?: string;
+    unitAmount?: number;
+    totalAmount?: number;
+  }>;
+
 
   status: 'pending' | 'in-review' | 'approved' | 'contacted' | 'completed' | 'rejected';
   adminNotes?: string;
@@ -108,6 +122,27 @@ const CustomizationSchema = new Schema<ICustomization>(
     deliveryAddressLine2: String,
     deliveryAddress: String,
     expectedTimeline: String,
+
+    quoteCurrency: {
+      type: String,
+      default: 'INR',
+      trim: true,
+      uppercase: true,
+    },
+    quotedBaseUnitPrice: { type: Number, min: 0, default: 0 },
+    quotedUnitPrice: { type: Number, min: 0, default: 0 },
+    quotedBaseTotal: { type: Number, min: 0, default: 0 },
+    quotedAdjustmentsTotal: { type: Number, default: 0 },
+    quotedGrandTotal: { type: Number, min: 0, default: 0 },
+    quoteLineItems: [
+      {
+        id: String,
+        label: String,
+        description: String,
+        unitAmount: Number,
+        totalAmount: Number,
+      },
+    ],
 
 
     status: {

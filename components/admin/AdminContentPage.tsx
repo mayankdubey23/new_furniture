@@ -5,9 +5,12 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
+  Headphones,
+  Image as ImageIcon,
   Inbox,
   Loader2,
   Mail,
+  Mic,
   Pencil,
   PlusCircle,
   Quote,
@@ -84,6 +87,37 @@ interface ContactRecord {
   phone: string;
   subject: string;
   message: string;
+  active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ChatbotTicketAttachment {
+  kind: 'image' | 'audio';
+  url: string;
+  filename: string;
+  contentType: string;
+  size: number;
+}
+
+interface ChatbotTicketRecord {
+  _id: string;
+  id?: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  issueType: string;
+  urgency: string;
+  preferredContact: string;
+  orderOrProductRef?: string;
+  description: string;
+  answers?: {
+    roomOrProduct?: string;
+    triedAlready?: string;
+    bestTimeToCall?: string;
+  };
+  attachments: ChatbotTicketAttachment[];
+  status: 'open' | 'in-review' | 'contacted' | 'resolved';
   active: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -1584,12 +1618,15 @@ function ContactStudio({
       ) : null}
 
       <div className="space-y-3">
-        {items.map((item) => {
-          const itemId = item._id || item.id;
+        {items.map((item, index) => {
+          const itemId = readEntityId(item);
+          const itemKey =
+            itemId ||
+            `contact-${item.email || 'unknown'}-${item.createdAt || item.updatedAt || index}`;
 
           return (
             <div
-              key={itemId}
+              key={itemKey}
               className="rounded-[1.5rem] border border-theme-line/50 bg-white/74 p-5 dark:bg-white/5"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -1628,7 +1665,12 @@ function ContactStudio({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
+                    disabled={!itemId}
                     onClick={() => {
+                      if (!itemId) {
+                        return;
+                      }
+
                       setForm({
                         name: item.name,
                         email: item.email,
@@ -1642,7 +1684,7 @@ function ContactStudio({
                       setError('');
                       setSuccess('');
                     }}
-                    className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em]"
+                    className="inline-flex items-center gap-1 rounded-full border border-theme-line/60 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                     Edit
@@ -1650,8 +1692,15 @@ function ContactStudio({
 
                   <button
                     type="button"
-                    onClick={() => void handleDelete(itemId)}
-                    className="inline-flex items-center gap-1 rounded-full border border-red-300/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-600"
+                    disabled={!itemId}
+                    onClick={() => {
+                      if (!itemId) {
+                        return;
+                      }
+
+                      void handleDelete(itemId);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full border border-red-300/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-red-600 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     Delete
@@ -1672,12 +1721,223 @@ function ContactStudio({
   );
 }
 
+function ChatbotTicketStudio({
+  tickets,
+  onRefresh,
+}: {
+  tickets: ChatbotTicketRecord[];
+  onRefresh: () => Promise<void>;
+}) {
+  const [savingId, setSavingId] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const statuses: ChatbotTicketRecord['status'][] = [
+    'open',
+    'in-review',
+    'contacted',
+    'resolved',
+  ];
+
+  const updateStatus = async (ticketId: string, status: ChatbotTicketRecord['status']) => {
+    setSavingId(ticketId);
+    setError('');
+    setSuccess('');
+
+    try {
+      const response = await fetch(getApiUrl('/api/admin/chatbot-tickets'), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ id: ticketId, status }),
+      });
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(extractApiError(result, 'Failed to update ticket status.'));
+      }
+
+      setSuccess('Ticket status updated.');
+      await onRefresh();
+    } catch (updateError) {
+      setError(
+        updateError instanceof Error ? updateError.message : 'Failed to update ticket status.'
+      );
+    } finally {
+      setSavingId('');
+    }
+  };
+
+  return (
+    <StudioShell
+      eyebrow="Chatbot Support"
+      title="Consumer Problems"
+      description="Review structured chatbot reports with contact details, issue answers, images, and voice notes."
+      action={
+        <div className="inline-flex items-center gap-2 rounded-full border border-theme-line/60 bg-white/70 px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-theme-walnut/72 dark:bg-white/5 dark:text-theme-ivory/64">
+          <Headphones className="h-3.5 w-3.5 text-theme-bronze" />
+          {tickets.filter((ticket) => ticket.status !== 'resolved').length} active
+        </div>
+      }
+    >
+      <Feedback error={error} success={success} />
+
+      <div className="space-y-4">
+        {tickets.map((ticket) => {
+          const ticketId = ticket._id || ticket.id || '';
+          const imageAttachments = ticket.attachments?.filter((item) => item.kind === 'image') || [];
+          const audioAttachments = ticket.attachments?.filter((item) => item.kind === 'audio') || [];
+
+          return (
+            <article
+              key={ticketId}
+              className="rounded-[1.7rem] border border-theme-line/50 bg-white/74 p-5 shadow-[0_18px_40px_rgba(49,30,21,0.05)] dark:bg-white/5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-theme-bronze/30 bg-theme-bronze/10 px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-theme-bronze">
+                      {ticket.issueType}
+                    </span>
+                    <span className={`rounded-full border px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] ${
+                      ticket.urgency === 'Urgent'
+                        ? 'border-red-300/70 bg-red-50 text-red-600 dark:bg-red-500/10'
+                        : 'border-theme-line/60 bg-theme-ivory/62 text-theme-walnut/62 dark:bg-white/5 dark:text-theme-ivory/60'
+                    }`}>
+                      {ticket.urgency}
+                    </span>
+                    <span className="rounded-full border border-theme-line/60 bg-theme-ivory/62 px-3 py-1 text-[0.64rem] font-semibold uppercase tracking-[0.2em] text-theme-walnut/62 dark:bg-white/5 dark:text-theme-ivory/60">
+                      {ticket.status}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-4 text-lg font-semibold text-theme-ink dark:text-theme-ivory">
+                    {ticket.customerName || 'Chatbot Visitor'}
+                  </h3>
+                  <p className="mt-1 text-sm text-theme-walnut/64 dark:text-theme-ivory/60">
+                    {ticket.customerPhone}
+                    {ticket.customerEmail ? ` | ${ticket.customerEmail}` : ''}
+                    {ticket.preferredContact ? ` | ${ticket.preferredContact}` : ''}
+                  </p>
+                  {ticket.orderOrProductRef ? (
+                    <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-theme-bronze">
+                      Ref: {ticket.orderOrProductRef}
+                    </p>
+                  ) : null}
+
+                  <p className="mt-4 text-sm leading-7 text-theme-walnut/72 dark:text-theme-ivory/68">
+                    {ticket.description}
+                  </p>
+
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    {ticket.answers?.roomOrProduct ? (
+                      <div className="rounded-[1.1rem] border border-theme-line/50 bg-theme-ivory/50 px-3 py-3 dark:bg-white/5">
+                        <p className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                          Location
+                        </p>
+                        <p className="mt-2 text-sm text-theme-ink dark:text-theme-ivory">
+                          {ticket.answers.roomOrProduct}
+                        </p>
+                      </div>
+                    ) : null}
+                    {ticket.answers?.triedAlready ? (
+                      <div className="rounded-[1.1rem] border border-theme-line/50 bg-theme-ivory/50 px-3 py-3 dark:bg-white/5">
+                        <p className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                          Tried
+                        </p>
+                        <p className="mt-2 text-sm text-theme-ink dark:text-theme-ivory">
+                          {ticket.answers.triedAlready}
+                        </p>
+                      </div>
+                    ) : null}
+                    {ticket.answers?.bestTimeToCall ? (
+                      <div className="rounded-[1.1rem] border border-theme-line/50 bg-theme-ivory/50 px-3 py-3 dark:bg-white/5">
+                        <p className="text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-theme-bronze">
+                          Best Time
+                        </p>
+                        <p className="mt-2 text-sm text-theme-ink dark:text-theme-ivory">
+                          {ticket.answers.bestTimeToCall}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {imageAttachments.length || audioAttachments.length ? (
+                    <div className="mt-4 grid gap-3 md:grid-cols-2">
+                      {imageAttachments.map((attachment) => (
+                        <a
+                          key={attachment.url}
+                          href={attachment.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="group overflow-hidden rounded-[1.2rem] border border-theme-line/50 bg-theme-ivory/45 dark:bg-white/5"
+                        >
+                          <img
+                            src={attachment.url}
+                            alt={attachment.filename || 'Problem attachment'}
+                            className="h-40 w-full object-cover transition group-hover:scale-[1.02]"
+                          />
+                          <span className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-theme-walnut/68 dark:text-theme-ivory/64">
+                            <ImageIcon className="h-3.5 w-3.5 text-theme-bronze" />
+                            Image evidence
+                          </span>
+                        </a>
+                      ))}
+                      {audioAttachments.map((attachment) => (
+                        <div
+                          key={attachment.url}
+                          className="rounded-[1.2rem] border border-theme-line/50 bg-theme-ivory/45 p-3 dark:bg-white/5"
+                        >
+                          <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-theme-bronze">
+                            <Mic className="h-3.5 w-3.5" />
+                            Voice note
+                          </p>
+                          <audio controls src={attachment.url} className="w-full" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <p className="mt-4 text-xs text-theme-walnut/56 dark:text-theme-ivory/52">
+                    Submitted {formatDate(ticket.createdAt)}
+                  </p>
+                </div>
+
+                <select
+                  value={ticket.status}
+                  disabled={savingId === ticketId}
+                  onChange={(event) =>
+                    void updateStatus(ticketId, event.target.value as ChatbotTicketRecord['status'])
+                  }
+                  className="rounded-full border border-theme-line/60 bg-white/72 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] outline-none dark:bg-white/6 dark:text-theme-ivory"
+                >
+                  {statuses.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </article>
+          );
+        })}
+
+        {!tickets.length ? (
+          <div className="rounded-[1.4rem] border border-dashed border-theme-line/60 px-4 py-8 text-center text-sm text-theme-walnut/56 dark:text-theme-ivory/52">
+            No chatbot problem reports yet.
+          </div>
+        ) : null}
+      </div>
+    </StudioShell>
+  );
+}
+
 export default function AdminContentPage() {
   const [faqs, setFaqs] = useState<FaqRecord[]>([]);
   const [features, setFeatures] = useState<FeatureRecord[]>([]);
   const [testimonials, setTestimonials] = useState<TestimonialRecord[]>([]);
   const [newsletters, setNewsletters] = useState<NewsletterRecord[]>([]);
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
+  const [chatbotTickets, setChatbotTickets] = useState<ChatbotTicketRecord[]>([]);
   const [users, setUsers] = useState<UserOption[]>([]);
   const [products, setProducts] = useState<ProductOption[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1695,6 +1955,7 @@ export default function AdminContentPage() {
       '/api/contactus',
       '/api/users',
       '/api/products',
+      '/api/admin/chatbot-tickets',
     ] as const;
 
     try {
@@ -1718,6 +1979,11 @@ export default function AdminContentPage() {
       setContacts(responses[4].ok ? unwrapApiArray<ContactRecord>(payloads[4]) : []);
       setUsers(responses[5].ok ? unwrapApiArray<UserOption>(payloads[5]) : []);
       setProducts(responses[6].ok ? unwrapApiArray<ProductOption>(payloads[6]) : []);
+      setChatbotTickets(
+        responses[7].ok && Array.isArray(payloads[7]?.tickets)
+          ? (payloads[7].tickets as ChatbotTicketRecord[])
+          : []
+      );
 
       const errors = responses
         .map((response, index) =>
@@ -1734,6 +2000,7 @@ export default function AdminContentPage() {
       setTestimonials([]);
       setNewsletters([]);
       setContacts([]);
+      setChatbotTickets([]);
       setUsers([]);
       setProducts([]);
       setLoadError(
@@ -1760,6 +2027,10 @@ export default function AdminContentPage() {
   const openContacts = useMemo(
     () => contacts.filter((item) => item.active).length,
     [contacts]
+  );
+  const openChatbotTickets = useMemo(
+    () => chatbotTickets.filter((item) => item.status !== 'resolved').length,
+    [chatbotTickets]
   );
 
   if (loading) {
@@ -1810,7 +2081,7 @@ export default function AdminContentPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-5">
+      <div className="grid gap-4 xl:grid-cols-6">
         <StatCard
           label="FAQs"
           value={String(faqs.length)}
@@ -1841,6 +2112,12 @@ export default function AdminContentPage() {
           note={`${openContacts} open message(s)`}
           icon={Inbox}
         />
+        <StatCard
+          label="Chatbot"
+          value={String(chatbotTickets.length)}
+          note={`${openChatbotTickets} active problem(s)`}
+          icon={Headphones}
+        />
       </div>
 
       <div className="grid gap-8 xl:grid-cols-2">
@@ -1857,6 +2134,8 @@ export default function AdminContentPage() {
         />
         <NewsletterStudio items={newsletters} onRefresh={refreshContent} />
       </div>
+
+      <ChatbotTicketStudio tickets={chatbotTickets} onRefresh={refreshContent} />
 
       <ContactStudio items={contacts} onRefresh={refreshContent} />
     </div>

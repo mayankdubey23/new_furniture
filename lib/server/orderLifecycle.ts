@@ -1,5 +1,9 @@
 import Notification from '@/models/Notification';
-import type { OrderStatus } from '@/models/Order';
+import type {
+  OrderStatus,
+  ReturnRefundRequestStatus,
+  ReturnRefundRequestType,
+} from '@/models/Order';
 import dbConnect from '@/lib/mongoose';
 import { ORDER_TRACKING_PREFIX, SITE_NAME } from '@/lib/brand';
 import { DEFAULT_SITE_SETTING, normalizeSiteSetting } from '@/lib/siteSettings';
@@ -37,6 +41,25 @@ export interface MutableOrderRecord {
   paymentProvider?: 'razorpay';
   gatewayOrderId?: string;
   gatewayPaymentId?: string;
+  returnRefundRequests?: Array<{
+    _id?: unknown;
+    requestType: ReturnRefundRequestType;
+    status: ReturnRefundRequestStatus;
+    reason: string;
+    details: string;
+    customerEmail: string;
+    items: Array<{
+      itemIndex: number;
+      productId?: string;
+      name: string;
+      quantity: number;
+    }>;
+    requestedAt: Date | string;
+    reviewedAt?: Date | string | null;
+    resolvedAt?: Date | string | null;
+    refundAmount?: number | null;
+    adminNotes?: string;
+  }>;
   customer: {
     name: string;
     email: string;
