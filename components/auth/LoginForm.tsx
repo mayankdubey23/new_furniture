@@ -76,6 +76,48 @@ function normalizeReturnTo(value: string | null) {
   return value;
 }
 
+type AuthApiPayload = {
+  code?: string;
+  error?: string;
+  enabled?: boolean;
+  phone?: string;
+};
+
+const BACKEND_UNAVAILABLE_MESSAGE =
+  'Customer account login needs the backend API. Start the backend server, or set NEXT_PUBLIC_EXTERNAL_API_BASE_URL to the deployed backend URL and restart Next.js.';
+
+async function readAuthApiPayload(response: Response): Promise<AuthApiPayload> {
+  const text = await response.text().catch(() => '');
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text) as AuthApiPayload;
+  } catch {
+    return { error: text };
+  }
+}
+
+function getAuthApiError(
+  response: Response,
+  payload: AuthApiPayload,
+  fallback: string
+) {
+  const message = String(payload.error || '').trim();
+
+  if (
+    response.status === 502 ||
+    message.includes('External API is unavailable') ||
+    message.includes('Internal Server Error')
+  ) {
+    return BACKEND_UNAVAILABLE_MESSAGE;
+  }
+
+  return message || fallback;
+}
+
 export default function LoginForm({ googleConfigured = false }: LoginFormProps) {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
@@ -135,7 +177,7 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
           cache: 'no-store',
           credentials: 'include',
         });
-        const data = (await response.json()) as { enabled?: boolean };
+        const data = await readAuthApiPayload(response);
         if (!active) {
           return;
         }
@@ -193,10 +235,10 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
           body: JSON.stringify({ phone, purpose }),
           credentials: 'include',
         });
-        const data = await res.json();
+        const data = await readAuthApiPayload(res);
 
         if (!res.ok) {
-          setError(data.error || 'Unable to send OTP. Please try again.');
+          setError(getAuthApiError(res, data, 'Unable to send OTP. Please try again.'));
           return;
         }
 
@@ -206,7 +248,7 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
 
         setInfo(`OTP sent to ${data.phone}. Enter the 6-digit code to continue.`);
       } catch {
-        setError('Something went wrong. Please try again.');
+        setError(BACKEND_UNAVAILABLE_MESSAGE);
       } finally {
         setOtpSendingFor(null);
       }
@@ -229,7 +271,7 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
         }),
         credentials: 'include',
       });
-      const data = await res.json();
+      const data = await readAuthApiPayload(res);
 
       if (!res.ok) {
         if (data.code === 'PASSWORD_SETUP_REQUIRED') {
@@ -257,14 +299,14 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
           return;
         }
 
-        setError(data.error || 'Login failed. Please try again.');
+        setError(getAuthApiError(res, data, 'Login failed. Please try again.'));
         return;
       }
 
       await refreshUser();
       router.push(returnTo || '/');
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(BACKEND_UNAVAILABLE_MESSAGE);
     } finally {
       setLoading(false);
     }
@@ -285,17 +327,17 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
         }),
         credentials: 'include',
       });
-      const data = await res.json();
+      const data = await readAuthApiPayload(res);
 
       if (!res.ok) {
-        setError(data.error || 'OTP sign-in failed. Please try again.');
+        setError(getAuthApiError(res, data, 'OTP sign-in failed. Please try again.'));
         return;
       }
 
       await refreshUser();
       router.push(returnTo || '/');
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(BACKEND_UNAVAILABLE_MESSAGE);
     } finally {
       setLoading(false);
     }
@@ -350,17 +392,17 @@ export default function LoginForm({ googleConfigured = false }: LoginFormProps) 
         }),
         credentials: 'include',
       });
-      const data = await res.json();
+      const data = await readAuthApiPayload(res);
 
       if (!res.ok) {
-        setError(data.error || 'Registration failed. Please try again.');
+        setError(getAuthApiError(res, data, 'Registration failed. Please try again.'));
         return;
       }
 
       await refreshUser();
       router.push(returnTo || '/');
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError(BACKEND_UNAVAILABLE_MESSAGE);
     } finally {
       setLoading(false);
     }
