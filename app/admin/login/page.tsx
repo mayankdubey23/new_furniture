@@ -51,6 +51,14 @@ export default function AdminLogin() {
   const [submitting, setSubmitting] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
 
+  const readJsonPayload = async <T,>(response: Response): Promise<T | null> => {
+    try {
+      return (await response.json()) as T;
+    } catch {
+      return null;
+    }
+  };
+
   const channelOptions = useMemo(
     () => [
       {
@@ -87,13 +95,13 @@ export default function AdminLogin() {
         }
 
         const payload = statusResponse.ok
-          ? ((await statusResponse.json()) as AdminAuthStatus)
+          ? await readJsonPayload<AdminAuthStatus>(statusResponse)
           : null;
 
         if (!cancelled) {
           setStatus(payload);
           setChannel(getPreferredChannel(payload));
-          setTab(payload?.hasPassword ? 'login' : 'create');
+          setTab('login');
         }
       } catch {
         if (!cancelled) {
@@ -131,14 +139,6 @@ export default function AdminLogin() {
     event.preventDefault();
     resetMessages();
 
-    if (!status?.hasPassword) {
-      setError(
-        status?.guidance ||
-          'No admin password is active yet. Create one first using email or contact number recovery.'
-      );
-      return;
-    }
-
     setSubmitting(true);
 
     try {
@@ -152,7 +152,7 @@ export default function AdminLogin() {
         }),
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = await readJsonPayload<{ error?: string }>(response);
 
       if (!response.ok) {
         setError(payload?.error || 'Unable to sign in. Please verify your credentials.');
@@ -186,9 +186,7 @@ export default function AdminLogin() {
         body: JSON.stringify({ channel }),
       });
 
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string; destination?: string }
-        | null;
+      const payload = await readJsonPayload<{ error?: string; destination?: string }>(response);
 
       if (!response.ok) {
         setError(payload?.error || 'Unable to send a verification code right now.');
@@ -235,7 +233,7 @@ export default function AdminLogin() {
         }),
       });
 
-      const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+      const payload = await readJsonPayload<{ error?: string }>(response);
 
       if (!response.ok) {
         setError(payload?.error || 'Unable to secure the admin password.');

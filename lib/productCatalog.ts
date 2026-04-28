@@ -1094,21 +1094,6 @@ export const DEFAULT_PRODUCTS: DefaultProduct[] = [
   },
 ];
 
-const DEFAULT_PRODUCT_BY_CATEGORY = new Map(
-  DEFAULT_PRODUCTS.map((product) => [product.category, product])
-);
-const DEFAULT_PRODUCT_BY_NAME = new Map(
-  DEFAULT_PRODUCTS.map((product) => [slugify(product.name), product])
-);
-
-function getDefaultProduct(category: string) {
-  return DEFAULT_PRODUCT_BY_CATEGORY.get(category) ?? DEFAULT_PRODUCTS[0];
-}
-
-function getDefaultProductByName(name: string) {
-  return DEFAULT_PRODUCT_BY_NAME.get(slugify(name)) ?? null;
-}
-
 function createSparseFallback(category: string): DefaultProduct {
   return {
     category,
@@ -1139,14 +1124,7 @@ function createSparseFallback(category: string): DefaultProduct {
 }
 
 function getNormalizationFallback(value: ProductLike | DefaultProduct, category: string) {
-  const source = value as ProductLike;
-  const matchingDefault = getDefaultProductByName(cleanString(source.name));
-
-  if (matchingDefault) {
-    return matchingDefault;
-  }
-
-  return source._id || source.id ? createSparseFallback(category) : getDefaultProduct(category);
+  return createSparseFallback(category || cleanString((value as ProductLike).category) || 'uncategorized');
 }
 
 export function normalizeProduct(
@@ -1162,7 +1140,7 @@ export function normalizeProduct(
         fallbackCategory ||
         ''
     );
-  const category = rawCategory || fallbackCategory || DEFAULT_PRODUCTS[0].category;
+  const category = rawCategory || fallbackCategory || 'uncategorized';
   const fallback = getNormalizationFallback(source, category);
   const views = {
     ...extractProductViews(fallback),
@@ -1466,7 +1444,7 @@ export function ensureFeaturedProducts(products: Array<ProductLike | DefaultProd
   }
 
   if (!byCollection.size) {
-    return DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category));
+    return [];
   }
 
   return Array.from(byCollection.values());

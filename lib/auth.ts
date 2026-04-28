@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongoose';
+import { getServerDataSource } from '@/lib/api/server';
 import { SITE_NAME } from '@/lib/brand';
 import { getAdminSettings } from '@/lib/services/adminSettings';
 import {
@@ -29,6 +30,8 @@ type AdminJwtPayload = {
 };
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
+
+const BOOTSTRAP_ADMIN_ID = 'bootstrap-admin';
 
 export interface AdminSessionUser {
   adminId: string;
@@ -70,6 +73,10 @@ function getJwtSecret() {
   }
 
   return secret;
+}
+
+function shouldUseBootstrapAdminAuth() {
+  return getServerDataSource() === 'external' || !process.env.MONGODB_URI?.trim();
 }
 
 function normalizeEmail(value: string | undefined | null) {
@@ -233,6 +240,24 @@ async function resolveSeedProfile() {
   };
 }
 
+function seedIdentifierMatches(
+  identifier: string,
+  seed: Awaited<ReturnType<typeof resolveSeedProfile>>
+) {
+  const normalizedEmail = normalizeEmail(identifier);
+  if (normalizedEmail && normalizedEmail === seed.email) {
+    return true;
+  }
+
+  const normalizedPhone = normalizePhoneNumber(identifier);
+  if (normalizedPhone && normalizedPhone === seed.phone) {
+    return true;
+  }
+
+  const normalizedUsername = normalizeUsername(identifier);
+  return Boolean(normalizedUsername && normalizedUsername === seed.username);
+}
+
 async function findAdminByIdentifier(identifier: string) {
   const normalizedEmail = normalizeEmail(identifier);
   if (normalizedEmail) {
@@ -368,6 +393,17 @@ export async function ensureAdminAccount() {
 }
 
 export async function syncAdminContactProfile(profile: { email?: string; phone?: string }) {
+  if (shouldUseBootstrapAdminAuth()) {
+    const seed = await resolveSeedProfile();
+    return {
+      _id: BOOTSTRAP_ADMIN_ID,
+      email: normalizeEmail(profile.email || '') || seed.email,
+      phone: normalizePhoneNumber(profile.phone || '') || seed.phone || undefined,
+      username: seed.username || undefined,
+      active: true,
+    };
+  }
+
   const admin = await ensureAdminAccount();
   const nextEmail = normalizeEmail(profile.email || '') || admin.email;
   const nextPhone = normalizePhoneNumber(profile.phone || '') || undefined;
@@ -392,6 +428,31 @@ export async function syncAdminContactProfile(profile: { email?: string; phone?:
 }
 
 export async function getAdminAuthStatus(): Promise<AdminAuthStatus> {
+  if (shouldUseBootstrapAdminAuth()) {
+    const seed = await resolveSeedProfile();
+    const hasPassword = Boolean(seed.bootstrapPassword);
+
+    return {
+      hasPassword,
+      passwordPolicy: buildPasswordPolicyMessage(),
+      guidance: hasPassword
+        ? ''
+        : 'No bootstrap admin password is configured yet. Add JWT_SECRET, ADMIN_USERNAME, and ADMIN_PASSWORD to .env.local, then restart the dev server.',
+      recovery: {
+        email: {
+          available: false,
+          maskedDestination: seed.email ? maskEmail(seed.email) : '',
+          reason: 'Password recovery is handled by the backend in external API mode.',
+        },
+        phone: {
+          available: false,
+          maskedDestination: seed.phone ? maskPhone(seed.phone) : '',
+          reason: 'Password recovery is handled by the backend in external API mode.',
+        },
+      },
+    };
+  }
+
   const admin = await ensureAdminAccount();
   const emailRecovery = buildEmailRecoveryOption(admin.email);
   const phoneRecovery = buildPhoneRecoveryOption(admin.phone);
@@ -431,6 +492,20 @@ export async function verifyAdmin(request?: NextRequest): Promise<AdminSessionUs
       return null;
     }
 
+    if (shouldUseBootstrapAdminAuth()) {
+      const seed = await resolveSeedProfile();
+      if (decoded.adminId !== BOOTSTRAP_ADMIN_ID || decoded.email !== seed.email) {
+        return null;
+      }
+
+      return {
+        adminId: BOOTSTRAP_ADMIN_ID,
+        email: seed.email,
+        phone: seed.phone || undefined,
+        username: seed.username || undefined,
+      };
+    }
+
     await dbConnect();
 
     const admin = await AdminAccount.findOne({
@@ -464,6 +539,23 @@ export async function adminMiddleware(request: NextRequest) {
 }
 
 export async function login(identifier: string, password: string) {
+  if (shouldUseBootstrapAdminAuth()) {
+    const seed = await resolveSeedProfile();
+    if (
+      !seed.bootstrapPassword ||
+      !seedIdentifierMatches(identifier, seed) ||
+      String(password || '') !== seed.bootstrapPassword
+    ) {
+      return null;
+    }
+
+    return createAdminToken({
+      adminId: BOOTSTRAP_ADMIN_ID,
+      email: seed.email,
+      scope: 'admin',
+    });
+  }
+
   await ensureAdminAccount();
 
   const admin = await findAdminByIdentifier(identifier);
@@ -487,6 +579,10 @@ export async function login(identifier: string, password: string) {
 }
 
 export async function requestAdminPasswordCode(channel: AdminChannel) {
+  if (shouldUseBootstrapAdminAuth()) {
+    throw new Error('PASSWORD_RECOVERY_UNAVAILABLE');
+  }
+
   const admin = await ensureAdminAccount();
 
   if (channel === 'phone') {
@@ -544,6 +640,10 @@ export async function requestAdminPasswordCode(channel: AdminChannel) {
 }
 
 export async function updateAdminPassword(channel: AdminChannel, code: string, nextPassword: string) {
+  if (shouldUseBootstrapAdminAuth()) {
+    throw new Error('PASSWORD_RECOVERY_UNAVAILABLE');
+  }
+
   const passwordError = validateAdminPassword(nextPassword);
   if (passwordError) {
     throw new Error(passwordError);

@@ -5,7 +5,8 @@ This document captures the frontend contracts for checkout, orders, cart, wishli
 ## Transport
 
 - Frontend calls same-origin `/api/*` routes with `credentials: include`.
-- If a route is added to `lib/api/externalRoutes.ts`, `proxy.ts` forwards it to `EXTERNAL_API_BASE_URL`.
+- In `external` mode, `proxy.ts` forwards all `/api/*` routes to `EXTERNAL_API_BASE_URL`.
+- `lib/api/externalRoutes.ts` only maps route-name differences, such as `/api/products` to `/api/product`.
 - External backend requests receive these headers when `PUBLIC_KEY` is configured:
   - `Authorization: Bearer <PUBLIC_KEY>`
   - `x-public-key: <PUBLIC_KEY>`
@@ -443,6 +444,9 @@ Success:
 
 ## Current Routing Decision
 
-These contracts are currently handled by local Next.js API routes, not forwarded to port `8000`.
+These contracts are owned by the external backend in `external` mode. The
+frontend keeps the same same-origin `/api/*` calls, and `proxy.ts` forwards them
+to `EXTERNAL_API_BASE_URL`.
 
-If the external backend should own any of these routes, add the exact mapping to `lib/api/externalRoutes.ts` only after the backend response shapes match this document.
+Only routes whose backend path differs from the frontend path need an entry in
+`lib/api/externalRoutes.ts`. Every other `/api/*` route is forwarded unchanged.

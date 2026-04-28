@@ -72,33 +72,33 @@ const DEPTH_SETTINGS: Record<
 > = {
   foreground: {
     zIndex: 18,
-    introOpacity: 0.15,
-    glideOpacity: 0.08,
-    travelOpacity: 0.04,
-    footerOpacity: 0.1,
-    exitOpacity: 0.07,
+    introOpacity: 0.16,
+    glideOpacity: 0.09,
+    travelOpacity: 0.045,
+    footerOpacity: 0.11,
+    exitOpacity: 0.06,
     shadow: 'drop-shadow(0 24px 52px rgba(42, 33, 28, 0.24))',
-    imageClassName: 'brightness-[0.86] saturate-[0.58] mix-blend-multiply',
+    imageClassName: 'brightness-[0.86] saturate-[0.58] mix-blend-multiply dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.9]',
   },
   midground: {
     zIndex: 12,
-    introOpacity: 0.1,
-    glideOpacity: 0.055,
-    travelOpacity: 0.03,
-    footerOpacity: 0.065,
+    introOpacity: 0.11,
+    glideOpacity: 0.065,
+    travelOpacity: 0.035,
+    footerOpacity: 0.075,
     exitOpacity: 0.03,
     shadow: 'drop-shadow(0 18px 38px rgba(42, 33, 28, 0.16))',
-    imageClassName: 'brightness-[0.82] saturate-[0.48] mix-blend-multiply',
+    imageClassName: 'brightness-[0.82] saturate-[0.48] mix-blend-multiply dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.86]',
   },
   background: {
     zIndex: 6,
-    introOpacity: 0.055,
-    glideOpacity: 0.03,
-    travelOpacity: 0.018,
-    footerOpacity: 0.04,
+    introOpacity: 0.06,
+    glideOpacity: 0.035,
+    travelOpacity: 0.02,
+    footerOpacity: 0.045,
     exitOpacity: 0,
     shadow: 'drop-shadow(0 14px 28px rgba(42, 33, 28, 0.1))',
-    imageClassName: 'brightness-[0.78] saturate-[0.4] mix-blend-multiply',
+    imageClassName: 'brightness-[0.78] saturate-[0.4] mix-blend-multiply dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.8]',
   },
 };
 
@@ -455,7 +455,7 @@ export default function CushionCascade() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      className="pointer-events-none fixed inset-0 z-[18] overflow-hidden"
+      className="pointer-events-none fixed inset-0 z-[24] overflow-hidden"
       style={{
         maskImage:
           'linear-gradient(180deg, transparent 0%, black 16%, black 88%, transparent 100%)',

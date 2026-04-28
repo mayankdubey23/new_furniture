@@ -25,6 +25,15 @@ Optional server-side override:
 
 - `DATA_SOURCE=external`
 
+In `external` mode, MongoDB is owned by the separate backend. The frontend keeps
+calling same-origin `/api/*` URLs, and `proxy.ts` forwards those requests to
+`EXTERNAL_API_BASE_URL` while preserving cookies and adding the configured
+public backend key.
+
+Product and collection images are read from product/category/brand records. The
+storefront no longer substitutes bundled sample product images when live product
+data is empty or unavailable.
+
 ## External Backend Settings
 
 When your separate backend is ready, set:
@@ -47,7 +56,7 @@ when the source is `external` and the key is configured. Keep this key server-si
 
 Browser calls should continue to hit local `/api/*` URLs. In `external` mode, `proxy.ts` rewrites the supported routes to your backend and adds the bearer token there, so the client never needs direct access to that secret.
 
-The built-in external route mapping covers the catalog/contact APIs owned by the separate backend:
+The built-in external route mapping covers backend route-name differences:
 
 - `/api/products` and `/api/product` -> backend `/api/product`
 - `/api/maincategories` and `/api/maincategory` -> backend `/api/maincategory`
@@ -55,7 +64,9 @@ The built-in external route mapping covers the catalog/contact APIs owned by the
 - `/api/brands` and `/api/brand` -> backend `/api/brand`
 - `/api/settings` and `/api/setting` -> backend `/api/setting`
 
-Auth, cart, wishlist, Razorpay checkout, newsletters, FAQs, features, testimonials, contact messages, and admin content stay on the local Next.js API routes unless you explicitly add those backend contracts to `lib/api/externalRoutes.ts`.
+All other `/api/*` routes are forwarded to the backend using the same path, for
+example `/api/address/current`, `/api/orders/current`, `/api/cart/current`, and
+`/api/auth/user/login`.
 
 The storefront server adapters are also prepared to consume:
 

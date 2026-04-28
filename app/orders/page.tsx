@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import AnimatedHeading from '@/components/AnimatedHeading';
 import { useUser } from '@/context/UserContext';
 import { getApiUrl } from '@/lib/api/browser';
-import { SITE_NAME } from '@/lib/brand';
 
 type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
 type PaymentMethod = 'cod' | 'razorpay';

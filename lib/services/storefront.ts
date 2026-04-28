@@ -24,8 +24,24 @@ import {
 
 type NormalizableProduct = Parameters<typeof normalizeProduct>[0];
 
-function getDefaultProducts() {
-  return DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category));
+function getFallbackProducts() {
+  return ensureRenderableProductAssetList(
+    DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category))
+  );
+}
+
+function unwrapProductList(value: unknown) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (value && typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const candidates = [record.data, record.products, record.items, record.results];
+    return candidates.find(Array.isArray) ?? [];
+  }
+
+  return [];
 }
 
 async function getInternalProducts() {
@@ -39,14 +55,14 @@ async function getInternalProducts() {
       .lean();
 
     if (!products.length) {
-      return getDefaultProducts();
+      return [];
     }
 
     return ensureRenderableProductAssetList(
       products.map((product) => normalizeProduct(product as NormalizableProduct))
     );
   } catch {
-    return getDefaultProducts();
+    return [];
   }
 }
 
@@ -56,33 +72,27 @@ async function getMockProducts() {
     const products = Array.isArray(database.products) ? database.products : [];
 
     if (!products.length) {
-      return getDefaultProducts();
+      return [];
     }
 
     return ensureRenderableProductAssetList(
       products.map((product) => normalizeProduct(product as NormalizableProduct))
     );
   } catch {
-    return getDefaultProducts();
+    return [];
   }
 }
 
 async function getExternalProducts() {
   try {
-    const [products, fallbackProducts] = await Promise.all([
-      fetchServerJson<unknown[]>(getExternalProductsPath()),
-      getInternalProducts(),
-    ]);
+    const response = await fetchServerJson<unknown>(getExternalProductsPath());
+    const products = unwrapProductList(response);
 
-    if (!Array.isArray(products) || !products.length) {
-      return fallbackProducts;
+    if (!products.length) {
+      return getFallbackProducts();
     }
 
     const mergedProducts = new Map<string, ProductRecord>();
-
-    for (const product of fallbackProducts) {
-      mergedProducts.set(product.id, product);
-    }
 
     for (const product of products) {
       const normalizedProduct = normalizeProduct(product as NormalizableProduct);
@@ -93,7 +103,7 @@ async function getExternalProducts() {
       Array.from(mergedProducts.values())
     );
   } catch {
-    return getInternalProducts();
+    return getFallbackProducts();
   }
 }
 

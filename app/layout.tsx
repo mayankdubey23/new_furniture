@@ -10,7 +10,7 @@ import ChatbotWidget from '@/components/ChatbotWidget';
 import { CartProvider } from '@/context/CartContext';
 import { WishlistProvider } from '@/context/WishlistContext';
 import { UserProvider } from '@/context/UserContext';
-import { getStorefrontCollectionLinks } from '@/lib/productStore';
+import { getStorefrontCollectionLinks, getStorefrontProducts } from '@/lib/productStore';
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TAGLINE } from '@/lib/brand';
 
 export const dynamic = 'force-dynamic';
@@ -25,7 +25,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const collections = await getStorefrontCollectionLinks();
+  const [products, collections] = await Promise.all([
+    getStorefrontProducts(),
+    getStorefrontCollectionLinks(),
+  ]);
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -40,7 +43,7 @@ export default async function RootLayout({
                   <CushionCascade />
                   <div className="relative z-10">
                     <SmoothScrolling>
-                      <Navbar collections={collections} />
+                      <Navbar collections={collections} products={products} />
                       {children}
                       <ChatbotWidget />
                     </SmoothScrolling>

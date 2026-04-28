@@ -14,10 +14,10 @@ npm run mock:server
 
 ## Dynamic Data Modes
 
-The app now supports three data sources:
+The app supports three data sources:
 
-- `internal`: current Next.js routes and Mongo-backed server logic
-- `external`: your separate backend
+- `external`: your separate backend, recommended for production and active development
+- `internal`: legacy Next.js routes and Mongo-backed server logic
 - `mock`: JSON Server using `mock-api/db.json`
 
 Set one of these:
@@ -50,13 +50,17 @@ Customer login supports email/password, optional phone OTP, and Google OAuth.
 Required local env values:
 
 ```bash
-MONGODB_URI=mongodb://127.0.0.1:27017/luxe-furniture
 JWT_SECRET=replace-with-a-long-random-secret
 APP_URL=http://localhost:3000
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
 ```
+
+MongoDB is expected to be owned by the external backend. The frontend keeps the
+same `/api/*` calls and proxies them to `EXTERNAL_API_BASE_URL` in `external`
+mode. The storefront no longer falls back to bundled sample product images when
+live product data is empty or unavailable.
 
 Admin access is now backed by a stored admin account instead of the old hardcoded fallback credentials. For a secure admin setup, add:
 

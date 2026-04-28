@@ -2,7 +2,11 @@
 
 This project now has a working admin catalog flow for products, uploads, and storefront sync.
 
-## Main Backend Files
+## Legacy Local Backend Files
+
+These files document the frontend contract and legacy local implementation. In
+normal `external` mode, `proxy.ts` forwards `/api/*` calls to the separate
+backend instead of using these Mongo-backed routes.
 
 - `app/api/maincategories/route.ts`
   Main category list and creation.
@@ -121,13 +125,13 @@ The homepage no longer depends only on a hardcoded product array.
 - product mutations call `revalidateCatalogRoutes(...)`
 - storefront sections stay aligned with admin changes
 
-## Local Backend Workflow
+## External Backend Workflow
 
-1. Set `MONGODB_URI`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, and `JWT_SECRET`.
-2. Run `npm run seed` if you want starter products in MongoDB.
-3. Log in through `/admin/login`.
-4. Create or edit products in the admin panel.
-5. Upload named views and model assets through the admin panel.
+1. Set `NEXT_PUBLIC_DATA_SOURCE=external` and `DATA_SOURCE=external`.
+2. Set `EXTERNAL_API_BASE_URL` and `NEXT_PUBLIC_EXTERNAL_API_BASE_URL` to the backend URL.
+3. Set `PUBLIC_KEY` if the backend requires the configured public key headers.
+4. Keep the admin panel and storefront calling the same frontend `/api/*` paths.
+5. Ensure the backend returns product/category/brand image fields in the shapes documented here.
 
 ## Recommended Next Backend Improvements
 

@@ -8,7 +8,6 @@ import {
   ensureRenderableProductAssets,
 } from '@/lib/server/productAssets';
 import {
-  DEFAULT_PRODUCTS,
   normalizeProduct,
   prepareProductMutationInput,
 } from '@/lib/productCatalog';
@@ -53,19 +52,6 @@ export async function GET(request: NextRequest) {
       .populate('brand')
       .sort({ createdAt: 1, name: 1 })
       .lean();
-
-    if (!products.length) {
-      return NextResponse.json(
-        await ensureRenderableProductAssetList(
-          DEFAULT_PRODUCTS.map((product) => normalizeProduct(product, product.category))
-        ),
-        {
-          headers: {
-            'Cache-Control': 'no-store',
-          },
-        }
-      );
-    }
 
     return NextResponse.json(
       await ensureRenderableProductAssetList(

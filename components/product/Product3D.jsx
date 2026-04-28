@@ -62,7 +62,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
                   fill
                   unoptimized
                   sizes="(min-width: 1024px) 13rem, 8rem"
-                  className="object-contain mix-blend-multiply saturate-[0.82]"
+                  className="object-contain mix-blend-multiply saturate-[0.82] dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.9]"
                 />
               </motion.div>
             ) : null}
@@ -74,7 +74,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
               <AnimatedHeading as="h2" className="mt-4 font-display text-4xl text-theme-ink md:text-5xl lg:text-6xl">
                 {data.name}
               </AnimatedHeading>
-              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
+              <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ivory/70 md:text-base">
                 {data.description}
               </p>
             </div>
@@ -105,7 +105,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
                     onClick={() => setShouldLoadModel(true)}
                     whileHover={{ scale: 1.04, y: -2 }}
                     whileTap={{ scale: 0.98 }}
-                    className="rounded-full border border-white/25 bg-theme-ink/86 px-6 py-3 text-sm font-semibold uppercase tracking-[0.28em] text-theme-ivory transition hover:bg-theme-bronze"
+                    className="rounded-full border border-white/25 bg-theme-ink/86 px-6 py-3 text-sm font-semibold uppercase tracking-[0.28em] text-theme-ivory transition hover:bg-theme-bronze dark:bg-[rgba(18,14,11,0.86)] dark:text-theme-ivory dark:hover:bg-theme-bronze"
                   >
                     Load 3D View
                   </motion.button>
@@ -136,19 +136,19 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
 
               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(26,22,19,0.02),rgba(26,22,19,0.15))]" />
 
-              <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80">
+              <div className="absolute bottom-5 left-5 z-10 rounded-full border border-white/20 bg-black/60 px-4 py-2 text-[0.62rem] font-semibold uppercase tracking-[0.3em] text-white/80 dark:text-white/86">
                 {data.modelPath ? 'Interactive 3D View' : 'Product Preview'}
               </div>
             </div>
 
             {data.eyebrow ? (
-              <div className="pointer-events-none absolute left-8 top-8 z-20 rounded-full border border-theme-bronze/30 bg-black/40 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-white backdrop-blur-md">
+              <div className="pointer-events-none absolute left-8 top-8 z-20 rounded-full border border-theme-bronze/30 bg-black/40 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-white backdrop-blur-md dark:bg-black/60 dark:text-white">
                 {data.eyebrow}
               </div>
             ) : null}
 
             {data.name ? (
-              <div className="pointer-events-none absolute bottom-8 right-8 z-20 rounded-full border border-theme-bronze/30 bg-black/40 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-white backdrop-blur-md">
+              <div className="pointer-events-none absolute bottom-8 right-8 z-20 rounded-full border border-theme-bronze/30 bg-black/40 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-white backdrop-blur-md dark:bg-black/60 dark:text-white">
                 {data.name}
               </div>
             ) : null}
@@ -158,7 +158,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
         <div className="relative z-0 flex flex-col justify-center md:col-span-1">
           <div className="rounded-[2rem] border border-theme-line/70 bg-white/55 p-6 shadow-[0_16px_46px_rgba(49,30,21,0.05)] dark:bg-theme-mist/15 md:p-7">
             <p className="text-xs font-semibold uppercase tracking-[0.35em] text-theme-bronze">3D View</p>
-            <p className="mt-4 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ink/76 md:text-lg">
+            <p className="mt-4 max-w-xl text-base leading-8 text-theme-walnut/80 dark:text-theme-ivory/76 md:text-lg">
               Tap the model to load the live 3D experience, then continue through the product details below.
             </p>
           </div>
@@ -166,11 +166,11 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
           <div className="mt-5 grid gap-4 md:grid-cols-[0.85fr_1.15fr]">
             <motion.div
               whileHover={{ y: -6 }}
-              className="rounded-[1.7rem] border border-theme-bronze/12 bg-theme-ink px-6 py-6 text-theme-ivory shadow-[0_20px_50px_rgba(26,22,19,0.18)]"
+              className="rounded-[1.7rem] border border-theme-bronze/12 bg-theme-ink px-6 py-6 text-theme-ivory shadow-[0_20px_50px_rgba(26,22,19,0.18)] dark:border-theme-bronze/30 dark:bg-[rgba(24,18,15,0.88)] dark:text-theme-ivory"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-theme-sand/70">Starting At</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-theme-sand/70 dark:text-theme-ivory/68">Starting At</p>
               <p className="mt-3 font-display text-5xl text-theme-ivory">Rs. {data.price.toLocaleString('en-IN')}</p>
-              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-theme-sand/76">
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.28em] text-theme-sand/76 dark:text-theme-ivory/72">
                 {isOutOfStock ? 'Currently Out of Stock' : `${stockQuantity} Units Available`}
               </p>
             </motion.div>
@@ -182,7 +182,7 @@ export default function Product3D({ id, data, reverseLayout = false, surfaceClas
               <div className="flex flex-col gap-4">
                 <div>
                   <p className="text-[0.66rem] font-semibold uppercase tracking-[0.32em] text-theme-bronze">Consultation Flow</p>
-                  <p className="mt-2 text-sm leading-7 text-theme-walnut/74 dark:text-theme-ink/68">
+                  <p className="mt-2 text-sm leading-7 text-theme-walnut/74 dark:text-theme-ivory/68">
                     Speak with the studio for finish direction, room planning, and order guidance.
                   </p>
                 </div>

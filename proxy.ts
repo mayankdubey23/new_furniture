@@ -36,6 +36,18 @@ function getExternalApiPublicKey() {
   return readEnv('PUBLIC_KEY', 'EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
 }
 
+function isLocalAdminAuthPath(pathname: string) {
+  if (pathname === '/api/auth') {
+    return true;
+  }
+
+  if (!pathname.startsWith('/api/auth/')) {
+    return false;
+  }
+
+  return !pathname.startsWith('/api/auth/user/');
+}
+
 async function maybeRewriteExternalApiRequest(request: NextRequest) {
   if (getProxyDataSource() !== 'external') {
     return null;
@@ -44,7 +56,7 @@ async function maybeRewriteExternalApiRequest(request: NextRequest) {
   const mappedPath = mapLocalApiPathToExternalPath(request.nextUrl.pathname);
   const baseUrl = getExternalApiBaseUrl();
 
-  if (!mappedPath || !baseUrl) {
+  if (!baseUrl) {
     return null;
   }
 
@@ -54,7 +66,6 @@ async function maybeRewriteExternalApiRequest(request: NextRequest) {
   });
 
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.delete('cookie');
   requestHeaders.delete('host');
   requestHeaders.delete('content-length');
 
@@ -174,6 +185,10 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api')) {
+    if (isLocalAdminAuthPath(pathname)) {
+      return NextResponse.next();
+    }
+
     const externalApiResponse = await maybeRewriteExternalApiRequest(request);
 
     if (externalApiResponse) {

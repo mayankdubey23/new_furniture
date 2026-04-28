@@ -23,7 +23,11 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to send a recovery code.';
 
-    if (message === 'PHONE_RECOVERY_UNAVAILABLE' || message === 'EMAIL_RECOVERY_UNAVAILABLE') {
+    if (
+      message === 'PHONE_RECOVERY_UNAVAILABLE' ||
+      message === 'EMAIL_RECOVERY_UNAVAILABLE' ||
+      message === 'PASSWORD_RECOVERY_UNAVAILABLE'
+    ) {
       return NextResponse.json(
         { error: 'That recovery method is not configured yet.' },
         { status: 400 }

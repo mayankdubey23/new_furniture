@@ -23,7 +23,7 @@ export function mapLocalApiPathToExternalPath(pathname: string) {
   const mapping = getExternalApiRouteMapping(pathname);
 
   if (!mapping) {
-    return null;
+    return pathname;
   }
 
   const [localPrefix, externalPrefix] = mapping;

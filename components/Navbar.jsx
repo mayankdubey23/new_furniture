@@ -73,6 +73,15 @@ function getServerSnapshot() {
   return false;
 }
 
+function formatProductNavLabel(product) {
+  const label = product?.mainCategoryName || product?.category || product?.name || 'Product';
+  return String(label)
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
 
 const CartItemRow = ({ item, onRemove, onUpdateQuantity }) => (
   <div className="flex items-center gap-3 p-3 rounded-xl border border-theme-line">
@@ -103,9 +112,12 @@ const CartItemRow = ({ item, onRemove, onUpdateQuantity }) => (
 
 
 /**
- * @param {{ collections?: import('@/lib/productCatalog').StorefrontCollectionLink[] }} props
+ * @param {{
+ *   collections?: import('@/lib/productCatalog').StorefrontCollectionLink[],
+ *   products?: import('@/lib/productCatalog').ProductRecord[]
+ * }} props
  */
-function Navbar({ collections = [] }) {
+function Navbar({ collections = [], products = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
@@ -149,7 +161,16 @@ function Navbar({ collections = [] }) {
   }), [isSolidNav, isDarkTheme]);
 
   const navLinks = useMemo(() => {
-    const collectionLinks = collections.length
+    const visibleProducts = Array.isArray(products)
+      ? products.filter((product) => product && product.active !== false)
+      : [];
+    const productLinks = visibleProducts.length
+      ? visibleProducts.map((product) => ({
+          name: formatProductNavLabel(product),
+          href: `/products/${encodeURIComponent(product.id || product._id)}`,
+          isProductLink: true,
+        }))
+      : collections.length
       ? collections.map((collection) => ({
           name: collection.name,
           href: `/products/${encodeURIComponent(collection.productSlug || collection.productId)}`,
@@ -158,11 +179,11 @@ function Navbar({ collections = [] }) {
       : [{ name: "Collections", href: "/#collections", targetId: "collections" }];
 
     return [
-      ...collectionLinks,
+      ...productLinks,
       { name: "Customization", href: "/customization" },
       { name: "Contact", href: "/contact" }
     ];
-  }, [collections]);
+  }, [collections, products]);
   const firstCollectionHref = navLinks.find((link) => link.targetId)?.href || "/#collections";
 
   useEffect(() => {
@@ -360,6 +381,13 @@ function Navbar({ collections = [] }) {
                         >
                           Track Order
                         </Link>
+                        <Link
+                          href="/track-order"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          Return / Refund
+                        </Link>
                         <button
                           onClick={() => { void handleLogout(); }}
                           className="w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-red-500 hover:bg-red-50/60 transition-colors dark:hover:bg-red-900/20"
@@ -381,6 +409,20 @@ function Navbar({ collections = [] }) {
                           className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
                         >
                           Track Order
+                        </Link>
+                        <Link
+                          href="/orders"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          My Orders
+                        </Link>
+                        <Link
+                          href="/track-order"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          Return / Refund
                         </Link>
                         <Link
                           href="/login"

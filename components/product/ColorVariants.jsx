@@ -26,10 +26,10 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
   return (
     <div className="space-y-6">
       <div>
-        <AnimatedHeading as="h3" className="mb-1 font-display text-2xl text-theme-ink md:text-3xl">
+        <AnimatedHeading as="h3" className="mb-1 font-display text-2xl text-theme-ink dark:text-theme-ivory md:text-3xl">
           Choose Your Finish
         </AnimatedHeading>
-        <p className="text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65">
+        <p className="text-sm leading-7 text-theme-walnut/70 dark:text-theme-ivory/68">
           Every upholstery variant is sourced to age beautifully. Click to preview each finish.
         </p>
       </div>
@@ -84,7 +84,7 @@ export default function ColorVariants({ colors, currentColor, onColorChange }) {
                 isActive ? 'bg-theme-bronze/12' : 'bg-theme-mist/60 dark:bg-theme-mist/30'
               }`}>
                 <p className={`text-xs font-semibold uppercase tracking-wider truncate ${
-                  isActive ? 'text-theme-bronze' : 'text-theme-walnut/80 dark:text-theme-ink/75'
+                  isActive ? 'text-theme-bronze' : 'text-theme-walnut/80 dark:text-theme-ivory/75'
                 }`}>
                   {color.name}
                 </p>

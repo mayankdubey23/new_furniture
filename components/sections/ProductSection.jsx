@@ -48,13 +48,13 @@ function SectionFrame({
             <p className="text-xs sm:text-[0.64rem] font-semibold uppercase tracking-widest sm:tracking-[0.34em] text-theme-bronze">
               {accent}
             </p>
-            <AnimatedHeading as="h3" className="mt-2 font-display text-lg leading-snug sm:text-[2rem] md:text-[2.3rem] text-theme-ink">
+            <AnimatedHeading as="h3" className="mt-2 font-display text-lg leading-snug text-theme-ink dark:text-theme-ivory sm:text-[2rem] md:text-[2.3rem]">
               {title}
             </AnimatedHeading>
           </div>
         </div>
 
-        <p className="max-w-2xl text-sm leading-7 text-theme-walnut/68 dark:text-theme-ink/62 md:text-[0.98rem] lg:justify-self-end">
+        <p className="max-w-2xl text-sm leading-7 text-theme-walnut/68 dark:text-theme-ivory/68 md:text-[0.98rem] lg:justify-self-end">
           {summary}
         </p>
       </div>
@@ -173,10 +173,10 @@ export default function ProductSection({
             <span className="inline-block rounded-full border border-theme-bronze/30 bg-theme-bronze/8 px-4 py-1.5 text-xs sm:text-[0.68rem] font-semibold uppercase tracking-widest sm:tracking-[0.36em] text-theme-bronze">
               {data.eyebrow}
             </span>
-            <AnimatedHeading as="h2" className="mt-4 font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-theme-ink">
+            <AnimatedHeading as="h2" className="mt-4 font-display text-3xl text-theme-ink dark:text-theme-ivory sm:text-4xl md:text-5xl lg:text-6xl">
               {data.name}
             </AnimatedHeading>
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ink/65 md:text-base">
+            <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-theme-walnut/70 dark:text-theme-ivory/68 md:text-base">
               {data.description}
             </p>
           </div>

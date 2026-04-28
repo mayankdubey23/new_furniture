@@ -41,8 +41,8 @@ const layersByVariant: Record<CushionBackdropVariant, CushionLayer[]> = {
     {
       src: PRODUCT_SVG_MOTIFS.sofa,
       className:
-        'absolute right-[-10rem] top-[calc(100svh+3rem)] hidden h-[22rem] w-[22rem] opacity-[0.08] md:block lg:right-[-6rem] lg:h-[30rem] lg:w-[30rem]',
-      imageClassName: 'object-contain mix-blend-multiply saturate-[0.84] rotate-[10deg]',
+        'absolute right-[-10rem] top-[calc(100svh+3rem)] hidden h-[22rem] w-[22rem] opacity-[0.14] md:block lg:right-[-6rem] lg:h-[30rem] lg:w-[30rem] dark:opacity-[0.22]',
+      imageClassName: 'object-contain mix-blend-multiply saturate-[0.84] rotate-[10deg] dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.92]',
       glowClassName:
         'bg-[radial-gradient(circle,rgba(165,106,63,0.14),transparent_72%)]',
       motionClassName: 'cushion-drift-slow',
@@ -51,8 +51,8 @@ const layersByVariant: Record<CushionBackdropVariant, CushionLayer[]> = {
     {
       src: PRODUCT_SVG_MOTIFS.chair,
       className:
-        'absolute left-[-7rem] top-[28%] hidden h-[18rem] w-[18rem] opacity-[0.08] lg:block xl:left-[-5rem] xl:h-[22rem] xl:w-[22rem]',
-      imageClassName: 'object-contain mix-blend-multiply saturate-[0.82] -rotate-[8deg]',
+        'absolute left-[-7rem] top-[28%] hidden h-[18rem] w-[18rem] opacity-[0.14] lg:block xl:left-[-5rem] xl:h-[22rem] xl:w-[22rem] dark:opacity-[0.22]',
+      imageClassName: 'object-contain mix-blend-multiply saturate-[0.82] -rotate-[8deg] dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.9]',
       glowClassName:
         'bg-[radial-gradient(circle,rgba(102,114,95,0.1),transparent_72%)]',
       motionClassName: 'cushion-drift-delayed',
@@ -61,8 +61,8 @@ const layersByVariant: Record<CushionBackdropVariant, CushionLayer[]> = {
     {
       src: PRODUCT_SVG_MOTIFS.recliner,
       className:
-        'absolute right-[-4rem] top-[56%] hidden h-[18rem] w-[18rem] opacity-[0.08] xl:block xl:right-[2%] xl:h-[24rem] xl:w-[24rem]',
-      imageClassName: 'object-contain mix-blend-multiply saturate-[0.86] rotate-[6deg]',
+        'absolute right-[-4rem] top-[56%] hidden h-[18rem] w-[18rem] opacity-[0.14] xl:block xl:right-[2%] xl:h-[24rem] xl:w-[24rem] dark:opacity-[0.22]',
+      imageClassName: 'object-contain mix-blend-multiply saturate-[0.86] rotate-[6deg] dark:mix-blend-screen dark:brightness-125 dark:saturate-[0.92]',
       glowClassName:
         'bg-[radial-gradient(circle,rgba(221,208,189,0.22),transparent_72%)]',
       motionClassName: 'cushion-drift-reverse',
@@ -71,8 +71,8 @@ const layersByVariant: Record<CushionBackdropVariant, CushionLayer[]> = {
     {
       src: PRODUCT_SVG_MOTIFS.pouffe,
       className:
-        'absolute left-[6%] bottom-[14%] hidden h-[12rem] w-[12rem] opacity-[0.08] md:block lg:h-[15rem] lg:w-[15rem]',
-      imageClassName: 'object-contain mix-blend-multiply saturate-[0.9]',
+        'absolute left-[6%] bottom-[14%] hidden h-[12rem] w-[12rem] opacity-[0.14] md:block lg:h-[15rem] lg:w-[15rem] dark:opacity-[0.22]',
+      imageClassName: 'object-contain mix-blend-multiply saturate-[0.9] dark:mix-blend-screen dark:brightness-125',
       glowClassName:
         'bg-[radial-gradient(circle,rgba(165,106,63,0.12),transparent_72%)]',
       motionClassName: 'cushion-drift-reverse',
@@ -81,8 +81,8 @@ const layersByVariant: Record<CushionBackdropVariant, CushionLayer[]> = {
     {
       src: PRODUCT_SVG_MOTIFS.cushion,
       className:
-        'absolute bottom-[7%] right-[18%] hidden h-[14rem] w-[14rem] opacity-[0.08] lg:block xl:h-[18rem] xl:w-[18rem]',
-      imageClassName: 'object-contain mix-blend-multiply saturate-[0.92] -rotate-[12deg]',
+        'absolute bottom-[7%] right-[18%] hidden h-[14rem] w-[14rem] opacity-[0.14] lg:block xl:h-[18rem] xl:w-[18rem] dark:opacity-[0.22]',
+      imageClassName: 'object-contain mix-blend-multiply saturate-[0.92] -rotate-[12deg] dark:mix-blend-screen dark:brightness-125',
       glowClassName:
         'bg-[radial-gradient(circle,rgba(221,208,189,0.24),transparent_72%)]',
       motionClassName: 'cushion-drift-delayed',

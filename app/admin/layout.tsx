@@ -88,10 +88,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   }, [router, isLoginPage]);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
-
   let currentSection = 'Overview';
   if (routeSuffix?.startsWith('/products')) currentSection = 'Products';
   if (routeSuffix?.startsWith('/orders')) currentSection = 'Orders';

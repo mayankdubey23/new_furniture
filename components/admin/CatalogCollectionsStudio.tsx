@@ -42,38 +42,6 @@ function countLabel(count: number, singular: string) {
   return `${count} ${singular}${count === 1 ? '' : 's'}`;
 }
 
-const catalogFallbackImages: Partial<Record<CollectionKey, Record<string, string>>> = {
-  maincategory: {
-    sofa: '/products/sofa/main.png',
-    recliner: '/products/recliners/main.png',
-    pouffe: '/products/pouffes/main.png',
-    chair: '/products/chairs/main.png',
-  },
-  brand: {
-    'furniture-lele': '/products/sofa/cover.png',
-  },
-};
-
-function normalizeCatalogLookupKey(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function resolveCatalogFallbackImage(
-  collection: CollectionKey,
-  item: Pick<CatalogEntityRecord, 'name' | 'slug' | 'pic'> | string
-) {
-  const fallbackMap = catalogFallbackImages[collection];
-  const key =
-    typeof item === 'string'
-      ? normalizeCatalogLookupKey(item)
-      : normalizeCatalogLookupKey(item.slug || item.name);
-
-  return fallbackMap?.[key] || '';
-}
-
 function formatDate(value?: string) {
   if (!value) {
     return 'Recently updated';
@@ -145,7 +113,7 @@ function CollectionPanel({
     resetForm();
     setForm({
       name: item.name,
-      pic: item.pic || resolveCatalogFallbackImage(collection, item),
+      pic: item.pic || '',
       active: item.active,
     });
     setEditingId(item._id);
@@ -154,8 +122,7 @@ function CollectionPanel({
     setSuccess('');
   };
 
-  const previewSource =
-    localPreview || form.pic || resolveCatalogFallbackImage(collection, form.name);
+  const previewSource = localPreview || form.pic;
 
   const handleSelectFile = (file: File) => {
     clearLocalAsset();
@@ -200,7 +167,7 @@ function CollectionPanel({
     body.append('name', form.name.trim());
     body.append('active', String(form.active));
 
-    const imagePath = form.pic.trim() || resolveCatalogFallbackImage(collection, form.name);
+    const imagePath = form.pic.trim();
 
     if (imagePath) {
       body.append('pic', imagePath);
@@ -469,7 +436,7 @@ function CollectionPanel({
 
       <div className="space-y-3">
         {items.map((item) => {
-          const itemImage = item.pic || resolveCatalogFallbackImage(collection, item);
+          const itemImage = item.pic || '';
           const linkedCount = linkedCounts?.[item._id] || 0;
           const isDeleteBlocked = linkedCount > 0;
 
