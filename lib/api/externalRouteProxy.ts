@@ -64,3 +64,12 @@ export async function maybeProxyExternalApiRoute(request: NextRequest) {
     );
   }
 }
+
+export function externalApiRequiredResponse(feature = 'This feature') {
+  return NextResponse.json(
+    {
+      error: `${feature} requires the external backend API. Set DATA_SOURCE=external and EXTERNAL_API_BASE_URL, then restart Next.js.`,
+    },
+    { status: 502, headers: { 'Cache-Control': 'no-store' } }
+  );
+}
