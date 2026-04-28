@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/mongoose';
+import { maybeProxyExternalApiRoute } from '@/lib/api/externalRouteProxy';
 import User from '@/models/User';
 import {
   isPhoneOtpConfigured,
@@ -30,6 +31,11 @@ function normalizeEmail(value: unknown) {
 
 export async function POST(request: NextRequest) {
   try {
+    const externalResponse = await maybeProxyExternalApiRoute(request);
+    if (externalResponse) {
+      return externalResponse;
+    }
+
     await dbConnect();
     const { name, email, password, phone, otpCode, userName, username } = await request.json();
     const phoneOtpEnabled = isPhoneOtpConfigured();

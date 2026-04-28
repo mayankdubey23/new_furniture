@@ -3,10 +3,16 @@ import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongoose';
 import User from '@/models/User';
+import { maybeProxyExternalApiRoute } from '@/lib/api/externalRouteProxy';
 import { createUserToken, setUserSession } from '@/lib/userAuth';
 
 export async function POST(request: NextRequest) {
   try {
+    const externalResponse = await maybeProxyExternalApiRoute(request);
+    if (externalResponse) {
+      return externalResponse;
+    }
+
     await dbConnect();
     const { email, password } = await request.json();
 

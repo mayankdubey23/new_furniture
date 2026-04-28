@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import dbConnect from '@/lib/mongoose';
+import { maybeProxyExternalApiRoute } from '@/lib/api/externalRouteProxy';
 import User from '@/models/User';
 import { normalizePhoneNumber, verifyPhoneOtp } from '@/lib/phoneOtp';
 import { createUserToken, setUserSession } from '@/lib/userAuth';
 
 export async function POST(request: NextRequest) {
   try {
+    const externalResponse = await maybeProxyExternalApiRoute(request);
+    if (externalResponse) {
+      return externalResponse;
+    }
+
     await dbConnect();
 
     const { phone, otpCode } = (await request.json()) as {

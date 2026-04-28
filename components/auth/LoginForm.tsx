@@ -9,7 +9,7 @@ import { SITE_NAME } from '@/lib/brand';
 
 type Tab = 'login' | 'signup';
 type LoginMethod = 'password' | 'otp';
-
+ 
 interface LoginFormProps {
   googleConfigured?: boolean;
 }

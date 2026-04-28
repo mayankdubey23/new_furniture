@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongoose';
+import { maybeProxyExternalApiRoute } from '@/lib/api/externalRouteProxy';
 import User from '@/models/User';
 import {
   isPhoneOtpConfigured,
@@ -11,6 +12,11 @@ type OtpPurpose = 'signup' | 'login';
 
 export async function POST(request: NextRequest) {
   try {
+    const externalResponse = await maybeProxyExternalApiRoute(request);
+    if (externalResponse) {
+      return externalResponse;
+    }
+
     if (!isPhoneOtpConfigured()) {
       return NextResponse.json(
         { error: 'Phone OTP is not configured yet.' },

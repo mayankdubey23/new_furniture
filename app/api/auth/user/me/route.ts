@@ -1,7 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
+import { maybeProxyExternalApiRoute } from '@/lib/api/externalRouteProxy';
 import { getUserFromCookie } from '@/lib/userAuth';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const externalResponse = await maybeProxyExternalApiRoute(request);
+  if (externalResponse) {
+    return externalResponse;
+  }
+
   const user = await getUserFromCookie();
 
   return NextResponse.json(
