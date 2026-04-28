@@ -38,11 +38,17 @@ function readEnv(name: string) {
   return String(process.env[name] || '').trim();
 }
 
-async function checkEndpoint(baseUrl: string, path: string, token: string) {
+async function checkEndpoint(baseUrl: string, path: string, publicKey: string) {
   const response = await fetch(`${baseUrl}${path}`, {
     headers: {
       Accept: 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(publicKey
+        ? {
+            Authorization: `Bearer ${publicKey}`,
+            'x-public-key': publicKey,
+            'public-key': publicKey,
+          }
+        : {}),
     },
     cache: 'no-store',
   });
@@ -63,7 +69,8 @@ async function main() {
   loadEnvFile('.env.local');
 
   const baseUrl = readEnv('EXTERNAL_API_BASE_URL') || readEnv('NEXT_PUBLIC_EXTERNAL_API_BASE_URL');
-  const token = readEnv('EXTERNAL_API_BEARER_TOKEN') || readEnv('API_BEARER_TOKEN');
+  const publicKey =
+    readEnv('PUBLIC_KEY') || readEnv('EXTERNAL_API_BEARER_TOKEN') || readEnv('API_BEARER_TOKEN');
 
   if (!baseUrl) {
     console.error('Missing EXTERNAL_API_BASE_URL or NEXT_PUBLIC_EXTERNAL_API_BASE_URL.');
@@ -75,15 +82,14 @@ async function main() {
     '/api/product',
     '/api/maincategory',
     '/api/setting',
-    '/api/contactus',
   ];
 
   console.log(`Checking external backend: ${normalizedBaseUrl}`);
-  console.log(`Bearer token configured: ${token ? 'yes' : 'no'}`);
+  console.log(`Public key configured: ${publicKey ? 'yes' : 'no'}`);
 
   for (const path of endpoints) {
     try {
-      const result = await checkEndpoint(normalizedBaseUrl, path, token);
+      const result = await checkEndpoint(normalizedBaseUrl, path, publicKey);
       console.log(`${result.ok ? 'OK' : 'FAIL'} ${result.status} ${path}`);
       if (result.preview) {
         console.log(`  ${result.preview}`);

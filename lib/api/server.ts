@@ -25,8 +25,8 @@ function readEnv(...names: string[]) {
   return '';
 }
 
-function getExternalApiBearerToken() {
-  return readEnv('EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
+function getExternalApiPublicKey() {
+  return readEnv('PUBLIC_KEY', 'EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
 }
 
 export function getServerDataSource(): DataSource {
@@ -88,10 +88,18 @@ export function getServerApiHeaders(
   normalizedHeaders.set('Accept', normalizedHeaders.get('Accept') || 'application/json');
 
   if (source === 'external') {
-    const bearerToken = getExternalApiBearerToken();
+    const publicKey = getExternalApiPublicKey();
 
-    if (bearerToken && !normalizedHeaders.has('Authorization')) {
-      normalizedHeaders.set('Authorization', `Bearer ${bearerToken}`);
+    if (publicKey && !normalizedHeaders.has('Authorization')) {
+      normalizedHeaders.set('Authorization', `Bearer ${publicKey}`);
+    }
+
+    if (publicKey && !normalizedHeaders.has('x-public-key')) {
+      normalizedHeaders.set('x-public-key', publicKey);
+    }
+
+    if (publicKey && !normalizedHeaders.has('public-key')) {
+      normalizedHeaders.set('public-key', publicKey);
     }
   }
 

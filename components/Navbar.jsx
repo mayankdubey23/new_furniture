@@ -347,6 +347,13 @@ function Navbar({ collections = [] }) {
                       </div>
                       <div className="border-t border-theme-line p-2 space-y-1">
                         <Link
+                          href="/orders"
+                          onClick={() => setAccountOpen(false)}
+                          className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
+                        >
+                          My Orders
+                        </Link>
+                        <Link
                           href="/track-order"
                           onClick={() => setAccountOpen(false)}
                           className="block w-full rounded-xl px-3 py-2 text-left text-sm font-medium text-theme-walnut hover:bg-theme-sand/30 transition-colors dark:text-theme-ivory dark:hover:bg-theme-mist/30"
@@ -452,11 +459,18 @@ function Navbar({ collections = [] }) {
                 <p className="mt-1 text-xs text-theme-ivory/60">{user.email}</p>
                 <div className="mt-4 flex flex-col gap-2">
                   <Link
-                    href="/track-order"
+                    href="/orders"
                     onClick={() => setIsOpen(false)}
                     className="rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 transition-colors hover:border-theme-bronze hover:text-white"
                   >
                     Your Orders
+                  </Link>
+                  <Link
+                    href="/track-order"
+                    onClick={() => setIsOpen(false)}
+                    className="rounded-xl border border-white/10 px-4 py-3 text-sm text-theme-ivory/90 transition-colors hover:border-theme-bronze hover:text-white"
+                  >
+                    Track Order
                   </Link>
                   <button
                     type="button"

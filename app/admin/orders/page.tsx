@@ -10,7 +10,7 @@ interface OrderItem {
   quantity: number;
 }
 
-type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+type ReturnRefundRequestType = 'return' | 'refund' | 'exchange' | 'return-refund';
 type ReturnRefundRequestStatus =
   | 'requested'
   | 'approved'
@@ -121,6 +121,8 @@ function getRequestTypeLabel(value: ReturnRefundRequestType) {
       return 'Return';
     case 'refund':
       return 'Refund';
+    case 'exchange':
+      return 'Exchange';
     case 'return-refund':
       return 'Return + Refund';
     default:

@@ -20,6 +20,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import StorefrontContentStudio from '@/components/admin/StorefrontContentStudio';
+import { extractApiError, unwrapApiArray } from '@/lib/adminApi';
 import { getApiUrl } from '@/lib/api/browser';
 import { getAdminPortalPath } from '@/lib/adminPortal';
 import {
@@ -46,6 +47,20 @@ const adminCustomersHref = getAdminPortalPath('/customers');
 const adminContentHref = getAdminPortalPath('/content');
 const adminOrdersHref = getAdminPortalPath('/orders');
 const adminCustomizationsHref = getAdminPortalPath('/customizations');
+
+async function readResponsePayload(response: Response) {
+  const text = await response.text().catch(() => '');
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    return { error: text };
+  }
+}
 
 function SectionShell({
   eyebrow,
@@ -105,6 +120,7 @@ export default function AdminDashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [exportStatus, setExportStatus] = useState('');
+  const [dashboardError, setDashboardError] = useState('');
   const [toast, setToast] = useState<AdminToastDetail | null>(null);
 
   const refreshDashboard = useCallback(async (silent = false) => {
@@ -113,6 +129,7 @@ export default function AdminDashboardPage() {
     } else {
       setLoading(true);
     }
+    setDashboardError('');
     try {
       const [productsRes, ordersRes, settingsRes] = await Promise.all([
         fetch(getApiUrl('/api/products'), { cache: 'no-store' }),
@@ -121,14 +138,33 @@ export default function AdminDashboardPage() {
       ]);
 
       const [productData, orderData, settingsData] = await Promise.all([
-        productsRes.json(),
-        ordersRes.ok ? ordersRes.json() : [],
-        settingsRes.ok ? settingsRes.json() : DEFAULT_ADMIN_SETTINGS,
+        readResponsePayload(productsRes),
+        readResponsePayload(ordersRes),
+        readResponsePayload(settingsRes),
       ]);
+      const loadErrors = [
+        productsRes.ok
+          ? ''
+          : extractApiError(productData, `Products could not be loaded (${productsRes.status}).`),
+        ordersRes.ok
+          ? ''
+          : extractApiError(orderData, `Orders could not be loaded (${ordersRes.status}).`),
+        settingsRes.ok
+          ? ''
+          : extractApiError(settingsData, `Settings could not be loaded (${settingsRes.status}).`),
+      ].filter(Boolean);
 
-      setProducts(Array.isArray(productData) ? productData : []);
-      setOrders(Array.isArray(orderData) ? orderData : []);
-      setSettings(normalizeAdminSettings(settingsData));
+      setProducts(productsRes.ok ? unwrapApiArray<AdminProduct>(productData) : []);
+      setOrders(ordersRes.ok ? unwrapApiArray<AdminOrder>(orderData) : []);
+      setSettings(normalizeAdminSettings(settingsRes.ok ? settingsData : DEFAULT_ADMIN_SETTINGS));
+
+      if (loadErrors.length) {
+        setDashboardError(loadErrors[0]);
+      }
+    } catch (error) {
+      setDashboardError(
+        error instanceof Error ? error.message : 'Dashboard data could not be loaded.'
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -278,6 +314,12 @@ export default function AdminDashboardPage() {
               <p className="text-sm font-semibold leading-6">{toast.message}</p>
             </div>
           </div>
+        </div>
+      ) : null}
+
+      {dashboardError ? (
+        <div className="rounded-[1.4rem] border border-red-300/50 bg-red-50/90 px-4 py-3 text-sm font-semibold leading-6 text-red-700 shadow-[0_16px_40px_rgba(127,29,29,0.08)]">
+          {dashboardError}
         </div>
       ) : null}
 

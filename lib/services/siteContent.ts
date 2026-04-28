@@ -27,7 +27,7 @@ async function getExternalSiteContent() {
     const content = await fetchServerJson<unknown>(getExternalSiteContentPath());
     return normalizeSiteContent(content);
   } catch {
-    return DEFAULT_SITE_CONTENT;
+    return getInternalSiteContent();
   }
 }
 

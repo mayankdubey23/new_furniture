@@ -1,6 +1,4 @@
 const EXTERNAL_API_ROUTE_MAPPINGS = [
-  ['/api/orders', '/api/checkout'],
-  ['/api/checkout', '/api/checkout'],
   ['/api/products', '/api/product'],
   ['/api/product', '/api/product'],
   ['/api/maincategories', '/api/maincategory'],
@@ -11,23 +9,6 @@ const EXTERNAL_API_ROUTE_MAPPINGS = [
   ['/api/brand', '/api/brand'],
   ['/api/settings', '/api/setting'],
   ['/api/setting', '/api/setting'],
-  ['/api/faqs', '/api/faq'],
-  ['/api/faq', '/api/faq'],
-  ['/api/features', '/api/feature'],
-  ['/api/feature', '/api/feature'],
-  ['/api/testimonials', '/api/testimonial'],
-  ['/api/testimonial', '/api/testimonial'],
-  ['/api/newsletters', '/api/newsletter'],
-  ['/api/newsletter', '/api/newsletter'],
-  ['/api/addresses', '/api/address'],
-  ['/api/address', '/api/address'],
-  ['/api/users', '/api/user'],
-  ['/api/user', '/api/user'],
-  ['/api/carts', '/api/cart'],
-  ['/api/cart', '/api/cart'],
-  ['/api/wishlists', '/api/wishlist'],
-  ['/api/wishlist', '/api/wishlist'],
-  ['/api/contactus', '/api/contactus'],
 ] as const;
 
 function matchesPrefix(pathname: string, prefix: string) {

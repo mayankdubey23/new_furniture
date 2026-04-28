@@ -13,6 +13,7 @@ import { sanitizeOrderForClient } from '@/lib/server/orderLifecycle';
 const ALLOWED_REQUEST_TYPES: ReturnRefundRequestType[] = [
   'return',
   'refund',
+  'exchange',
   'return-refund',
 ];
 const ALLOWED_REQUEST_STATUSES: ReturnRefundRequestStatus[] = [

@@ -32,11 +32,11 @@ function getExternalApiBaseUrl() {
   );
 }
 
-function getExternalApiBearerToken() {
-  return readEnv('EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
+function getExternalApiPublicKey() {
+  return readEnv('PUBLIC_KEY', 'EXTERNAL_API_BEARER_TOKEN', 'API_BEARER_TOKEN');
 }
 
-function maybeRewriteExternalApiRequest(request: NextRequest) {
+async function maybeRewriteExternalApiRequest(request: NextRequest) {
   if (getProxyDataSource() !== 'external') {
     return null;
   }
@@ -58,9 +58,45 @@ function maybeRewriteExternalApiRequest(request: NextRequest) {
   requestHeaders.delete('host');
   requestHeaders.delete('content-length');
 
-  const bearerToken = getExternalApiBearerToken();
-  if (bearerToken) {
-    requestHeaders.set('authorization', `Bearer ${bearerToken}`);
+  const publicKey = getExternalApiPublicKey();
+  if (publicKey) {
+    requestHeaders.set('authorization', `Bearer ${publicKey}`);
+    requestHeaders.set('x-public-key', publicKey);
+    requestHeaders.set('public-key', publicKey);
+  }
+
+  if (request.method === 'GET' || request.method === 'HEAD') {
+    try {
+      const upstreamResponse = await fetch(targetUrl, {
+        method: request.method,
+        headers: requestHeaders,
+        cache: 'no-store',
+        redirect: 'manual',
+      });
+      const responseHeaders = new Headers(upstreamResponse.headers);
+      responseHeaders.set('Cache-Control', 'no-store');
+
+      return new NextResponse(upstreamResponse.body, {
+        status: upstreamResponse.status,
+        statusText: upstreamResponse.statusText,
+        headers: responseHeaders,
+      });
+    } catch (error) {
+      console.error('External API request failed:', targetUrl.toString(), error);
+
+      return NextResponse.json(
+        {
+          error:
+            'External API is unavailable. Check EXTERNAL_API_BASE_URL or start the backend server.',
+        },
+        {
+          status: 502,
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        }
+      );
+    }
   }
 
   const response = NextResponse.rewrite(targetUrl, {
@@ -73,6 +109,10 @@ function maybeRewriteExternalApiRequest(request: NextRequest) {
 }
 
 async function readMaintenanceMode(request: NextRequest) {
+  if (getProxyDataSource() === 'external') {
+    return false;
+  }
+
   try {
     const response = await fetch(new URL('/api/admin/settings', request.url), {
       cache: 'no-store',
@@ -134,7 +174,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (pathname.startsWith('/api')) {
-    const externalApiResponse = maybeRewriteExternalApiRequest(request);
+    const externalApiResponse = await maybeRewriteExternalApiRequest(request);
 
     if (externalApiResponse) {
       return externalApiResponse;

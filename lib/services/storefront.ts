@@ -69,17 +69,31 @@ async function getMockProducts() {
 
 async function getExternalProducts() {
   try {
-    const products = await fetchServerJson<unknown[]>(getExternalProductsPath());
+    const [products, fallbackProducts] = await Promise.all([
+      fetchServerJson<unknown[]>(getExternalProductsPath()),
+      getInternalProducts(),
+    ]);
 
     if (!Array.isArray(products) || !products.length) {
-      return getDefaultProducts();
+      return fallbackProducts;
+    }
+
+    const mergedProducts = new Map<string, ProductRecord>();
+
+    for (const product of fallbackProducts) {
+      mergedProducts.set(product.id, product);
+    }
+
+    for (const product of products) {
+      const normalizedProduct = normalizeProduct(product as NormalizableProduct);
+      mergedProducts.set(normalizedProduct.id, normalizedProduct);
     }
 
     return ensureRenderableProductAssetList(
-      products.map((product) => normalizeProduct(product as NormalizableProduct))
+      Array.from(mergedProducts.values())
     );
   } catch {
-    return getDefaultProducts();
+    return getInternalProducts();
   }
 }
 

@@ -24,7 +24,7 @@ export interface ICustomerInfo {
 export type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
 export type PaymentMethod = 'cod' | 'razorpay';
 export type PaymentStatus = 'pending' | 'paid' | 'failed';
-export type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+export type ReturnRefundRequestType = 'return' | 'refund' | 'exchange' | 'return-refund';
 export type ReturnRefundRequestStatus =
   | 'requested'
   | 'approved'
@@ -132,7 +132,7 @@ const ReturnRefundRequestSchema = new Schema(
   {
     requestType: {
       type: String,
-      enum: ['return', 'refund', 'return-refund'],
+      enum: ['return', 'refund', 'exchange', 'return-refund'],
       required: true,
     },
     status: {

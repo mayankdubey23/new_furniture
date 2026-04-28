@@ -9,7 +9,7 @@ import { getApiUrl } from '@/lib/api/browser';
 import { ORDER_TRACKING_PREFIX, SITE_NAME } from '@/lib/brand';
 
 type OrderStatus = 'pending' | 'paid' | 'shipped' | 'delivered';
-type ReturnRefundRequestType = 'return' | 'refund' | 'return-refund';
+type ReturnRefundRequestType = 'return' | 'refund' | 'exchange' | 'return-refund';
 type ReturnRefundRequestStatus =
   | 'requested'
   | 'approved'
@@ -90,6 +90,7 @@ const ORDER_STEPS: Array<{ key: OrderStatus; label: string }> = [
 const RETURN_REQUEST_REASONS = [
   'Damaged item',
   'Wrong item delivered',
+  'Exchange requested',
   'Product mismatch',
   'Quality issue',
   'Delivery issue',
@@ -104,6 +105,8 @@ function getReturnRequestTypeLabel(value: ReturnRefundRequestType) {
       return 'Return';
     case 'refund':
       return 'Refund';
+    case 'exchange':
+      return 'Exchange';
     case 'return-refund':
       return 'Return + Refund';
     default:
@@ -582,7 +585,7 @@ function TrackOrderPageContent() {
                         Returns & Refunds
                       </p>
                       <p className="mt-2 max-w-2xl text-sm leading-7 text-theme-walnut/66 dark:text-theme-ivory/62">
-                        Use this panel to request a return, refund, or both for eligible orders.
+                        Use this panel to request a return, refund, exchange, or combined resolution for eligible orders.
                       </p>
                     </div>
                     {activeReturnRequest ? (
@@ -671,6 +674,7 @@ function TrackOrderPageContent() {
                           >
                             <option value="return">Return</option>
                             <option value="refund">Refund</option>
+                            <option value="exchange">Exchange</option>
                             <option value="return-refund">Return + Refund</option>
                           </select>
                         </div>

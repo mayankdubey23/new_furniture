@@ -6,7 +6,7 @@ info:
     Core backend contract for admin product management, uploads, settings, and orders.
 
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:8000
 
 tags:
   - name: Products
@@ -429,4 +429,3 @@ components:
               type: string
             email:
               type: string
-

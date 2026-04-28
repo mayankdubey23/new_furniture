@@ -34,12 +34,12 @@ Optional API base URLs:
 DATA_SOURCE=external
 NEXT_PUBLIC_EXTERNAL_API_BASE_URL=https://your-backend.example.com
 EXTERNAL_API_BASE_URL=https://your-backend.example.com
-EXTERNAL_API_BEARER_TOKEN=your-backend-bearer-token
+PUBLIC_KEY=your-backend-public-key
 EXTERNAL_PRODUCTS_PATH=/api/product
 NEXT_PUBLIC_MOCK_API_BASE_URL=http://localhost:4000
 ```
 
-`EXTERNAL_API_BEARER_TOKEN` is a server-only bearer token for calling your backend. Do not place JWT session tokens or secrets in client-side env vars.
+`PUBLIC_KEY` is a server-only key for calling your backend. Do not place JWT session tokens or secrets in client-side `NEXT_PUBLIC_` env vars.
 
 In `external` mode, browser-side `/api/*` calls now stay same-origin and are rewritten by `proxy.ts` to the backend so the bearer token can be attached server-side. The built-in mapping covers the routes already mirrored in the repo, including `/api/products -> /api/product`, `/api/maincategories -> /api/maincategory`, and `/api/orders -> /api/checkout`.
 

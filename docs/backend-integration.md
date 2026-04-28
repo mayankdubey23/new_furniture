@@ -5,6 +5,7 @@
 - `lib/api/browser.ts`: resolves client-side API URLs for `internal`, `external`, and `mock` modes
 - `lib/api/server.ts`: server-side source selection and remote fetch helpers
 - `lib/api/externalRoutes.ts`: local-to-backend route mapping for external API mode
+- `docs/backend-contracts.md`: frontend contracts for checkout, orders, cart, wishlist, auth, and Razorpay
 - `lib/services/storefront.ts`: dynamic product and collection reads
 - `lib/services/siteContent.ts`: dynamic hero/footer copy and video sources
 - `lib/content/siteContent.ts`: content types and default media config
@@ -30,37 +31,31 @@ When your separate backend is ready, set:
 
 - `NEXT_PUBLIC_EXTERNAL_API_BASE_URL=https://your-backend.example.com`
 - `EXTERNAL_API_BASE_URL=https://your-backend.example.com`
-- `EXTERNAL_API_BEARER_TOKEN=your-backend-bearer-token`
+- `PUBLIC_KEY=your-backend-public-key`
 - `EXTERNAL_PRODUCTS_PATH=/api/product`
 - `EXTERNAL_SITE_CONTENT_PATH=/api/site-content`
 
-The server fetch helper will automatically send:
+The server fetch helper and proxy will automatically send:
 
 ```http
-Authorization: Bearer <EXTERNAL_API_BEARER_TOKEN>
+Authorization: Bearer <PUBLIC_KEY>
+x-public-key: <PUBLIC_KEY>
+public-key: <PUBLIC_KEY>
 ```
 
-when the source is `external` and the token is configured. Keep this token server-side only.
+when the source is `external` and the key is configured. Keep this key server-side only.
 
 Browser calls should continue to hit local `/api/*` URLs. In `external` mode, `proxy.ts` rewrites the supported routes to your backend and adds the bearer token there, so the client never needs direct access to that secret.
 
-The built-in route mapping covers:
+The built-in external route mapping covers the catalog/contact APIs owned by the separate backend:
 
 - `/api/products` and `/api/product` -> backend `/api/product`
 - `/api/maincategories` and `/api/maincategory` -> backend `/api/maincategory`
 - `/api/subcategories` and `/api/subcategory` -> backend `/api/subcategory`
 - `/api/brands` and `/api/brand` -> backend `/api/brand`
 - `/api/settings` and `/api/setting` -> backend `/api/setting`
-- `/api/faqs` and `/api/faq` -> backend `/api/faq`
-- `/api/features` and `/api/feature` -> backend `/api/feature`
-- `/api/testimonials` and `/api/testimonial` -> backend `/api/testimonial`
-- `/api/newsletters` and `/api/newsletter` -> backend `/api/newsletter`
-- `/api/addresses` and `/api/address` -> backend `/api/address`
-- `/api/users` and `/api/user` -> backend `/api/user`
-- `/api/carts` and `/api/cart` -> backend `/api/cart`
-- `/api/wishlists` and `/api/wishlist` -> backend `/api/wishlist`
-- `/api/contactus` -> backend `/api/contactus`
-- `/api/orders` and `/api/checkout` -> backend `/api/checkout`
+
+Auth, cart, wishlist, Razorpay checkout, newsletters, FAQs, features, testimonials, contact messages, and admin content stay on the local Next.js API routes unless you explicitly add those backend contracts to `lib/api/externalRoutes.ts`.
 
 The storefront server adapters are also prepared to consume:
 
